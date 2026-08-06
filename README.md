@@ -2,23 +2,61 @@
 
 CUELOOP is a voice-first cognitive intervention system designed to help people think without replacing their reasoning.
 
-Most AI assistants optimize for producing answers. CUELOOP takes the opposite approach: the human remains the primary reasoning agent, while the system decides whether to stay silent, acknowledge, question, mirror, perturb, constrain, retrieve, or verify.
+## What CUELOOP does
 
-## Problem
+CUELOOP listens while a person thinks aloud and chooses among a small set of interventions:
 
-Current AI systems often improve performance by generating completed answers. This can reduce the amount of reasoning performed by the user and may create dependence on the system.
+- stay silent
+- acknowledge and preserve the user's turn
+- ask a minimal question
+- mirror the current reasoning structure
+- introduce a counterexample or constraint
+- retrieve missing knowledge
+- mark claims for later verification
 
-CUELOOP explores a different model:
+The system does not generate a completed answer by default. Its job is to improve the conditions under which the user reasons, while keeping the user as the primary reasoning agent.
 
-> Use AI to improve the environment in which a human thinks, rather than using AI to perform the thinking for them.
-
-The initial use case is a 10–30 minute spoken thinking session for:
+The initial product is a 10–30 minute spoken thinking session for:
 
 - research hypotheses
-- product design
+- product and system design
 - complex decision-making
 - writing and argument development
 - technical problem decomposition
+
+After the session, CUELOOP can extract:
+
+- claims
+- premises
+- evidence
+- dependencies
+- counterexamples
+- unresolved questions
+- claims requiring verification
+
+## Why CUELOOP exists
+
+Most AI assistants optimize for producing high-quality answers immediately. That is useful, but it can move the reasoning process from the person to the model.
+
+CUELOOP is based on a different premise:
+
+> AI should sometimes improve the environment in which a human thinks, rather than perform the thinking for them.
+
+The project exists to address four problems:
+
+1. **Answer substitution**  
+   Completed model outputs can replace the user's own generation process.
+
+2. **Weak internalization**  
+   A user may perform better while assisted without retaining the reasoning structure after assistance is removed.
+
+3. **Poor updateability**  
+   Memorized answers are difficult to revise consistently when a premise or counterexample changes. Structured reasoning makes downstream revision possible.
+
+4. **Over-intervention**  
+   Conventional assistants are optimized to respond. In a thinking session, silence or a two-word cue may be more useful than a full answer.
+
+CUELOOP therefore optimizes for minimal, context-dependent intervention, later verification, and eventual cue reduction—not maximum response volume.
 
 ## Core principles
 
@@ -51,7 +89,7 @@ The initial use case is a 10–30 minute spoken thinking session for:
 - `STRUCTURE_GAP`
 - `OVERLOAD`
 
-These are operational interaction states, not diagnoses of a person's cognitive ability.
+These are short-lived operational interaction states, not diagnoses of a person's cognitive ability.
 
 ## Architecture
 
