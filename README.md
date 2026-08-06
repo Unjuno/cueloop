@@ -36,13 +36,25 @@ After the session, CUELOOP can extract:
 
 ## Why CUELOOP exists
 
-Most AI assistants optimize for producing high-quality answers immediately. That is useful, but it can move the reasoning process from the person to the model.
+Frontier AI development has largely focused on improving external models through more compute, more data, larger models, and better optimization.
 
-CUELOOP is based on a different premise:
+That direction has produced powerful systems, but it usually treats the human as a consumer of model outputs.
 
-> AI should sometimes improve the environment in which a human thinks, rather than perform the thinking for them.
+CUELOOP starts from a different hypothesis:
 
-The project exists to address four problems:
+> Humans already possess a flexible, grounded, continuously adapting cognitive architecture that current AI interfaces do little to improve.
+
+Pretrained models provide broad prior knowledge, rapid retrieval, and cross-domain patterns. Humans provide continual learning, real-world grounding, goal formation, value judgment, flexible adaptation, and responsibility.
+
+CUELOOP attempts to connect these complementary capabilities.
+
+Instead of using the model primarily to produce completed answers, it converts model knowledge and reasoning into minimal interventions that help the human retrieve, generate, restructure, verify, and update their own thinking.
+
+The objective is not merely better AI-assisted output.
+
+The objective is greater retained human capability after the assistance is removed.
+
+This project exists to address four problems:
 
 1. **Answer substitution**  
    Completed model outputs can replace the user's own generation process.
@@ -57,6 +69,14 @@ The project exists to address four problems:
    Conventional assistants are optimized to respond. In a thinking session, silence or a two-word cue may be more useful than a full answer.
 
 CUELOOP therefore optimizes for minimal, context-dependent intervention, later verification, and eventual cue reduction—not maximum response volume.
+
+For the full origin, architectural thesis, and epistemic limits, see [`docs/origin-and-thesis.md`](docs/origin-and-thesis.md).
+
+## Core hypothesis
+
+> A pretrained model's broad knowledge and intervention capabilities can be converted into minimal, context-sensitive feedback that helps a human update their own reasoning policies and internal representations.
+
+This is a design hypothesis, not an established scientific result.
 
 ## Core principles
 
@@ -193,6 +213,16 @@ The initial implementation should therefore:
 - separate raw audio from derived structures
 - avoid storing unsupported personality or ability judgments
 - attach confidence, evidence, timestamps, and expiry conditions to inferred user-state data
+
+## Epistemic status
+
+The following remain unproven design hypotheses:
+
+- that human cognition is globally more architecture-efficient than frontier models
+- that large portions of model knowledge can be transferred into reusable human structures
+- that minimal real-time intervention produces durable cognitive improvement
+- that such improvement generalizes across domains
+- that human-generated outputs can materially improve future model training
 
 ## Project status
 
