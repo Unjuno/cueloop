@@ -1,7 +1,14 @@
 import json
 import unittest
 
-from cuelloop.core import Action, HeuristicAnalyzer, InterventionController, State, run_turns
+from cuelloop.core import (
+    Action,
+    HeuristicAnalyzer,
+    InterventionController,
+    SessionContext,
+    State,
+    run_turns,
+)
 from cuelloop.llm import LLMAnalyzer, PromptRequest, parse_analysis_json
 
 
@@ -26,6 +33,23 @@ class HeuristicAnalyzerTests(unittest.TestCase):
         self.assertEqual(analysis.state, State.STUCK)
         self.assertEqual(analysis.proposed_action, Action.CUE)
         self.assertEqual(analysis.cue, "何に依存？")
+
+
+class SessionContextTests(unittest.TestCase):
+    def test_context_keeps_only_recent_turns(self) -> None:
+        context = SessionContext(max_turns=2, max_characters=100)
+        context.add("first")
+        context.add("second")
+        context.add("third")
+        self.assertEqual(context.snapshot(), ("second", "third"))
+
+    def test_context_respects_character_bound(self) -> None:
+        context = SessionContext(max_turns=4, max_characters=8)
+        context.add("1234")
+        context.add("5678")
+        context.add("90")
+        self.assertEqual(sum(len(turn) for turn in context.snapshot()), 6)
+        self.assertEqual(context.snapshot(), ("5678", "90"))
 
 
 class LLMAnalyzerContractTests(unittest.TestCase):
@@ -72,6 +96,28 @@ class LLMAnalyzerContractTests(unittest.TestCase):
         analysis = LLMAnalyzer(failing_completion).analyze("考え中")
         self.assertEqual(analysis.proposed_action, Action.SILENCE)
         self.assertEqual(analysis.confidence, 0.0)
+
+    def test_bounded_context_is_included_in_prompt(self) -> None:
+        captured: list[PromptRequest] = []
+
+        def completion(request: PromptRequest) -> str:
+            captured.append(request)
+            return json.dumps(
+                {
+                    "state": "FLOWING",
+                    "confidence": 0.9,
+                    "evidence": ["論点が継続している"],
+                    "proposed_action": "SILENCE",
+                    "cue": None,
+                },
+                ensure_ascii=False,
+            )
+
+        context = SessionContext(max_turns=2, max_characters=100)
+        context.add("前の論点")
+        LLMAnalyzer(completion).analyze("現在の論点", context)
+        self.assertIn("前の論点", captured[0].user)
+        self.assertIn("現在の論点", captured[0].user)
 
     def test_run_turns_accepts_injected_analyzer(self) -> None:
         def completion(_: PromptRequest) -> str:
