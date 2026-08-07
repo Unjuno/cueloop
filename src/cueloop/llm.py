@@ -5,7 +5,7 @@ import json
 import subprocess
 from typing import Callable, Sequence
 
-from .core import Action, Analysis, State, safe_analysis
+from .core import Action, Analysis, SessionContext, State, safe_analysis
 
 
 SYSTEM_PROMPT = """You are CUELOOP's semantic analyzer.
@@ -21,7 +21,8 @@ Rules:
 - CUE must be a short question that triggers a reasoning operation.
 - Never provide a solution, explanation, recommendation, or completed sentence.
 - The cue must be 16 Japanese characters or fewer when possible.
-- Evidence must describe observable properties of the supplied text, not hidden mental states.
+- Evidence must describe observable properties of the supplied text or recent turns, not hidden mental states.
+- Recent context is bounded and may be incomplete. Do not infer stable traits from it.
 
 Return JSON only with exactly these keys:
 {
@@ -73,19 +74,22 @@ class CommandCompletion:
 
 
 class LLMAnalyzer:
-    """Provider-neutral semantic analyzer using a strict JSON contract.
-
-    The injected completion function owns transport/provider details. This class
-    owns prompting, validation, and fail-closed behavior.
-    """
+    """Provider-neutral semantic analyzer using a strict JSON contract."""
 
     def __init__(self, complete: CompletionFn) -> None:
         self._complete = complete
 
-    def analyze(self, text: str) -> Analysis:
+    def analyze(self, text: str, context: SessionContext | None = None) -> Analysis:
+        recent = context.render() if context is not None else "(no previous turns)"
         request = PromptRequest(
             system=SYSTEM_PROMPT,
-            user=f"Analyze this reasoning turn only:\n\n{text}",
+            user=(
+                "Recent reasoning turns (oldest to newest):\n"
+                f"{recent}\n\n"
+                "Current reasoning turn:\n"
+                f"{text}\n\n"
+                "Analyze the current turn in light of the bounded recent context."
+            ),
         )
         try:
             raw = self._complete(request)
