@@ -4,7 +4,8 @@ import argparse
 from pathlib import Path
 import sys
 
-from .core import Action, HeuristicAnalyzer, InterventionController, append_jsonl
+from .core import Action, Analyzer, HeuristicAnalyzer, InterventionController, append_jsonl
+from .llm import CommandCompletion, LLMAnalyzer
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -23,7 +24,29 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Disable session logging.",
     )
+    parser.add_argument(
+        "--analyzer-command",
+        nargs="+",
+        metavar=("CMD", "ARG"),
+        help=(
+            "Use an external semantic analyzer command instead of heuristics. "
+            "CUELOOP sends prompt JSON to stdin and expects analyzer-result JSON on stdout."
+        ),
+    )
+    parser.add_argument(
+        "--analyzer-timeout",
+        type=float,
+        default=8.0,
+        help="External analyzer timeout in seconds (default: 8.0).",
+    )
     return parser
+
+
+def build_analyzer(args: argparse.Namespace) -> Analyzer:
+    if not args.analyzer_command:
+        return HeuristicAnalyzer()
+    completion = CommandCompletion(args.analyzer_command, timeout_seconds=args.analyzer_timeout)
+    return LLMAnalyzer(completion)
 
 
 def render(action: Action, cue: str | None) -> str:
@@ -36,10 +59,11 @@ def render(action: Action, cue: str | None) -> str:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    analyzer = HeuristicAnalyzer()
+    analyzer = build_analyzer(args)
     controller = InterventionController()
 
-    print("CUELOOP M1 — text prototype")
+    mode = "external semantic analyzer" if args.analyzer_command else "heuristic baseline"
+    print(f"CUELOOP M1 — text prototype ({mode})")
     print("Type a reasoning turn. Use /quit to exit, /help for commands.")
 
     while True:
@@ -62,6 +86,8 @@ def main(argv: list[str] | None = None) -> int:
             f"  state={analysis.state.value} confidence={analysis.confidence:.2f} "
             f"reason={decision.reason}"
         )
+        if analysis.evidence:
+            print(f"  evidence={'; '.join(analysis.evidence)}")
 
         if not args.no_log:
             try:
