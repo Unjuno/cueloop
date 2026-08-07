@@ -4,7 +4,7 @@ import argparse
 from pathlib import Path
 import sys
 
-from .core import Action, Analyzer, HeuristicAnalyzer, InterventionController, append_jsonl
+from .core import Action, Analyzer, HeuristicAnalyzer, InterventionController, SessionContext, append_jsonl
 from .llm import CommandCompletion, LLMAnalyzer
 
 
@@ -39,6 +39,18 @@ def build_parser() -> argparse.ArgumentParser:
         default=8.0,
         help="External analyzer timeout in seconds (default: 8.0).",
     )
+    parser.add_argument(
+        "--context-turns",
+        type=int,
+        default=4,
+        help="Maximum previous reasoning turns exposed to semantic analysis (default: 4).",
+    )
+    parser.add_argument(
+        "--context-characters",
+        type=int,
+        default=2400,
+        help="Maximum characters retained in recent context (default: 2400).",
+    )
     return parser
 
 
@@ -59,8 +71,12 @@ def render(action: Action, cue: str | None) -> str:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    if args.context_turns < 1 or args.context_characters < 1:
+        raise SystemExit("context limits must be positive")
+
     analyzer = build_analyzer(args)
     controller = InterventionController()
+    context = SessionContext(max_turns=args.context_turns, max_characters=args.context_characters)
 
     mode = "external semantic analyzer" if args.analyzer_command else "heuristic baseline"
     print(f"CUELOOP M1 — text prototype ({mode})")
@@ -79,7 +95,7 @@ def main(argv: list[str] | None = None) -> int:
             print("/quit  exit\n/help  show commands")
             continue
 
-        analysis = analyzer.analyze(text)
+        analysis = analyzer.analyze(text, context)
         decision = controller.decide(analysis)
         print(render(decision.action, decision.cue))
         print(
@@ -94,6 +110,8 @@ def main(argv: list[str] | None = None) -> int:
                 append_jsonl(args.log, text, decision)
             except OSError as exc:
                 print(f"warning: failed to write log: {exc}", file=sys.stderr)
+
+        context.add(text)
 
 
 if __name__ == "__main__":
