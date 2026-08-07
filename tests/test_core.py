@@ -1,7 +1,8 @@
 import json
 import unittest
 
-from cuelloop.core import (
+from cueloop.cli import build_parser
+from cueloop.core import (
     Action,
     HeuristicAnalyzer,
     InterventionController,
@@ -9,7 +10,7 @@ from cuelloop.core import (
     State,
     run_turns,
 )
-from cuelloop.llm import LLMAnalyzer, PromptRequest, parse_analysis_json
+from cueloop.llm import LLMAnalyzer, PromptRequest, parse_analysis_json
 
 
 class HeuristicAnalyzerTests(unittest.TestCase):
@@ -158,6 +159,12 @@ class InterventionControllerTests(unittest.TestCase):
         second = controller.decide(analyzer.analyze("えっと、その、なんだろう、性能が良い"))
         self.assertEqual(first.action, Action.CUE)
         self.assertEqual(second.action, Action.SILENCE)
+
+
+class CLITests(unittest.TestCase):
+    def test_analyzer_command_accepts_multiple_tokens(self) -> None:
+        args = build_parser().parse_args(["--analyzer-command", "python", "adapter.py"])
+        self.assertEqual(args.analyzer_command, ["python", "adapter.py"])
 
 
 if __name__ == "__main__":
