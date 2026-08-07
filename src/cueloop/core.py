@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from enum import StrEnum
 import json
@@ -39,10 +39,39 @@ class Analysis:
     cue: str | None = None
 
 
+@dataclass
+class SessionContext:
+    """Bounded recent-turn context; never an unbounded transcript."""
+
+    max_turns: int = 4
+    max_characters: int = 2400
+    _turns: list[str] = field(default_factory=list, repr=False)
+
+    def add(self, text: str) -> None:
+        normalized = " ".join(text.strip().split())
+        if not normalized:
+            return
+        self._turns.append(normalized)
+        if len(self._turns) > self.max_turns:
+            self._turns = self._turns[-self.max_turns :]
+        while sum(len(turn) for turn in self._turns) > self.max_characters and len(self._turns) > 1:
+            self._turns.pop(0)
+        if self._turns and len(self._turns[-1]) > self.max_characters:
+            self._turns[-1] = self._turns[-1][-self.max_characters :]
+
+    def snapshot(self) -> tuple[str, ...]:
+        return tuple(self._turns)
+
+    def render(self) -> str:
+        if not self._turns:
+            return "(no previous turns)"
+        return "\n".join(f"{index + 1}. {turn}" for index, turn in enumerate(self._turns))
+
+
 class Analyzer(Protocol):
     """Produces a non-binding state hypothesis and intervention proposal."""
 
-    def analyze(self, text: str) -> Analysis: ...
+    def analyze(self, text: str, context: SessionContext | None = None) -> Analysis: ...
 
 
 @dataclass(frozen=True)
@@ -67,7 +96,8 @@ class HeuristicAnalyzer:
     _repeat_pattern = re.compile(r"(.{2,12})\1{1,}")
     _structure_terms = ("なぜ", "前提", "根拠", "依存", "条件", "反例", "具体")
 
-    def analyze(self, text: str) -> Analysis:
+    def analyze(self, text: str, context: SessionContext | None = None) -> Analysis:
+        del context
         normalized = " ".join(text.strip().split())
         if not normalized:
             return Analysis(
@@ -203,10 +233,12 @@ def run_turns(
 ) -> list[Decision]:
     selected_analyzer = analyzer or HeuristicAnalyzer()
     selected_controller = controller or InterventionController()
+    context = SessionContext()
     decisions: list[Decision] = []
     for text in texts:
-        decision = selected_controller.decide(selected_analyzer.analyze(text))
+        decision = selected_controller.decide(selected_analyzer.analyze(text, context))
         decisions.append(decision)
         if log_path is not None:
             append_jsonl(log_path, text, decision)
+        context.add(text)
     return decisions
