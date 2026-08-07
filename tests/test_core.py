@@ -1,6 +1,8 @@
+import json
 import unittest
 
-from cuelloop.core import Action, HeuristicAnalyzer, InterventionController, State
+from cuelloop.core import Action, HeuristicAnalyzer, InterventionController, State, run_turns
+from cuelloop.llm import LLMAnalyzer, PromptRequest, parse_analysis_json
 
 
 class HeuristicAnalyzerTests(unittest.TestCase):
@@ -24,6 +26,68 @@ class HeuristicAnalyzerTests(unittest.TestCase):
         self.assertEqual(analysis.state, State.STUCK)
         self.assertEqual(analysis.proposed_action, Action.CUE)
         self.assertEqual(analysis.cue, "何に依存？")
+
+
+class LLMAnalyzerContractTests(unittest.TestCase):
+    def test_valid_json_maps_to_analysis(self) -> None:
+        raw = json.dumps(
+            {
+                "state": "STUCK",
+                "confidence": 0.82,
+                "evidence": ["同じ比較表現が反復している"],
+                "proposed_action": "CUE",
+                "cue": "何に依存？",
+            },
+            ensure_ascii=False,
+        )
+        analysis = parse_analysis_json(raw)
+        self.assertEqual(analysis.state, State.STUCK)
+        self.assertEqual(analysis.proposed_action, Action.CUE)
+        self.assertEqual(analysis.cue, "何に依存？")
+
+    def test_invalid_json_fails_closed(self) -> None:
+        analysis = parse_analysis_json("not-json")
+        self.assertEqual(analysis.proposed_action, Action.SILENCE)
+        self.assertEqual(analysis.confidence, 0.0)
+
+    def test_flowing_cannot_propose_intervention(self) -> None:
+        raw = json.dumps(
+            {
+                "state": "FLOWING",
+                "confidence": 0.91,
+                "evidence": ["論点が連続して展開している"],
+                "proposed_action": "CUE",
+                "cue": "逆なら？",
+            },
+            ensure_ascii=False,
+        )
+        analysis = parse_analysis_json(raw)
+        self.assertEqual(analysis.proposed_action, Action.SILENCE)
+        self.assertEqual(analysis.confidence, 0.0)
+
+    def test_provider_failure_fails_closed(self) -> None:
+        def failing_completion(_: PromptRequest) -> str:
+            raise RuntimeError("provider unavailable")
+
+        analysis = LLMAnalyzer(failing_completion).analyze("考え中")
+        self.assertEqual(analysis.proposed_action, Action.SILENCE)
+        self.assertEqual(analysis.confidence, 0.0)
+
+    def test_run_turns_accepts_injected_analyzer(self) -> None:
+        def completion(_: PromptRequest) -> str:
+            return json.dumps(
+                {
+                    "state": "FLOWING",
+                    "confidence": 0.9,
+                    "evidence": ["因果関係を連続して展開している"],
+                    "proposed_action": "SILENCE",
+                    "cue": None,
+                },
+                ensure_ascii=False,
+            )
+
+        decisions = run_turns(["入力"], analyzer=LLMAnalyzer(completion))
+        self.assertEqual(decisions[0].action, Action.SILENCE)
 
 
 class InterventionControllerTests(unittest.TestCase):
