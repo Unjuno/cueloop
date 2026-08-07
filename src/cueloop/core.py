@@ -6,7 +6,7 @@ from enum import StrEnum
 import json
 from pathlib import Path
 import re
-from typing import Iterable
+from typing import Iterable, Protocol
 
 
 class State(StrEnum):
@@ -39,6 +39,12 @@ class Analysis:
     cue: str | None = None
 
 
+class Analyzer(Protocol):
+    """Produces a non-binding state hypothesis and intervention proposal."""
+
+    def analyze(self, text: str) -> Analysis: ...
+
+
 @dataclass(frozen=True)
 class Decision:
     action: Action
@@ -55,7 +61,7 @@ class ControllerConfig:
 
 
 class HeuristicAnalyzer:
-    """A deterministic baseline. Replaceable by an LLM-backed analyzer later."""
+    """Deterministic baseline used when no semantic analyzer is configured."""
 
     _filler_pattern = re.compile(r"(?:えーと|えっと|その|なんだろう|うーん)")
     _repeat_pattern = re.compile(r"(.{2,12})\1{1,}")
@@ -159,6 +165,16 @@ class InterventionController:
         return Decision(Action.SILENCE, None, "no deliverable intervention", analysis)
 
 
+def safe_analysis(reason: str) -> Analysis:
+    """Fail closed: uncertain analyzer failures must not create an intervention."""
+    return Analysis(
+        state=State.PAUSED,
+        confidence=0.0,
+        evidence=(reason,),
+        proposed_action=Action.SILENCE,
+    )
+
+
 def append_jsonl(path: Path, text: str, decision: Decision) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     record = {
@@ -179,12 +195,17 @@ def append_jsonl(path: Path, text: str, decision: Decision) -> None:
         handle.write(json.dumps(record, ensure_ascii=False) + "\n")
 
 
-def run_turns(texts: Iterable[str], log_path: Path | None = None) -> list[Decision]:
-    analyzer = HeuristicAnalyzer()
-    controller = InterventionController()
+def run_turns(
+    texts: Iterable[str],
+    log_path: Path | None = None,
+    analyzer: Analyzer | None = None,
+    controller: InterventionController | None = None,
+) -> list[Decision]:
+    selected_analyzer = analyzer or HeuristicAnalyzer()
+    selected_controller = controller or InterventionController()
     decisions: list[Decision] = []
     for text in texts:
-        decision = controller.decide(analyzer.analyze(text))
+        decision = selected_controller.decide(selected_analyzer.analyze(text))
         decisions.append(decision)
         if log_path is not None:
             append_jsonl(log_path, text, decision)
