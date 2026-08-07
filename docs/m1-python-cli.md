@@ -20,6 +20,8 @@ The default analyzer is deterministic and heuristic-based. It is a replaceable b
 
 An optional provider-neutral semantic analyzer can be connected through an external command. The core still owns validation and delivery suppression.
 
+A bounded `SessionContext` exposes only a small recent-turn window to semantic analysis. It is intentionally not an unbounded transcript or a long-term user model.
+
 ## Install
 
 ```bash
@@ -56,6 +58,12 @@ Use a custom JSONL log path:
 cueloop --log logs/manual-session.jsonl
 ```
 
+Bound recent context explicitly:
+
+```bash
+cueloop --context-turns 4 --context-characters 2400
+```
+
 ## External semantic analyzer
 
 CUELOOP can delegate semantic analysis to any executable without taking a dependency on a specific LLM SDK:
@@ -69,7 +77,7 @@ The command receives one JSON object on stdin:
 ```json
 {
   "system": "...CUELOOP analyzer instructions...",
-  "user": "Analyze this reasoning turn only: ..."
+  "user": "...bounded recent turns and current reasoning turn..."
 }
 ```
 
@@ -105,6 +113,7 @@ GitHub Actions runs the suite on Python 3.11 and 3.12.
 - Only one intervention may be delivered per turn.
 - Repeated interventions are subject to cooldown.
 - Cues have a strict length limit.
+- Recent context is bounded by turn count and total characters.
 - Logs record observable evidence and controller reasons.
 - Semantic analyzers must describe observable text evidence, not claim access to hidden cognitive state.
 
@@ -113,9 +122,9 @@ GitHub Actions runs the suite on Python 3.11 and 3.12.
 - No provider-specific LLM adapter is included.
 - No microphone, ASR, VAD, or TTS exists yet.
 - The heuristic baseline is intentionally narrow.
-- The semantic analyzer sees one reasoning turn rather than full session context.
+- Session context contains only recent raw turns; it does not yet contain structured claims, goals, or unresolved questions.
 - This implementation validates software boundaries, not cognitive effectiveness.
 
 ## Next implementation step
 
-Add session context as a bounded, structured object so a semantic analyzer can distinguish local hesitation from repeated fixation without receiving an unbounded transcript.
+Close M1 by validating the CLI and analyzer contract in CI. After that, begin M2 with an audio-boundary prototype: define streaming transcript events and turn-boundary events before selecting a specific ASR or TTS provider.
