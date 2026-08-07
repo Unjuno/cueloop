@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 import json
-from typing import Callable
+import subprocess
+from typing import Callable, Sequence
 
 from .core import Action, Analysis, State, safe_analysis
 
@@ -40,6 +41,35 @@ class PromptRequest:
 
 
 CompletionFn = Callable[[PromptRequest], str]
+
+
+class CommandCompletion:
+    """Provider-neutral subprocess adapter.
+
+    Sends {"system": ..., "user": ...} JSON to stdin. The command must emit
+    only the analyzer-result JSON to stdout. This deliberately keeps provider
+    credentials and SDKs outside the CUELOOP core.
+    """
+
+    def __init__(self, command: Sequence[str], timeout_seconds: float = 8.0) -> None:
+        if not command:
+            raise ValueError("command must not be empty")
+        self._command = tuple(command)
+        self._timeout_seconds = timeout_seconds
+
+    def __call__(self, request: PromptRequest) -> str:
+        process = subprocess.run(
+            self._command,
+            input=json.dumps(asdict(request), ensure_ascii=False),
+            capture_output=True,
+            text=True,
+            timeout=self._timeout_seconds,
+            check=False,
+        )
+        if process.returncode != 0:
+            stderr = process.stderr.strip()[:240]
+            raise RuntimeError(f"analyzer command failed ({process.returncode}): {stderr}")
+        return process.stdout.strip()
 
 
 class LLMAnalyzer:
