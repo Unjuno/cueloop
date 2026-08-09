@@ -49,9 +49,11 @@ class TimelineDecision:
 class OfflineSessionRunner:
     """Runs the production decision path against deterministic audio events.
 
-    Audio transport uncertainty is handled before semantic analysis.  A low
+    Audio transport uncertainty is handled before semantic analysis. A low
     calibrated ASR confidence therefore cannot be mistaken for human hesitation
-    or fixation and cannot cause an intervention.
+    or fixation and cannot cause an intervention. Event timestamps are also
+    passed to the controller so recorded and live runs share the same delivery
+    spacing rules.
     """
 
     def __init__(
@@ -88,7 +90,7 @@ class OfflineSessionRunner:
         else:
             analysis = self.analyzer.analyze(text, self.context)
 
-        decision = self.controller.decide(analysis)
+        decision = self.controller.decide(analysis, now_ms=event.at_ms)
         self.context.add(text)
         return TimelineDecision(
             at_ms=event.at_ms,
