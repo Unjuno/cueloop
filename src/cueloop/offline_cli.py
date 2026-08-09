@@ -6,7 +6,7 @@ from pathlib import Path
 from .asr_command import CommandASRConfig, CommandASREventSource
 from .core import Analyzer, HeuristicAnalyzer, InterventionController, SessionContext
 from .llm import CommandCompletion, LLMAnalyzer
-from .offline import OfflineSessionRunner, write_timeline
+from .offline import OfflineRunnerConfig, OfflineSessionRunner, write_timeline
 from .replay import JSONLReplaySource
 
 
@@ -24,6 +24,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="External command that receives the audio path as its final argument and writes CUELOOP event JSONL to stdout.",
     )
     parser.add_argument("--asr-timeout", type=float, default=120.0)
+    parser.add_argument("--minimum-asr-confidence", type=float, default=0.45)
     parser.add_argument(
         "--analyzer-command",
         nargs="+",
@@ -46,6 +47,8 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if args.context_turns < 1 or args.context_characters < 1:
         raise SystemExit("context limits must be positive")
+    if not 0.0 <= args.minimum_asr_confidence <= 1.0:
+        raise SystemExit("--minimum-asr-confidence must be in [0, 1]")
 
     if args.audio is not None:
         if not args.asr_command:
@@ -66,15 +69,18 @@ def main(argv: list[str] | None = None) -> int:
             max_turns=args.context_turns,
             max_characters=args.context_characters,
         ),
+        config=OfflineRunnerConfig(minimum_asr_confidence=args.minimum_asr_confidence),
     )
     timeline = runner.run_source(source)
     write_timeline(args.output, timeline)
 
     for item in timeline:
         cue = f" cue={item.decision.cue}" if item.decision.cue else ""
+        asr = "unknown" if item.asr_confidence is None else f"{item.asr_confidence:.2f}"
         print(
             f"{item.at_ms:>7}ms  {item.decision.action.value:<8} "
-            f"state={item.decision.analysis.state.value:<7} confidence={item.decision.analysis.confidence:.2f}{cue}"
+            f"state={item.decision.analysis.state.value:<7} "
+            f"confidence={item.decision.analysis.confidence:.2f} asr={asr}{cue}"
         )
         print(f"           {item.text}")
 
