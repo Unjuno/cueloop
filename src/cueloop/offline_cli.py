@@ -4,7 +4,8 @@ import argparse
 from pathlib import Path
 
 from .asr_command import CommandASRConfig, CommandASREventSource
-from .core import HeuristicAnalyzer
+from .core import Analyzer, HeuristicAnalyzer, InterventionController, SessionContext
+from .llm import CommandCompletion, LLMAnalyzer
 from .offline import OfflineSessionRunner, write_timeline
 from .replay import JSONLReplaySource
 
@@ -23,12 +24,28 @@ def build_parser() -> argparse.ArgumentParser:
         help="External command that receives the audio path as its final argument and writes CUELOOP event JSONL to stdout.",
     )
     parser.add_argument("--asr-timeout", type=float, default=120.0)
+    parser.add_argument(
+        "--analyzer-command",
+        nargs="+",
+        help="Optional semantic analyzer command. Receives prompt JSON on stdin and returns strict analyzer JSON on stdout.",
+    )
+    parser.add_argument("--analyzer-timeout", type=float, default=8.0)
+    parser.add_argument("--context-turns", type=int, default=4)
+    parser.add_argument("--context-characters", type=int, default=2400)
     parser.add_argument("--output", type=Path, default=Path("logs/offline-timeline.jsonl"))
     return parser
 
 
+def build_analyzer(args: argparse.Namespace) -> Analyzer:
+    if not args.analyzer_command:
+        return HeuristicAnalyzer()
+    return LLMAnalyzer(CommandCompletion(args.analyzer_command, timeout_seconds=args.analyzer_timeout))
+
+
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    if args.context_turns < 1 or args.context_characters < 1:
+        raise SystemExit("context limits must be positive")
 
     if args.audio is not None:
         if not args.asr_command:
@@ -42,7 +59,14 @@ def main(argv: list[str] | None = None) -> int:
             raise SystemExit("--asr-command is only valid with --audio")
         source = JSONLReplaySource.from_path(args.events)
 
-    runner = OfflineSessionRunner(analyzer=HeuristicAnalyzer())
+    runner = OfflineSessionRunner(
+        analyzer=build_analyzer(args),
+        controller=InterventionController(),
+        context=SessionContext(
+            max_turns=args.context_turns,
+            max_characters=args.context_characters,
+        ),
+    )
     timeline = runner.run_source(source)
     write_timeline(args.output, timeline)
 
