@@ -6,7 +6,7 @@ from pathlib import Path
 from .core import Analyzer, HeuristicAnalyzer, InterventionController, SessionContext
 from .live import LiveSessionRunner
 from .llm import CommandCompletion, LLMAnalyzer
-from .offline import OfflineSessionRunner, write_timeline
+from .offline import OfflineRunnerConfig, OfflineSessionRunner, write_timeline
 from .output import CommandInterventionSink, CommandSinkConfig, ConsoleSink
 from .stream_command import StreamingCommandEventSource
 
@@ -28,6 +28,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Optional semantic analyzer command. Receives prompt JSON on stdin and returns strict analyzer JSON on stdout.",
     )
     parser.add_argument("--analyzer-timeout", type=float, default=8.0)
+    parser.add_argument("--minimum-asr-confidence", type=float, default=0.45)
     parser.add_argument(
         "--output-command",
         nargs="+",
@@ -50,6 +51,8 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if args.context_turns < 1 or args.context_characters < 1:
         raise SystemExit("context limits must be positive")
+    if not 0.0 <= args.minimum_asr_confidence <= 1.0:
+        raise SystemExit("--minimum-asr-confidence must be in [0, 1]")
 
     context = SessionContext(
         max_turns=args.context_turns,
@@ -59,6 +62,7 @@ def main(argv: list[str] | None = None) -> int:
         analyzer=build_analyzer(args),
         controller=InterventionController(),
         context=context,
+        config=OfflineRunnerConfig(minimum_asr_confidence=args.minimum_asr_confidence),
     )
     if args.output_command:
         sink = CommandInterventionSink(
