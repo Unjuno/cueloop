@@ -8,6 +8,7 @@ from .live import LiveSessionRunner
 from .llm import CommandCompletion, LLMAnalyzer
 from .offline import OfflineRunnerConfig, OfflineSessionRunner, write_timeline
 from .output import CommandInterventionSink, CommandSinkConfig, ConsoleSink
+from .prefetch import PrefetchConfig, PrefetchingAnalyzer
 from .stream_command import StreamingCommandEventSource
 
 
@@ -28,6 +29,8 @@ def build_parser() -> argparse.ArgumentParser:
         help="Optional semantic analyzer command. Receives prompt JSON on stdin and returns strict analyzer JSON on stdout.",
     )
     parser.add_argument("--analyzer-timeout", type=float, default=8.0)
+    parser.add_argument("--prefetch-minimum-characters", type=int, default=24)
+    parser.add_argument("--boundary-wait-ms", type=int, default=60)
     parser.add_argument("--minimum-asr-confidence", type=float, default=0.45)
     parser.add_argument(
         "--output-command",
@@ -44,22 +47,32 @@ def build_parser() -> argparse.ArgumentParser:
 def build_analyzer(args: argparse.Namespace) -> Analyzer:
     if not args.analyzer_command:
         return HeuristicAnalyzer()
-    return LLMAnalyzer(CommandCompletion(args.analyzer_command, timeout_seconds=args.analyzer_timeout))
+    semantic = LLMAnalyzer(CommandCompletion(args.analyzer_command, timeout_seconds=args.analyzer_timeout))
+    return PrefetchingAnalyzer(
+        semantic,
+        PrefetchConfig(
+            minimum_characters=args.prefetch_minimum_characters,
+            boundary_wait_ms=args.boundary_wait_ms,
+        ),
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if args.context_turns < 1 or args.context_characters < 1:
         raise SystemExit("context limits must be positive")
+    if args.prefetch_minimum_characters < 1 or args.boundary_wait_ms < 0:
+        raise SystemExit("prefetch limits are invalid")
     if not 0.0 <= args.minimum_asr_confidence <= 1.0:
         raise SystemExit("--minimum-asr-confidence must be in [0, 1]")
 
+    analyzer = build_analyzer(args)
     context = SessionContext(
         max_turns=args.context_turns,
         max_characters=args.context_characters,
     )
     session = OfflineSessionRunner(
-        analyzer=build_analyzer(args),
+        analyzer=analyzer,
         controller=InterventionController(),
         context=context,
         config=OfflineRunnerConfig(minimum_asr_confidence=args.minimum_asr_confidence),
@@ -71,9 +84,14 @@ def main(argv: list[str] | None = None) -> int:
     else:
         sink = ConsoleSink()
 
-    runner = LiveSessionRunner(session, sink)
-    with StreamingCommandEventSource(args.source_command) as source:
-        timeline = runner.run(source)
+    try:
+        runner = LiveSessionRunner(session, sink)
+        with StreamingCommandEventSource(args.source_command) as source:
+            timeline = runner.run(source)
+    finally:
+        close = getattr(analyzer, "close", None)
+        if callable(close):
+            close()
 
     write_timeline(args.timeline, timeline)
     print(f"wrote {len(timeline)} decisions to {args.timeline}")
