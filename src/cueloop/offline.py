@@ -14,10 +14,13 @@ class OfflineRunnerConfig:
     """Runtime safety gates before semantic intervention analysis."""
 
     minimum_asr_confidence: float = 0.45
+    minimum_turn_silence_ms: int = 280
 
     def __post_init__(self) -> None:
         if not 0.0 <= self.minimum_asr_confidence <= 1.0:
             raise ValueError("minimum_asr_confidence must be in [0, 1]")
+        if self.minimum_turn_silence_ms < 0:
+            raise ValueError("minimum_turn_silence_ms must be non-negative")
 
 
 @dataclass(frozen=True)
@@ -49,11 +52,11 @@ class TimelineDecision:
 class OfflineSessionRunner:
     """Runs the production decision path against deterministic audio events.
 
-    Audio transport uncertainty is handled before semantic analysis. A low
-    calibrated ASR confidence therefore cannot be mistaken for human hesitation
-    or fixation and cannot cause an intervention. Event timestamps are also
-    passed to the controller so recorded and live runs share the same delivery
-    spacing rules.
+    Transport uncertainty and turn-taking uncertainty are handled before
+    semantic analysis. A calibrated low-confidence transcript cannot trigger an
+    intervention, and a short ordinary pause does not consume the transcript or
+    create a false turn boundary. A provider may use silence_ms=0 to signal an
+    explicit endpoint where silence duration is unavailable.
     """
 
     def __init__(
@@ -75,6 +78,9 @@ class OfflineSessionRunner:
             return None
 
         if not isinstance(event, BoundaryEvent) or event.kind is not BoundaryKind.TURN_CANDIDATE:
+            return None
+
+        if 0 < event.silence_ms < self.config.minimum_turn_silence_ms:
             return None
 
         text, asr_confidence = self.buffer.consume_stable_with_confidence()
