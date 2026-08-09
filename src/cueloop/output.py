@@ -23,6 +23,9 @@ class ConsoleSink:
             return
         print(f"[CUE] {decision.cue}", flush=True)
 
+    def cancel(self) -> None:
+        return
+
 
 @dataclass(frozen=True)
 class CommandSinkConfig:
@@ -37,10 +40,17 @@ class CommandSinkConfig:
 
 
 class CommandInterventionSink:
-    """Sends one intervention JSON object to an external playback/TTS command."""
+    """Sends one intervention JSON object to an external playback/TTS command.
+
+    The active subprocess is cancellable so user speech can immediately win a
+    barge-in race against an already-playing intervention.
+    """
 
     def __init__(self, config: CommandSinkConfig) -> None:
         self._config = config
+        self._lock = Lock()
+        self._process: subprocess.Popen[str] | None = None
+        self._cancelled_pids: set[int] = set()
 
     def emit(self, decision: Decision) -> None:
         if decision.action is Action.SILENCE:
@@ -52,24 +62,53 @@ class CommandInterventionSink:
             "cue": decision.cue,
             "reason": decision.reason,
         }
-        process = subprocess.run(
+
+        process = subprocess.Popen(
             self._config.command,
-            input=json.dumps(payload, ensure_ascii=False),
-            capture_output=True,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             text=True,
-            timeout=self._config.timeout_seconds,
-            check=False,
         )
+        with self._lock:
+            self._process = process
+
+        try:
+            _, stderr = process.communicate(
+                input=json.dumps(payload, ensure_ascii=False),
+                timeout=self._config.timeout_seconds,
+            )
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.communicate()
+            raise RuntimeError("output command timed out")
+        finally:
+            with self._lock:
+                if self._process is process:
+                    self._process = None
+
+        with self._lock:
+            cancelled = process.pid in self._cancelled_pids
+            self._cancelled_pids.discard(process.pid)
+        if cancelled:
+            return
         if process.returncode != 0:
-            stderr = process.stderr.strip()[:500]
-            raise RuntimeError(f"output command failed ({process.returncode}): {stderr}")
+            raise RuntimeError(f"output command failed ({process.returncode}): {stderr.strip()[:500]}")
+
+    def cancel(self) -> None:
+        with self._lock:
+            process = self._process
+            if process is None or process.poll() is not None:
+                return
+            self._cancelled_pids.add(process.pid)
+            process.terminate()
 
 
 class AsyncInterventionSink:
     """Keeps TTS/playback latency off the streaming event loop.
 
-    A single worker preserves intervention order. Errors are retained and raised
-    by `close()` so failures are observable without blocking ASR event intake.
+    A single worker preserves intervention order. `cancel()` terminates current
+    playback when supported and drops queued interventions that have not begun.
     """
 
     def __init__(self, delegate: InterventionSink) -> None:
@@ -85,10 +124,23 @@ class AsyncInterventionSink:
         with self._lock:
             self._futures.append(future)
 
+    def cancel(self) -> None:
+        with self._lock:
+            futures = list(self._futures)
+            self._futures = [future for future in futures if future.running()]
+        for future in futures:
+            if not future.running():
+                future.cancel()
+        cancel = getattr(self._delegate, "cancel", None)
+        if callable(cancel):
+            cancel()
+
     def close(self) -> None:
         with self._lock:
             futures = list(self._futures)
             self._futures.clear()
         self._executor.shutdown(wait=True)
         for future in futures:
+            if future.cancelled():
+                continue
             future.result()
