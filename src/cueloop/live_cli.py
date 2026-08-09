@@ -7,7 +7,7 @@ from .core import Analyzer, HeuristicAnalyzer, InterventionController, SessionCo
 from .live import LiveSessionRunner
 from .llm import CommandCompletion, LLMAnalyzer
 from .offline import OfflineRunnerConfig, OfflineSessionRunner, write_timeline
-from .output import CommandInterventionSink, CommandSinkConfig, ConsoleSink
+from .output import AsyncInterventionSink, CommandInterventionSink, CommandSinkConfig, ConsoleSink
 from .prefetch import PrefetchConfig, PrefetchingAnalyzer
 from .stream_command import StreamingCommandEventSource
 
@@ -77,10 +77,15 @@ def main(argv: list[str] | None = None) -> int:
         context=context,
         config=OfflineRunnerConfig(minimum_asr_confidence=args.minimum_asr_confidence),
     )
+
+    async_sink: AsyncInterventionSink | None = None
     if args.output_command:
-        sink = CommandInterventionSink(
-            CommandSinkConfig(tuple(args.output_command), timeout_seconds=args.output_timeout)
+        async_sink = AsyncInterventionSink(
+            CommandInterventionSink(
+                CommandSinkConfig(tuple(args.output_command), timeout_seconds=args.output_timeout)
+            )
         )
+        sink = async_sink
     else:
         sink = ConsoleSink()
 
@@ -89,6 +94,8 @@ def main(argv: list[str] | None = None) -> int:
         with StreamingCommandEventSource(args.source_command) as source:
             timeline = runner.run(source)
     finally:
+        if async_sink is not None:
+            async_sink.close()
         close = getattr(analyzer, "close", None)
         if callable(close):
             close()
