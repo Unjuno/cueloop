@@ -15,6 +15,7 @@ dependencies = []
 [project.scripts]
 cueloop = "cueloop.cli:main"
 cueloop-offline = "cueloop.offline_cli:main"
+cueloop-live = "cueloop.live_cli:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
