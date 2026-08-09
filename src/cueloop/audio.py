@@ -64,14 +64,23 @@ class AudioEventSource(Protocol):
 
 @dataclass
 class TranscriptBuffer:
-    """Accumulates final text and tracks only the latest unstable partial."""
+    """Accumulates final text and tracks only the latest unstable partial.
+
+    ASR confidence is transport evidence, not a cognitive-state signal.  When
+    multiple FINAL segments form one reasoning turn, the conservative turn
+    confidence is the minimum known segment confidence.  Providers that do not
+    expose confidence remain `None` rather than receiving an invented score.
+    """
 
     _final_segments: list[str] = None  # type: ignore[assignment]
+    _final_confidences: list[float] = None  # type: ignore[assignment]
     _partial: str = ""
 
     def __post_init__(self) -> None:
         if self._final_segments is None:
             self._final_segments = []
+        if self._final_confidences is None:
+            self._final_confidences = []
 
     def apply(self, event: TranscriptEvent) -> None:
         text = " ".join(event.text.strip().split())
@@ -80,10 +89,17 @@ class TranscriptBuffer:
             return
         if text:
             self._final_segments.append(text)
+            if event.confidence is not None:
+                self._final_confidences.append(event.confidence)
         self._partial = ""
 
     def stable_text(self) -> str:
         return " ".join(self._final_segments)
+
+    def stable_confidence(self) -> float | None:
+        if not self._final_confidences:
+            return None
+        return min(self._final_confidences)
 
     def live_text(self) -> str:
         parts = [*self._final_segments]
@@ -91,7 +107,13 @@ class TranscriptBuffer:
             parts.append(self._partial)
         return " ".join(parts)
 
-    def consume_stable(self) -> str:
+    def consume_stable_with_confidence(self) -> tuple[str, float | None]:
         text = self.stable_text()
+        confidence = self.stable_confidence()
         self._final_segments.clear()
+        self._final_confidences.clear()
+        return text, confidence
+
+    def consume_stable(self) -> str:
+        text, _ = self.consume_stable_with_confidence()
         return text
