@@ -86,7 +86,18 @@ class Decision:
 class ControllerConfig:
     minimum_confidence: float = 0.65
     cooldown_turns: int = 2
+    minimum_interval_ms: int = 1800
     max_cue_characters: int = 16
+
+    def __post_init__(self) -> None:
+        if not 0.0 <= self.minimum_confidence <= 1.0:
+            raise ValueError("minimum_confidence must be in [0, 1]")
+        if self.cooldown_turns < 0:
+            raise ValueError("cooldown_turns must be non-negative")
+        if self.minimum_interval_ms < 0:
+            raise ValueError("minimum_interval_ms must be non-negative")
+        if self.max_cue_characters < 1:
+            raise ValueError("max_cue_characters must be positive")
 
 
 class HeuristicAnalyzer:
@@ -165,11 +176,21 @@ class HeuristicAnalyzer:
 
 
 class InterventionController:
+    """Final delivery authority.
+
+    Analyzer output is advisory.  This controller enforces confidence, turn
+    cooldown, wall-clock spacing when timestamps are available, and cue length.
+    """
+
     def __init__(self, config: ControllerConfig | None = None) -> None:
         self.config = config or ControllerConfig()
         self._turns_since_intervention = self.config.cooldown_turns
+        self._last_intervention_ms: int | None = None
 
-    def decide(self, analysis: Analysis) -> Decision:
+    def decide(self, analysis: Analysis, *, now_ms: int | None = None) -> Decision:
+        if now_ms is not None and now_ms < 0:
+            raise ValueError("now_ms must be non-negative")
+
         self._turns_since_intervention += 1
 
         if analysis.state is State.FLOWING:
@@ -179,20 +200,32 @@ class InterventionController:
             return Decision(Action.SILENCE, None, "confidence below delivery threshold", analysis)
 
         if self._turns_since_intervention < self.config.cooldown_turns:
-            return Decision(Action.SILENCE, None, "intervention cooldown active", analysis)
+            return Decision(Action.SILENCE, None, "intervention turn cooldown active", analysis)
+
+        if (
+            now_ms is not None
+            and self._last_intervention_ms is not None
+            and now_ms - self._last_intervention_ms < self.config.minimum_interval_ms
+        ):
+            return Decision(Action.SILENCE, None, "intervention time cooldown active", analysis)
 
         if analysis.proposed_action is Action.CUE:
             cue = analysis.cue
             if not cue or len(cue) > self.config.max_cue_characters:
                 return Decision(Action.SILENCE, None, "cue is missing or too long", analysis)
-            self._turns_since_intervention = 0
+            self._record_delivery(now_ms)
             return Decision(Action.CUE, cue, "stuck state with valid minimal cue", analysis)
 
         if analysis.proposed_action is Action.CONTINUE:
-            self._turns_since_intervention = 0
+            self._record_delivery(now_ms)
             return Decision(Action.CONTINUE, None, "unfinished thought may benefit from turn preservation", analysis)
 
         return Decision(Action.SILENCE, None, "no deliverable intervention", analysis)
+
+    def _record_delivery(self, now_ms: int | None) -> None:
+        self._turns_since_intervention = 0
+        if now_ms is not None:
+            self._last_intervention_ms = now_ms
 
 
 def safe_analysis(reason: str) -> Analysis:
