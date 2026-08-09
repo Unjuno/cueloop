@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from .audio import AudioEventSource, TranscriptEvent
+from .audio import AudioEventSource, BoundaryEvent, BoundaryKind, TranscriptEvent
 from .offline import OfflineSessionRunner, TimelineDecision
 from .output import InterventionSink
 
@@ -10,8 +10,8 @@ class LiveSessionRunner:
 
     If the configured analyzer exposes `prefetch(text, context)`, partial/final
     transcript updates are analyzed speculatively while the user is still
-    speaking. The normal boundary-time `analyze` call then consumes only an
-    exact-text prefetched result, preserving the same controller semantics.
+    speaking. If the sink exposes `cancel()`, SPEECH_STARTED immediately stops
+    any active/queued intervention so user speech always has priority.
     """
 
     def __init__(self, session: OfflineSessionRunner, sink: InterventionSink) -> None:
@@ -24,6 +24,11 @@ class LiveSessionRunner:
             event = source.next_event()
             if event is None:
                 break
+
+            if isinstance(event, BoundaryEvent) and event.kind is BoundaryKind.SPEECH_STARTED:
+                cancel = getattr(self._sink, "cancel", None)
+                if callable(cancel):
+                    cancel()
 
             item = self._session.process(event)
 
