@@ -3,8 +3,9 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from .core import HeuristicAnalyzer, InterventionController, SessionContext
+from .core import Analyzer, HeuristicAnalyzer, InterventionController, SessionContext
 from .live import LiveSessionRunner
+from .llm import CommandCompletion, LLMAnalyzer
 from .offline import OfflineSessionRunner, write_timeline
 from .output import CommandInterventionSink, CommandSinkConfig, ConsoleSink
 from .stream_command import StreamingCommandEventSource
@@ -22,6 +23,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Long-running command that writes one CUELOOP event JSON object per stdout line.",
     )
     parser.add_argument(
+        "--analyzer-command",
+        nargs="+",
+        help="Optional semantic analyzer command. Receives prompt JSON on stdin and returns strict analyzer JSON on stdout.",
+    )
+    parser.add_argument("--analyzer-timeout", type=float, default=8.0)
+    parser.add_argument(
         "--output-command",
         nargs="+",
         help="Optional command receiving one intervention JSON object on stdin for playback/TTS.",
@@ -31,6 +38,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--context-turns", type=int, default=4)
     parser.add_argument("--context-characters", type=int, default=2400)
     return parser
+
+
+def build_analyzer(args: argparse.Namespace) -> Analyzer:
+    if not args.analyzer_command:
+        return HeuristicAnalyzer()
+    return LLMAnalyzer(CommandCompletion(args.analyzer_command, timeout_seconds=args.analyzer_timeout))
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -43,7 +56,7 @@ def main(argv: list[str] | None = None) -> int:
         max_characters=args.context_characters,
     )
     session = OfflineSessionRunner(
-        analyzer=HeuristicAnalyzer(),
+        analyzer=build_analyzer(args),
         controller=InterventionController(),
         context=context,
     )
