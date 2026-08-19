@@ -14,6 +14,17 @@ dependencies = []
 
 [project.scripts]
 cueloop = "cueloop.cli:main"
+cueloop-voice = "cueloop.voice_cli:main"
+cueloop-experiment = "cueloop.experiment_cli:main"
+cueloop-structure = "cueloop.structure_cli:main"
+cueloop-ground = "cueloop.knowledge_cli:main"
+cueloop-feedback = "cueloop.feedback_cli:main"
+cueloop-soak = "cueloop.soak_cli:main"
+cueloop-delete-data = "cueloop.privacy_cli:main"
+cueloop-pilot = "cueloop.pilot_cli:main"
+cueloop-audit = "cueloop.audit_cli:main"
+cueloop-session = "cueloop.session_cli:main"
+cueloop-memory = "cueloop.memory_cli:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

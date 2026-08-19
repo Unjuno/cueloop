@@ -3,34 +3,47 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 import json
 import subprocess
+import threading
 from typing import Callable, Sequence
 
-from .core import Action, Analysis, SessionContext, State, safe_analysis
+from .core import (
+    Action,
+    Analysis,
+    Evidence,
+    EvidenceKind,
+    HeuristicAnalyzer,
+    SessionContext,
+    State,
+    safe_analysis,
+)
 
 
 SYSTEM_PROMPT = """You are CUELOOP's semantic analyzer.
 You do not answer the user's problem.
 You only classify the current reasoning turn and propose at most one minimal intervention.
 
-Allowed states: FLOWING, PAUSED, STUCK.
-Allowed actions: SILENCE, CONTINUE, CUE.
+Allowed states: PRODUCTIVE, RETRIEVAL_FAILURE, STRATEGY_FAILURE, FIXATION, STRUCTURE_GAP, OVERLOAD.
+Allowed actions: SILENCE, BACKCHANNEL, QUESTION, MIRROR, PERTURB, CONSTRAIN, RETRIEVE, VERIFY.
 
 Rules:
 - Prefer SILENCE when reasoning is productive or uncertainty is high.
-- CONTINUE only preserves the user's turn; it is not praise or agreement.
-- CUE must be a short question that triggers a reasoning operation.
+- BACKCHANNEL only preserves the user's turn; it is not praise or agreement.
+- QUESTION, MIRROR, PERTURB, and CONSTRAIN must contain one short cognitive operation in cue.
+- RETRIEVE requires one or more explicit source_refs and will otherwise be suppressed.
+- OVERLOAD and PRODUCTIVE may only propose SILENCE.
 - Never provide a solution, explanation, recommendation, or completed sentence.
-- The cue must be 16 Japanese characters or fewer when possible.
+- The cue must be a SHORT cognitive cue of at most 15 Japanese characters. Use the canonical cue set directly where it fits: 何に依存？ 具体的には？ 逆なら？ どこで破れる？ 結論は？ 前提は？ 根拠は？ 条件は？ 具体例は？ 反例は？ それで？ だから？ Examples of VALID short cues: 何に依存？ 逆なら？ 具体的には？ 結論は？ どこで破れる？ Examples of INVALID over-long cues: 性能について何か具体的なことを教えて。
 - Evidence must describe observable properties of the supplied text or recent turns, not hidden mental states.
 - Recent context is bounded and may be incomplete. Do not infer stable traits from it.
 
 Return JSON only with exactly these keys:
 {
-  "state": "FLOWING|PAUSED|STUCK",
+  "state": "PRODUCTIVE|RETRIEVAL_FAILURE|STRATEGY_FAILURE|FIXATION|STRUCTURE_GAP|OVERLOAD",
   "confidence": 0.0,
-  "evidence": ["observable reason"],
-  "proposed_action": "SILENCE|CONTINUE|CUE",
-  "cue": null
+  "evidence": [{"kind":"TRANSCRIPT|TIMING|PROSODY|INTERACTION_HISTORY|USER_SIGNAL","description":"observable reason","source_span":null}],
+  "proposed_action": "SILENCE|BACKCHANNEL|QUESTION|MIRROR|PERTURB|CONSTRAIN|RETRIEVE|VERIFY",
+  "cue": null,
+  "source_refs": []
 }
 """
 
@@ -57,20 +70,45 @@ class CommandCompletion:
             raise ValueError("command must not be empty")
         self._command = tuple(command)
         self._timeout_seconds = timeout_seconds
+        self._lock = threading.Lock()
+        self._process: subprocess.Popen[str] | None = None
+        self._cancel_requested = False
 
     def __call__(self, request: PromptRequest) -> str:
-        process = subprocess.run(
+        process = subprocess.Popen(
             self._command,
-            input=json.dumps(asdict(request), ensure_ascii=False),
-            capture_output=True,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             text=True,
-            timeout=self._timeout_seconds,
-            check=False,
         )
+        with self._lock:
+            self._process = process
+            cancel_requested = self._cancel_requested
+        if cancel_requested:
+            process.terminate()
+        try:
+            stdout, stderr = process.communicate(
+                json.dumps(asdict(request), ensure_ascii=False), timeout=self._timeout_seconds
+            )
+        except subprocess.TimeoutExpired as exc:
+            process.kill()
+            process.communicate()
+            raise RuntimeError("analyzer command timed out") from exc
+        finally:
+            with self._lock:
+                self._process = None
+                self._cancel_requested = False
         if process.returncode != 0:
-            stderr = process.stderr.strip()[:240]
+            stderr = stderr.strip()[:240]
             raise RuntimeError(f"analyzer command failed ({process.returncode}): {stderr}")
-        return process.stdout.strip()
+        return stdout.strip()
+
+    def cancel(self) -> None:
+        with self._lock:
+            self._cancel_requested = True
+            if self._process is not None and self._process.poll() is None:
+                self._process.terminate()
 
 
 class LLMAnalyzer:
@@ -97,6 +135,49 @@ class LLMAnalyzer:
             return safe_analysis(f"analyzer transport failure: {type(exc).__name__}")
         return parse_analysis_json(raw)
 
+    def cancel(self) -> None:
+        cancel = getattr(self._complete, "cancel", None)
+        if callable(cancel):
+            cancel()
+
+
+class HybridAnalyzer:
+    """Fast-path heuristic with optional slow-path LLM refinement.
+
+    Returns an instant heuristic decision when it is safe and confident. Only
+    when the heuristic is uncertain (low confidence or SILENCE with no clear
+    state) does it consult the language model. This keeps live latency low
+    while preserving semantic depth on ambiguous turns.
+    """
+
+    def __init__(self, llm: LLMAnalyzer | None = None) -> None:
+        self._heuristic = HeuristicAnalyzer()
+        self._llm = llm
+
+    def analyze(self, text: str, context: SessionContext | None = None) -> Analysis:
+        heuristic = self._heuristic.analyze(text, context)
+        if self._llm is None:
+            return heuristic
+        if heuristic.confidence >= 0.7 and heuristic.proposed_action is not Action.SILENCE:
+            return heuristic
+        if heuristic.state is State.PRODUCTIVE and heuristic.confidence >= 0.7:
+            return heuristic
+        refined = self._llm.analyze(text, context)
+        # Prefer the safer of the two: never let a refined analysis propose an
+        # intervention that the heuristic would have suppressed outright.
+        if heuristic.state in {State.PRODUCTIVE, State.OVERLOAD} and refined.state not in {
+            State.PRODUCTIVE,
+            State.OVERLOAD,
+        }:
+            return heuristic
+        if refined.confidence >= heuristic.confidence:
+            return refined
+        return heuristic
+
+    def cancel(self) -> None:
+        if self._llm is not None:
+            self._llm.cancel()
+
 
 def parse_analysis_json(raw: str) -> Analysis:
     try:
@@ -107,7 +188,7 @@ def parse_analysis_json(raw: str) -> Analysis:
     if not isinstance(payload, dict):
         return safe_analysis("analyzer JSON must be an object")
 
-    allowed_keys = {"state", "confidence", "evidence", "proposed_action", "cue"}
+    allowed_keys = {"state", "confidence", "evidence", "proposed_action", "cue", "source_refs"}
     if set(payload) != allowed_keys:
         return safe_analysis("analyzer JSON keys do not match contract")
 
@@ -122,9 +203,25 @@ def parse_analysis_json(raw: str) -> Analysis:
         return safe_analysis("analyzer confidence out of range")
 
     evidence_raw = payload["evidence"]
-    if not isinstance(evidence_raw, list) or not all(isinstance(item, str) for item in evidence_raw):
-        return safe_analysis("analyzer evidence must be a string list")
-    evidence = tuple(item.strip() for item in evidence_raw if item.strip())
+    evidence_items: list[Evidence] = []
+    if not isinstance(evidence_raw, list):
+        return safe_analysis("analyzer evidence must be an array")
+    try:
+        for item in evidence_raw:
+            if not isinstance(item, dict) or set(item) != {"kind", "description", "source_span"}:
+                raise ValueError
+            description = item["description"]
+            source_span = item["source_span"]
+            if not isinstance(description, str) or not description.strip():
+                raise ValueError
+            if source_span is not None and not isinstance(source_span, str):
+                raise ValueError
+            evidence_items.append(
+                Evidence(EvidenceKind(item["kind"]), description.strip(), source_span)
+            )
+    except (TypeError, ValueError):
+        return safe_analysis("analyzer evidence does not match the typed contract")
+    evidence = tuple(evidence_items)
     if not evidence:
         return safe_analysis("analyzer evidence is empty")
 
@@ -133,12 +230,24 @@ def parse_analysis_json(raw: str) -> Analysis:
         return safe_analysis("analyzer cue must be a string or null")
     cue = cue_raw.strip() if isinstance(cue_raw, str) else None
 
-    if action is Action.CUE and not cue:
-        return safe_analysis("CUE action requires a cue")
-    if action is not Action.CUE and cue is not None:
-        return safe_analysis("non-CUE action must not include a cue")
-    if state is State.FLOWING and action is not Action.SILENCE:
-        return safe_analysis("FLOWING state may only propose SILENCE")
+    source_refs_raw = payload["source_refs"]
+    if not isinstance(source_refs_raw, list) or not all(
+        isinstance(item, str) and item.strip() for item in source_refs_raw
+    ):
+        return safe_analysis("analyzer source_refs must be a list of non-empty strings")
+    source_refs = tuple(item.strip() for item in source_refs_raw)
+
+    text_actions = {Action.QUESTION, Action.MIRROR, Action.PERTURB, Action.CONSTRAIN, Action.RETRIEVE}
+    if action in text_actions and not cue:
+        return safe_analysis(f"{action.value} action requires a cue")
+    if action not in text_actions and cue is not None:
+        return safe_analysis(f"{action.value} action must not include a cue")
+    if state in {State.PRODUCTIVE, State.OVERLOAD} and action is not Action.SILENCE:
+        return safe_analysis(f"{state.value} state may only propose SILENCE")
+    if action is Action.RETRIEVE and not source_refs:
+        return safe_analysis("RETRIEVE action requires source_refs")
+    if action is not Action.RETRIEVE and source_refs:
+        return safe_analysis("only RETRIEVE may include source_refs")
 
     return Analysis(
         state=state,
@@ -146,4 +255,5 @@ def parse_analysis_json(raw: str) -> Analysis:
         evidence=evidence,
         proposed_action=action,
         cue=cue,
+        source_refs=source_refs,
     )

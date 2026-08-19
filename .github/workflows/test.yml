@@ -5,6 +5,9 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   unit:
     runs-on: ubuntu-latest
@@ -20,3 +23,23 @@ jobs:
         run: python -m pip install -e .
       - name: Run unit tests
         run: python -m unittest discover -s tests -v
+      - name: Run held-out policy experiment
+        run: cueloop-experiment --report /tmp/policy-report.json --policy-out /tmp/policy.json
+      - name: Run continuous-session invariants
+        run: cueloop-soak --minutes 10 --report /tmp/voice-soak.json
+      - name: Audit software completion evidence
+        run: cueloop-audit
+      - name: Build distribution wheel
+        run: python -m pip wheel --no-deps . --wheel-dir /tmp/wheels
+
+  macos-adapter:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile macOS microphone adapter
+        run: |
+          mkdir -p .build
+          swiftc tools/macos_speech_events.swift -o .build/macos-speech-events \
+            -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __info_plist \
+            -Xlinker tools/macos_speech_events.Info.plist
+          .build/macos-speech-events --help

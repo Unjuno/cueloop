@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleIdentifier</key>
+    <string>dev.cueloop.macos-speech-events</string>
+    <key>CFBundleName</key>
+    <string>CUELOOP Speech Events</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>CUELOOP uses the microphone during an explicitly started reasoning session.</string>
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>CUELOOP transcribes an explicitly started reasoning session to detect turn boundaries and minimal interventions.</string>
+</dict>
+</plist>

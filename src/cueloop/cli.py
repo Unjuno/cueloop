@@ -11,7 +11,7 @@ from .llm import CommandCompletion, LLMAnalyzer
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="cueloop",
-        description="Human-first reasoning CLI. Returns SILENCE, CONTINUE, or one minimal CUE.",
+        description="Human-first reasoning CLI using the formal minimal-intervention action space.",
     )
     parser.add_argument(
         "--log",
@@ -64,9 +64,10 @@ def build_analyzer(args: argparse.Namespace) -> Analyzer:
 def render(action: Action, cue: str | None) -> str:
     if action is Action.SILENCE:
         return "[SILENCE]"
-    if action is Action.CONTINUE:
-        return "[CONTINUE] うん。"
-    return f"[CUE] {cue}"
+    if action is Action.BACKCHANNEL:
+        return "[BACKCHANNEL] うん。"
+    suffix = f" {cue}" if cue else ""
+    return f"[{action.value}]{suffix}"
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -103,7 +104,7 @@ def main(argv: list[str] | None = None) -> int:
             f"reason={decision.reason}"
         )
         if analysis.evidence:
-            print(f"  evidence={'; '.join(analysis.evidence)}")
+            print(f"  evidence={'; '.join(str(item) for item in analysis.evidence)}")
 
         if not args.no_log:
             try:

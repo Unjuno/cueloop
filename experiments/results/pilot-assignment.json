@@ -1,0 +1,50 @@
+[
+  {
+    "participant_id": "p1",
+    "session_number": 1,
+    "condition": "CONTROL",
+    "task_id": "c"
+  },
+  {
+    "participant_id": "p1",
+    "session_number": 2,
+    "condition": "CUELOOP",
+    "task_id": "b"
+  },
+  {
+    "participant_id": "p1",
+    "session_number": 3,
+    "condition": "CONTROL",
+    "task_id": "d"
+  },
+  {
+    "participant_id": "p1",
+    "session_number": 4,
+    "condition": "CUELOOP",
+    "task_id": "a"
+  },
+  {
+    "participant_id": "p2",
+    "session_number": 1,
+    "condition": "CUELOOP",
+    "task_id": "c"
+  },
+  {
+    "participant_id": "p2",
+    "session_number": 2,
+    "condition": "CONTROL",
+    "task_id": "b"
+  },
+  {
+    "participant_id": "p2",
+    "session_number": 3,
+    "condition": "CUELOOP",
+    "task_id": "d"
+  },
+  {
+    "participant_id": "p2",
+    "session_number": 4,
+    "condition": "CONTROL",
+    "task_id": "a"
+  }
+]

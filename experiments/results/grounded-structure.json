@@ -1,0 +1,52 @@
+{
+  "claims": [
+    {
+      "id": "C1",
+      "text": "この設計は前提と依存関係を分けて考える。",
+      "turn_index": 1,
+      "epistemic_type": "CLAIM"
+    },
+    {
+      "id": "C2",
+      "text": "えっと、その、なんだろう、性能が良いと思う",
+      "turn_index": 2,
+      "epistemic_type": "INFERENCE"
+    }
+  ],
+  "premises": [
+    {
+      "id": "P1",
+      "text": "この設計は前提と依存関係を分けて考える。",
+      "turn_index": 1,
+      "epistemic_type": "PREMISE"
+    }
+  ],
+  "evidence": [],
+  "dependencies": [
+    {
+      "source_id": "P1",
+      "target_id": "C1",
+      "relation": "supports"
+    }
+  ],
+  "counterexamples": [],
+  "unresolved_questions": [],
+  "verification_queue": [],
+  "grounding": [
+    {
+      "item_id": "C1",
+      "text": "この設計は前提と依存関係を分けて考える。",
+      "epistemic_type": "CLAIM",
+      "status": "UNSUPPORTED",
+      "matches": []
+    },
+    {
+      "item_id": "C2",
+      "text": "えっと、その、なんだろう、性能が良いと思う",
+      "epistemic_type": "INFERENCE",
+      "status": "UNSUPPORTED",
+      "matches": []
+    }
+  ],
+  "grounding_notice": "Lexical matches are candidate evidence for human review, not proof that a claim is true."
+}

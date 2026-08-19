@@ -4,17 +4,25 @@ This milestone validates the control loop before adding real-time audio.
 
 ## Scope
 
-The prototype deliberately uses three operational states:
+The original M1 prototype used three coarse operational states. The runnable core now uses the formal state model:
 
-- `FLOWING`
-- `PAUSED`
-- `STUCK`
+- `PRODUCTIVE`
+- `RETRIEVAL_FAILURE`
+- `STRATEGY_FAILURE`
+- `FIXATION`
+- `STRUCTURE_GAP`
+- `OVERLOAD`
 
-and three actions:
+and the formal action space:
 
 - `SILENCE`
-- `CONTINUE`
-- `CUE`
+- `BACKCHANNEL`
+- `QUESTION`
+- `MIRROR`
+- `PERTURB`
+- `CONSTRAIN`
+- `RETRIEVE`
+- `VERIFY`
 
 The default analyzer is deterministic and heuristic-based. It is a replaceable baseline, not a validated cognitive-state model.
 
@@ -85,11 +93,18 @@ It must emit exactly one JSON object on stdout:
 
 ```json
 {
-  "state": "STUCK",
+  "state": "STRUCTURE_GAP",
   "confidence": 0.82,
-  "evidence": ["同じ比較表現が反復している"],
-  "proposed_action": "CUE",
-  "cue": "何に依存？"
+  "evidence": [
+    {
+      "kind": "TRANSCRIPT",
+      "description": "同じ比較表現が反復している",
+      "source_span": null
+    }
+  ],
+  "proposed_action": "QUESTION",
+  "cue": "何に依存？",
+  "source_refs": []
 }
 ```
 
@@ -107,7 +122,7 @@ GitHub Actions runs the suite on Python 3.11 and 3.12.
 
 ## Design constraints
 
-- Productive reasoning must result in `SILENCE`.
+- `PRODUCTIVE` and `OVERLOAD` must result in `SILENCE`.
 - Low-confidence classifications must be suppressed.
 - Analyzer failure must fail closed to `SILENCE`.
 - Only one intervention may be delivered per turn.
@@ -120,11 +135,11 @@ GitHub Actions runs the suite on Python 3.11 and 3.12.
 ## Current limitations
 
 - No provider-specific LLM adapter is included.
-- No microphone, ASR, VAD, or TTS exists yet.
+- The text core remains provider-neutral; the repository now also includes the event-driven voice path and a macOS adapter described in `voice-mvp.md`.
 - The heuristic baseline is intentionally narrow.
-- Session context contains only recent raw turns; it does not yet contain structured claims, goals, or unresolved questions.
+- Real-time context remains deliberately bounded; structured claims and questions are produced after the session rather than injected unbounded into the fast path.
 - This implementation validates software boundaries, not cognitive effectiveness.
 
-## Next implementation step
+## Integration status
 
-Close M1 by validating the CLI and analyzer contract in CI. After that, begin M2 with an audio-boundary prototype: define streaming transcript events and turn-boundary events before selecting a specific ASR or TTS provider.
+M1 is validated in CI and integrated with the M2–M5 runtime. Voice operation, completion evidence, and experiment procedures are documented in the repository README, `voice-mvp.md`, `completion-evidence.md`, and `experiment-protocol.md`.

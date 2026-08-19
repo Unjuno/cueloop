@@ -15,6 +15,7 @@ transcripts/
 # Python
 __pycache__/
 *.py[cod]
+*.egg-info/
 .venv/
 venv/
 .pytest_cache/
@@ -26,6 +27,7 @@ node_modules/
 .next/
 dist/
 build/
+.build/
 coverage/
 
 # Editors and OS
@@ -35,3 +37,5 @@ coverage/
 
 # Logs
 *.log
+logs/
+artifacts/

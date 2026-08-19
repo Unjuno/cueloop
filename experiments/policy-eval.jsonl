@@ -1,0 +1,16 @@
+{"session_id":"tune-flow","split":"tune","turns":[{"text":"この設計は前提と依存関係を分けて考える必要がある。反例も確認する。","expected_action":"SILENCE"},{"text":"次に評価指標を定義し、観測と推論を分離する。","expected_action":"SILENCE"}]}
+{"session_id":"tune-pause","split":"tune","turns":[{"text":"まだ比較軸を決めていないので","expected_action":"BACKCHANNEL"}]}
+{"session_id":"tune-stuck","split":"tune","turns":[{"text":"えっと、その、なんだろう、性能が良いと思う","expected_action":"QUESTION"}]}
+{"session_id":"tune-low-confidence","split":"tune","turns":[{"text":"短い","expected_action":"SILENCE"}]}
+{"session_id":"tune-overload","split":"tune","turns":[{"text":"情報が多すぎて頭がいっぱいになった","expected_action":"SILENCE"}]}
+{"session_id":"tune-strategy","split":"tune","turns":[{"text":"何からどう進めればよいかわからない","expected_action":"CONSTRAIN"}]}
+{"session_id":"tune-fixation","split":"tune","turns":[{"text":"同じ案同じ案","expected_action":"PERTURB"}]}
+{"session_id":"tune-cooldown","split":"tune","turns":[{"text":"えっと、その、なんだろう、性能が良い","expected_action":"QUESTION"},{"text":"えっと、その、なんだろう、性能が良い","expected_action":"SILENCE"},{"text":"根拠と条件を分けて考える。","expected_action":"SILENCE"},{"text":"えっと、その、なんだろう、モデルは絶対に良い","expected_action":"QUESTION"}]}
+{"session_id":"eval-flow","split":"eval","turns":[{"text":"原因を仮説に分け、それぞれの反例と依存条件を順番に確認する。","expected_action":"SILENCE"},{"text":"観測できる指標を先に置けば検証可能になる。","expected_action":"SILENCE"}]}
+{"session_id":"eval-pause","split":"eval","turns":[{"text":"この選択が妥当だと思うけど","expected_action":"BACKCHANNEL"}]}
+{"session_id":"eval-stuck","split":"eval","turns":[{"text":"うーん、えっと、その、全部良い気がする","expected_action":"QUESTION"}]}
+{"session_id":"eval-ambiguous","split":"eval","turns":[{"text":"次に","expected_action":"SILENCE"}]}
+{"session_id":"eval-overload","split":"eval","turns":[{"text":"疲れたし混乱している","expected_action":"SILENCE"}]}
+{"session_id":"eval-strategy","split":"eval","turns":[{"text":"方法がわからない。何から考えるべきか","expected_action":"CONSTRAIN"}]}
+{"session_id":"eval-fixation","split":"eval","turns":[{"text":"同じ前提同じ前提","expected_action":"PERTURB"}]}
+{"session_id":"eval-cooldown","split":"eval","turns":[{"text":"えっと、その、なんだろう、抽象モデルを考える","expected_action":"QUESTION"},{"text":"えっと、その、なんだろう、抽象モデルを考える","expected_action":"SILENCE"}]}

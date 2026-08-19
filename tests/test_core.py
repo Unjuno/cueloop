@@ -1,9 +1,13 @@
 import json
+from pathlib import Path
 import unittest
 
 from cueloop.cli import build_parser
 from cueloop.core import (
     Action,
+    ALLOWED_STATE_ACTIONS,
+    Analysis,
+    EvidenceKind,
     HeuristicAnalyzer,
     InterventionController,
     SessionContext,
@@ -21,19 +25,35 @@ class HeuristicAnalyzerTests(unittest.TestCase):
         analysis = self.analyzer.analyze(
             "この設計は前提と依存関係を分けて考える必要がある。反例も確認する。"
         )
-        self.assertEqual(analysis.state, State.FLOWING)
+        self.assertEqual(analysis.state, State.PRODUCTIVE)
         self.assertEqual(analysis.proposed_action, Action.SILENCE)
 
     def test_unfinished_turn_preserves_turn(self) -> None:
         analysis = self.analyzer.analyze("まだ比較軸を決めていないので")
-        self.assertEqual(analysis.state, State.PAUSED)
-        self.assertEqual(analysis.proposed_action, Action.CONTINUE)
+        self.assertEqual(analysis.state, State.RETRIEVAL_FAILURE)
+        self.assertEqual(analysis.proposed_action, Action.BACKCHANNEL)
 
     def test_repeated_fillers_trigger_minimal_cue(self) -> None:
         analysis = self.analyzer.analyze("えっと、その、なんだろう、性能が良いと思う")
-        self.assertEqual(analysis.state, State.STUCK)
-        self.assertEqual(analysis.proposed_action, Action.CUE)
+        self.assertEqual(analysis.state, State.STRUCTURE_GAP)
+        self.assertEqual(analysis.proposed_action, Action.QUESTION)
         self.assertEqual(analysis.cue, "何に依存？")
+
+    def test_explicit_overload_stays_silent(self) -> None:
+        analysis = self.analyzer.analyze("情報が多すぎて混乱した")
+        self.assertEqual(analysis.state, State.OVERLOAD)
+        self.assertEqual(analysis.proposed_action, Action.SILENCE)
+
+    def test_strategy_failure_gets_one_constraint(self) -> None:
+        analysis = self.analyzer.analyze("何からどう進めればよいかわからない")
+        self.assertEqual(analysis.state, State.STRATEGY_FAILURE)
+        self.assertEqual(analysis.proposed_action, Action.CONSTRAIN)
+        self.assertEqual(analysis.cue, "結論は？")
+
+    def test_repetition_without_structure_terms_is_fixation(self) -> None:
+        analysis = self.analyzer.analyze("同じ案同じ案")
+        self.assertEqual(analysis.state, State.FIXATION)
+        self.assertEqual(analysis.proposed_action, Action.PERTURB)
 
 
 class SessionContextTests(unittest.TestCase):
@@ -57,18 +77,20 @@ class LLMAnalyzerContractTests(unittest.TestCase):
     def test_valid_json_maps_to_analysis(self) -> None:
         raw = json.dumps(
             {
-                "state": "STUCK",
+                "state": "STRUCTURE_GAP",
                 "confidence": 0.82,
-                "evidence": ["同じ比較表現が反復している"],
-                "proposed_action": "CUE",
+                "evidence": [{"kind":"TRANSCRIPT","description":"同じ比較表現が反復している","source_span":None}],
+                "proposed_action": "QUESTION",
                 "cue": "何に依存？",
+                "source_refs": [],
             },
             ensure_ascii=False,
         )
         analysis = parse_analysis_json(raw)
-        self.assertEqual(analysis.state, State.STUCK)
-        self.assertEqual(analysis.proposed_action, Action.CUE)
+        self.assertEqual(analysis.state, State.STRUCTURE_GAP)
+        self.assertEqual(analysis.proposed_action, Action.QUESTION)
         self.assertEqual(analysis.cue, "何に依存？")
+        self.assertEqual(analysis.evidence[0].kind, EvidenceKind.TRANSCRIPT)
 
     def test_invalid_json_fails_closed(self) -> None:
         analysis = parse_analysis_json("not-json")
@@ -78,11 +100,12 @@ class LLMAnalyzerContractTests(unittest.TestCase):
     def test_flowing_cannot_propose_intervention(self) -> None:
         raw = json.dumps(
             {
-                "state": "FLOWING",
+                "state": "PRODUCTIVE",
                 "confidence": 0.91,
-                "evidence": ["論点が連続して展開している"],
-                "proposed_action": "CUE",
+                "evidence": [{"kind":"TRANSCRIPT","description":"論点が連続して展開している","source_span":None}],
+                "proposed_action": "QUESTION",
                 "cue": "逆なら？",
+                "source_refs": [],
             },
             ensure_ascii=False,
         )
@@ -98,6 +121,22 @@ class LLMAnalyzerContractTests(unittest.TestCase):
         self.assertEqual(analysis.proposed_action, Action.SILENCE)
         self.assertEqual(analysis.confidence, 0.0)
 
+    def test_retrieve_without_source_refs_fails_closed(self) -> None:
+        raw = json.dumps(
+            {
+                "state": "RETRIEVAL_FAILURE",
+                "confidence": 0.9,
+                "evidence": [{"kind":"USER_SIGNAL","description":"用語を思い出せないと明示している","source_span":None}],
+                "proposed_action": "RETRIEVE",
+                "cue": "用語は制御理論",
+                "source_refs": [],
+            },
+            ensure_ascii=False,
+        )
+        analysis = parse_analysis_json(raw)
+        self.assertEqual(analysis.proposed_action, Action.SILENCE)
+        self.assertEqual(analysis.confidence, 0.0)
+
     def test_bounded_context_is_included_in_prompt(self) -> None:
         captured: list[PromptRequest] = []
 
@@ -105,11 +144,12 @@ class LLMAnalyzerContractTests(unittest.TestCase):
             captured.append(request)
             return json.dumps(
                 {
-                    "state": "FLOWING",
+                    "state": "PRODUCTIVE",
                     "confidence": 0.9,
-                    "evidence": ["論点が継続している"],
+                    "evidence": [{"kind":"TRANSCRIPT","description":"論点が継続している","source_span":None}],
                     "proposed_action": "SILENCE",
                     "cue": None,
+                    "source_refs": [],
                 },
                 ensure_ascii=False,
             )
@@ -124,11 +164,12 @@ class LLMAnalyzerContractTests(unittest.TestCase):
         def completion(_: PromptRequest) -> str:
             return json.dumps(
                 {
-                    "state": "FLOWING",
+                    "state": "PRODUCTIVE",
                     "confidence": 0.9,
-                    "evidence": ["因果関係を連続して展開している"],
+                    "evidence": [{"kind":"TRANSCRIPT","description":"因果関係を連続して展開している","source_span":None}],
                     "proposed_action": "SILENCE",
                     "cue": None,
+                    "source_refs": [],
                 },
                 ensure_ascii=False,
             )
@@ -157,8 +198,76 @@ class InterventionControllerTests(unittest.TestCase):
         controller = InterventionController()
         first = controller.decide(analyzer.analyze("えっと、その、なんだろう、性能が良い"))
         second = controller.decide(analyzer.analyze("えっと、その、なんだろう、性能が良い"))
-        self.assertEqual(first.action, Action.CUE)
+        self.assertEqual(first.action, Action.QUESTION)
         self.assertEqual(second.action, Action.SILENCE)
+
+    def test_ungrounded_retrieval_is_always_suppressed(self) -> None:
+        analysis = Analysis(
+            State.RETRIEVAL_FAILURE,
+            0.95,
+            ("explicit request for an external fact",),
+            Action.RETRIEVE,
+            "用語を検索",
+        )
+        decision = InterventionController().decide(analysis)
+        self.assertEqual(decision.action, Action.SILENCE)
+        self.assertIn("grounded", decision.reason)
+
+    def test_grounded_retrieval_can_deliver_minimal_source_aware_text(self) -> None:
+        analysis = Analysis(
+            State.RETRIEVAL_FAILURE,
+            0.95,
+            ("explicit request for a known term",),
+            Action.RETRIEVE,
+            "用語は制御理論",
+            ("notes/control.md#L8",),
+        )
+        decision = InterventionController(
+            trusted_source_refs=frozenset({"notes/control.md#L8"})
+        ).decide(analysis)
+        self.assertEqual(decision.action, Action.RETRIEVE)
+        self.assertEqual(decision.analysis.source_refs, ("notes/control.md#L8",))
+
+    def test_formal_state_and_action_spaces_match_schemas(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        state_schema = json.loads((root / "schemas/human-state.schema.json").read_text(encoding="utf-8"))
+        action_schema = json.loads((root / "schemas/intervention-candidate.schema.json").read_text(encoding="utf-8"))
+        self.assertEqual({state.value for state in State}, set(state_schema["properties"]["state"]["enum"]))
+        self.assertEqual({action.value for action in Action}, set(action_schema["properties"]["action"]["enum"]))
+        self.assertEqual(
+            {kind.value for kind in EvidenceKind},
+            set(state_schema["properties"]["evidence"]["items"]["properties"]["kind"]["enum"]),
+        )
+
+    def test_prohibited_state_action_pair_fails_closed(self) -> None:
+        analysis = Analysis(
+            State.FIXATION,
+            0.95,
+            ("repeated local path",),
+            Action.BACKCHANNEL,
+        )
+        decision = InterventionController().decide(analysis)
+        self.assertEqual(decision.action, Action.SILENCE)
+        self.assertIn("prohibited", decision.reason)
+
+    def test_every_prohibited_formal_state_action_pair_fails_closed(self) -> None:
+        for state in State:
+            for action in Action:
+                if action in ALLOWED_STATE_ACTIONS[state]:
+                    continue
+                cue = "一つ確認？" if action in {
+                    Action.QUESTION, Action.MIRROR, Action.PERTURB, Action.CONSTRAIN, Action.RETRIEVE
+                } else None
+                refs = ("trusted",) if action is Action.RETRIEVE else ()
+                analysis = Analysis(state, 0.99, ("observable",), action, cue, refs)
+                decision = InterventionController(
+                    trusted_source_refs=frozenset({"trusted"})
+                ).decide(analysis)
+                self.assertEqual(
+                    decision.action,
+                    Action.SILENCE,
+                    f"{state.value}/{action.value} should be prohibited",
+                )
 
 
 class CLITests(unittest.TestCase):
