@@ -31,7 +31,27 @@ class IntegratedSessionTests(unittest.TestCase):
             self.assertEqual(verify_session(outcome.directory), [])
             self.assertTrue((outcome.directory / "structure.json").exists())
             self.assertTrue((outcome.directory / "grounding.json").exists())
+            self.assertTrue((outcome.directory / "structure-diff.json").exists())
             self.assertAlmostEqual(outcome.manifest["session_duration_minutes"], 5_000 / 60_000)
+
+    def test_structure_diff_file_marks_differences_as_candidates_not_proof(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            with (self.root / "experiments/voice-smoke.jsonl").open(encoding="utf-8") as lines:
+                outcome = run_integrated_session(
+                    lines,
+                    Path(directory),
+                    goal="設計仮説を検討する",
+                    source_paths=[self.root / "README.md"],
+                    session_id="diff-session",
+                )
+            diff_payload = json.loads(
+                (outcome.directory / "structure-diff.json").read_text(encoding="utf-8")
+            )
+            self.assertIsInstance(diff_payload["diffs"], list)
+            self.assertIn("candidates", diff_payload["notice"].lower())
+            for diff in diff_payload["diffs"]:
+                self.assertIn(diff["kind"], {"MISSING_PREMISE", "MISSING_VARIABLE", "MISSING_DEPENDENCY", "CONTRADICTION", "UNSUPPORTED_INFERENCE"})
+                self.assertTrue(0.0 <= diff["confidence"] <= 1.0)
 
     def test_integrated_session_delivers_cue_to_speaker(self) -> None:
         class RecordingSpeaker:

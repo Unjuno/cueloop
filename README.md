@@ -187,6 +187,13 @@ cueloop-session verify data/sessions/first-session
 
 Artifacts are committed atomically: malformed input or downstream failure leaves no partial session directory. Use `--no-transcript-retention` to retain only derived structure and the manifest.
 
+When `--sources` is given, the session also writes `structure-diff.json`: candidate
+differences between the user's reasoning structure and the source's structure
+(missing premise, missing variable, missing dependency, contradiction,
+unsupported inference). Each diff maps to one minimal cue and is explicitly a
+review candidate, not proof that the user lacks knowledge or that the source is
+correct:
+
 Preview and apply retention expiry:
 
 ```bash

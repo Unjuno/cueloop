@@ -10,6 +10,8 @@ from pathlib import Path
 import tempfile
 
 from .core import Action, Analysis, Decision, InterventionController, State
+from .cue_fading import CueFadingPolicy
+from .knowledge_state import KnowledgeAcquisition, KnowledgeStore
 
 
 class FeedbackRating(StrEnum):
@@ -106,17 +108,23 @@ class RetainedStructure:
 class PersonalizationProfile:
     """Stores explicit intervention feedback only; it never models stable user traits."""
 
-    schema_version = 3
+    schema_version = 4
 
     def __init__(
         self,
         stats: dict[str, InterventionStats] | None = None,
         state_observations: list[StateObservation] | None = None,
         retained_structures: list[RetainedStructure] | None = None,
+        knowledge_acquisitions: list[KnowledgeAcquisition] | None = None,
+        knowledge_retention_days: int = 90,
     ) -> None:
         self.stats = stats or {}
         self.state_observations = state_observations or []
         self.retained_structures = retained_structures or []
+        self.knowledge_store = KnowledgeStore(
+            acquisitions=knowledge_acquisitions or [],
+            retention_days=knowledge_retention_days,
+        )
 
     @staticmethod
     def key(action: Action, cue: str | None) -> str:
@@ -273,6 +281,7 @@ class PersonalizationProfile:
                 }
                 for item in self.retained_structures
             ],
+            "knowledge_acquisitions": self.knowledge_store.to_list(),
         }
 
     @classmethod
@@ -295,17 +304,34 @@ class PersonalizationProfile:
             )
             profile.prune_state_observations()
             return profile
-        if set(payload) != {"schema_version", "stats", "state_observations", "retained_structures"}:
+        if payload.get("schema_version") == 3 and set(payload) == {
+            "schema_version", "stats", "state_observations", "retained_structures"
+        }:
+            profile = cls(
+                {key: InterventionStats.from_dict(value) for key, value in payload["stats"].items()},
+                [StateObservation.from_dict(value) for value in payload["state_observations"]],
+                [RetainedStructure.from_dict(value) for value in payload["retained_structures"]],
+            )
+            profile.prune_state_observations()
+            profile.prune_retained_structures()
+            return profile
+        # schema v4: same as v3 plus knowledge_acquisitions
+        if set(payload) != {"schema_version", "stats", "state_observations", "retained_structures", "knowledge_acquisitions"}:
             raise ValueError("invalid personalization profile")
         if payload["schema_version"] != cls.schema_version or not isinstance(payload["stats"], dict) or not isinstance(payload["state_observations"], list) or not isinstance(payload["retained_structures"], list):
             raise ValueError("unsupported personalization profile")
+        acquisitions_raw = payload.get("knowledge_acquisitions", [])
+        if not isinstance(acquisitions_raw, list):
+            raise ValueError("knowledge_acquisitions must be a list")
         profile = cls(
             {key: InterventionStats.from_dict(value) for key, value in payload["stats"].items()},
             [StateObservation.from_dict(value) for value in payload["state_observations"]],
             [RetainedStructure.from_dict(value) for value in payload["retained_structures"]],
+            [KnowledgeAcquisition.from_dict(value) for value in acquisitions_raw],
         )
         profile.prune_state_observations()
         profile.prune_retained_structures()
+        profile.knowledge_store.prune_expired()
         return profile
 
     def save(self, path: Path) -> None:
@@ -330,23 +356,63 @@ class AdaptiveController:
 
     Adaptation can only suppress or fade an intervention. It cannot bypass a
     confidence threshold, cooldown, cue-length limit, or productive-flow rule.
+
+    Cue fading follows Priority D: full cue -> keyword -> SILENCE.
+    Spontaneous reuse detection follows Priority C: when the user's speech
+    contains evidence of a previously cued concept, the knowledge state is
+    upgraded and fading is applied.
     """
 
-    def __init__(self, base: InterventionController, profile: PersonalizationProfile) -> None:
+    def __init__(
+        self,
+        base: InterventionController,
+        profile: PersonalizationProfile,
+        cue_fading: CueFadingPolicy | None = None,
+    ) -> None:
         self.base = base
         self.profile = profile
+        self.cue_fading = cue_fading or CueFadingPolicy(profile.knowledge_store)
 
     def decide(self, analysis: Analysis) -> Decision:
         self.profile.observe_state(analysis)
         decision = self.base.decide(analysis)
         if decision.action is Action.SILENCE:
             return decision
+
+        # Record cue delivery for knowledge tracking
+        if decision.cue:
+            self.profile.knowledge_store.record_cue_delivery(
+                decision.cue,
+                source_session_id="",
+                confidence=analysis.confidence,
+            )
+
+        # Apply feedback-based suppression (existing logic)
         stats = self.profile.for_intervention(decision.action, decision.cue)
         stats.opportunities += 1
         reviewed = stats.helpful + stats.neutral + stats.disruptive
         if reviewed >= 2 and stats.disruptive / reviewed >= 0.5:
             self.base.cancel_delivery(decision)
             return Decision(Action.SILENCE, None, "explicit feedback suppressed disruptive intervention", analysis)
+
+        # Apply cue fading (Priority D)
+        if decision.cue:
+            fading = self.cue_fading.apply(decision.cue)
+            if not fading.should_deliver:
+                self.base.cancel_delivery(decision)
+                return Decision(
+                    Action.SILENCE, None,
+                    f"cue faded: {fading.reason}",
+                    analysis,
+                )
+            if fading.faded_cue != decision.cue:
+                # Replace with faded cue
+                decision = Decision(
+                    decision.action,
+                    fading.faded_cue,
+                    f"faded from '{decision.cue}' to '{fading.faded_cue}': {fading.reason}",
+                    analysis,
+                )
 
         # After repeated helpful feedback, fade the cue deterministically. This
         # preserves occasional availability without increasing dependence.
@@ -358,6 +424,14 @@ class AdaptiveController:
 
         stats.delivered += 1
         return decision
+
+    def detect_spontaneous_reuse(self, speech_text: str) -> list:
+        """Check user speech for spontaneous reuse of previously cued concepts.
+
+        Should be called on each completed user turn.  Returns a list of
+        knowledge acquisitions whose state was upgraded.
+        """
+        return self.profile.knowledge_store.detect_spontaneous_reuse(speech_text)
 
     def cancel_delivery(self, decision: Decision) -> None:
         """Prevent cancelled TTS from being learned as a delivered cue."""

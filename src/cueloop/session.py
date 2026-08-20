@@ -16,6 +16,7 @@ import uuid
 from .core import Action, Analysis, Analyzer, ControllerConfig, Decision, HeuristicAnalyzer, InterventionController
 from .core import EvidenceKind, State
 from .knowledge import GroundedRetrievalAnalyzer, KnowledgeIndex, ground_structure
+from .knowledge_diff import build_source_structure, compare_structures
 from .personalization import AdaptiveController, PersonalizationProfile
 from .structure import extract_structure, write_structure
 from .voice import VoiceSession, append_voice_result, read_events, run_live_event_stream
@@ -169,6 +170,19 @@ def run_integrated_session(
         if knowledge_index is not None:
             grounded = ground_structure(structure.to_dict(), knowledge_index)
             _write_json(temporary / "grounding.json", grounded)
+            source_structure = build_source_structure(knowledge_index)
+            diffs = compare_structures(structure, source_structure)
+            _write_json(
+                temporary / "structure-diff.json",
+                {
+                    "diffs": [diff.to_dict() for diff in diffs],
+                    "notice": (
+                        "Lexical-structural differences are review candidates, "
+                        "not proof that the user lacks knowledge or that the "
+                        "source is correct."
+                    ),
+                },
+            )
 
         if not selected_retention.transcript_retained:
             (temporary / "voice.jsonl").unlink(missing_ok=True)

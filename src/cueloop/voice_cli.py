@@ -10,6 +10,7 @@ from typing import Sequence
 from .core import Action, Analysis, Analyzer, ControllerConfig, Decision, HeuristicAnalyzer, InterventionController
 from .commands import parse_command_json
 from .knowledge import GroundedRetrievalAnalyzer, KnowledgeIndex
+from .knowledge_diff import StructuralDiffAnalyzer, build_source_structure
 from .llm import CommandCompletion, HybridAnalyzer, LLMAnalyzer
 from .personalization import AdaptiveController, PersonalizationProfile
 from .voice import (
@@ -186,6 +187,8 @@ def main(argv: list[str] | None = None) -> int:
         knowledge_index = KnowledgeIndex.from_paths(args.sources) if args.sources else None
         if knowledge_index is not None:
             analyzer = GroundedRetrievalAnalyzer(analyzer, knowledge_index)
+            source_structure = build_source_structure(knowledge_index)
+            analyzer = StructuralDiffAnalyzer(analyzer, source_structure)
         trusted_refs = knowledge_index.source_refs if knowledge_index is not None else frozenset()
         controller = (
             ObservationOnlyController(profile)
