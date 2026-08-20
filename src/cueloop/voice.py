@@ -25,6 +25,14 @@ from .core import (
     State,
     safe_analysis,
 )
+from .knowledge_state import KnowledgeStore
+from .structure import SessionStructure
+from .unified_analyzer import (
+    MidSpeechUnifiedAnalyzer,
+    UnifiedAnalyzerConfig,
+    detect_spontaneous_reuse,
+    record_cue_delivery,
+)
 
 
 class VoiceEventType(StrEnum):
@@ -343,13 +351,15 @@ class MidSpeechInjector:
     knowledge is distilled into the user's mind. This injector runs on the
     evolving partial transcript and emits very short single-word cues that are
 
-    - context-sensitive: derived from the user's own vocabulary and likely gap,
-    - very short: one cognitive operation expressed in a few characters,
-    - non-repetitive and non-evaluative,
-    - suppressed during OVERLOAD and never delivered after the turn has ended.
+    - context-sensitive: derived from the user's own vocabulary, structural gaps
+      vs. source knowledge, and knowledge state tracking
+    - very short: one cognitive operation expressed in a few characters
+    - non-repetitive and non-evaluative
+    - suppressed during OVERLOAD and never delivered after the turn has ended
+    - faded when the user shows evidence of internalizing the concept
 
-    The analysis is heuristic and instant so it can run between ASR events
-    without blocking the live stream.
+    The analysis combines heuristic state detection, structural diff awareness,
+    and knowledge state tracking for consistent intervention decisions.
     """
 
     INTERVENTION_ACTIONS: frozenset[Action] = frozenset(
@@ -357,8 +367,8 @@ class MidSpeechInjector:
     )
 
     # Explicit opt-in rotation mode (--mid-speech-rotate) keeps a stable,
-    # predictable rhythm of canonical cues. DISABLED by default: the context-
-    # aware vocabulary path is the primary mechanism.
+    # predictable rhythm of canonical cues. DISABLED by default: the unified
+    # analyzer path is the primary mechanism.
     ROTATION_CUES: tuple[str, ...] = (
         "何に依存？",
         "具体的には？",
@@ -366,56 +376,6 @@ class MidSpeechInjector:
         "条件は？",
         "結論は？",
         "根拠は？",
-    )
-
-    # Minimal single-word cue templates keyed by the reasoning operation that is
-    # most likely missing from the user's own phrasing. The cue never supplies
-    # content: it only asks the user to produce the missing operation.
-    CUE_BY_OPERATION: dict[str, tuple[str, ...]] = {
-        "dependency": ("何に？", "依存は？", "前提は？"),
-        "concretize": ("具体は？", "例は？", "場合、？"),
-        "invert": ("逆は？", "逆なら？", "逆で？"),
-        "boundary": ("範囲は？", "条件は？", "どこまで？"),
-        "conclusion": ("結論は？", "つまり？", "それで？"),
-        "ground": ("根拠は？", "根拠", "答えは？"),
-        "mechanism": ("仕組みは？", "なぜ？", "どうして？"),
-        "comparison": ("何と比べる？", "違いは？", "基準は？"),
-    }
-
-    _VOCAB_OPERATIONS: tuple[tuple[str, str], ...] = (
-        ("なぜなら", "mechanism"),
-        ("仕組み", "mechanism"),
-        ("理由", "mechanism"),
-        ("なぜ", "mechanism"),
-        ("どうして", "mechanism"),
-        ("だから", "conclusion"),
-        ("つまり", "conclusion"),
-        ("なので", "conclusion"),
-        ("結論", "conclusion"),
-        ("たぶん", "ground"),
-        ("だと思う", "ground"),
-        ("ような気がする", "ground"),
-        ("思う", "ground"),
-        ("感じ", "ground"),
-        ("例えば", "concretize"),
-        ("具体的", "concretize"),
-        ("まず", "concretize"),
-        ("依存", "dependency"),
-        ("前提", "dependency"),
-        ("必要", "dependency"),
-        ("条件", "boundary"),
-        ("限界", "boundary"),
-        ("範囲", "boundary"),
-        ("いつも", "boundary"),
-        ("必ず", "boundary"),
-        ("逆に", "invert"),
-        ("逆なら", "invert"),
-        ("逆は", "invert"),
-        ("逆", "invert"),
-        ("比較", "comparison"),
-        ("違い", "comparison"),
-        ("比べる", "comparison"),
-        ("違う", "comparison"),
     )
 
     def __init__(
@@ -429,6 +389,8 @@ class MidSpeechInjector:
         min_text_characters: int = 4,
         always_rotate: bool = False,
         log_path: Path | None = None,
+        source_structure: SessionStructure | None = None,
+        knowledge_store: KnowledgeStore | None = None,
     ) -> None:
         if interval_ms < 500:
             raise ValueError("mid-speech interval_ms must be at least 500")
@@ -442,7 +404,16 @@ class MidSpeechInjector:
             raise ValueError("mid-speech min_text_characters must be positive")
         if max_cue_characters > (10 if always_rotate else 8):
             raise ValueError("mid-speech max_cue_characters is too large for live cues")
-        self.analyzer = analyzer or HeuristicAnalyzer()
+
+        unified_config = UnifiedAnalyzerConfig(
+            minimum_confidence=minimum_confidence,
+            source_structure=source_structure,
+            structural_minimum_confidence=0.3,
+            knowledge_store=knowledge_store,
+            max_cue_characters=16,
+            max_mid_speech_cue_characters=max_cue_characters,
+        )
+        self.unified_analyzer = MidSpeechUnifiedAnalyzer(unified_config, analyzer)
         self.speaker = speaker or NullSpeaker()
         self.interval_ms = interval_ms
         self.cooldown_ms = cooldown_ms
@@ -451,6 +422,7 @@ class MidSpeechInjector:
         self.min_text_characters = min_text_characters
         self.always_rotate = always_rotate
         self.log_path = log_path
+        self.knowledge_store = knowledge_store
         self.timeline_origin = datetime.now(timezone.utc).isoformat()
         self.delivered_count = 0
         self.injected_cues: list[str] = []
@@ -460,20 +432,26 @@ class MidSpeechInjector:
         self._speaking = False
         self._rotation_index = 0
         self._last_cue: str | None = None
-        self._candidate_index_by_operation: dict[str, int] = {}
         self._used_cues_this_session: set[str] = set()
-        self._recent_operations: list[str] = []  # bounded memory to avoid repeats
 
-    def feed(self, event: VoiceEvent) -> str | None:
-        """Return the spoken cue when one was delivered during speech."""
+    def feed(self, event: VoiceEvent, context: SessionContext | None = None) -> str | None:
+        """Return the spoken cue when one was delivered during speech.
+
+        ``context`` carries the completed prior turns so the unified analyzer can
+        compute structural differences against source knowledge while the user
+        is still speaking. Without it, the structural branch is inert and only
+        vocabulary echoes would be delivered.
+        """
         if event.type is VoiceEventType.SPEECH_STARTED:
             self._speaking = True
             self._recent_partial = ""
             self._accumulated_partial = ""
             self._last_injection_at_ms = event.at_ms
             self._last_cue = None
-            self._candidate_index_by_operation = {}
             self._used_cues_this_session = set()
+            # Reset unified analyzer session state
+            if hasattr(self.unified_analyzer, "reset_session"):
+                self.unified_analyzer.reset_session()
             return None
         if event.type is VoiceEventType.SPEECH_ENDED or event.type is VoiceEventType.SESSION_ENDED:
             self._speaking = False
@@ -498,47 +476,34 @@ class MidSpeechInjector:
             return None
         if self.always_rotate:
             cue = self._next_rotation_cue()
-            analysis = self.analyzer.analyze(text)
+            analysis = self.unified_analyzer.analyze(text, context)
             if analysis.state is State.OVERLOAD:
                 self._last_injection_at_ms = now
                 return None
             return self._deliver(cue, now, text, analysis)
-        operation = self._select_operation(text)
-        analysis = self.analyzer.analyze(text)
+        # Use unified analyzer for context-aware, structurally-informed cue selection
+        analysis = self.unified_analyzer.analyze(text, context)
         if analysis.state is State.OVERLOAD:
             self._last_injection_at_ms = now
             return None
-        # When the user's own phrasing reveals a missing operation, the cue is
-        # self-derived. The analyzer's proposed_action is not required here;
-        # only its state/confidence gates delivery.
-        if operation is None or analysis.confidence < self.minimum_confidence:
+        # Mid-speech is a method-steering channel, not an answering channel:
+        # an explicit knowledge question is honored at the turn boundary, never
+        # mid-utterance. Suppressing RETRIEVE here keeps a source fragment
+        # (which also exceeds the 8-char live-cue limit) out of live speech.
+        if analysis.proposed_action is Action.RETRIEVE:
+            self._last_injection_at_ms = now
             return None
-        # Repeating the exact same cue is noise, not guidance: the accumulated
-        # transcript may still contain the triggering token (e.g. 必要), so
-        # we rotate to the next candidate within the same operation and only
-        # deliver when the new cue has not already been used this session.
-        cue = self._pick_cue(operation, text)
-        if not cue or cue == self._last_cue or cue in self._used_cues_this_session:
+        # Detect spontaneous reuse of previously cued concepts
+        if self.knowledge_store is not None and self._recent_partial:
+            detect_spontaneous_reuse(self.knowledge_store, self._recent_partial)
+        # Unified analyzer returns None cue if no intervention warranted
+        if analysis.cue is None:
+            return None
+        # Avoid repeating the exact same cue
+        cue = analysis.cue
+        if cue == self._last_cue or cue in self._used_cues_this_session:
             return None
         return self._deliver(cue, now, text, analysis)
-
-    def _select_operation(self, text: str) -> str | None:
-        for token, operation in self._VOCAB_OPERATIONS:
-            if token in text:
-                return operation
-        return None
-
-    def _pick_cue(self, operation: str, text: str) -> str | None:
-        del text
-        candidates = self.CUE_BY_OPERATION[operation]
-        start = self._candidate_index_by_operation.get(operation, 0)
-        for offset in range(len(candidates)):
-            index = (start + offset) % len(candidates)
-            candidate = candidates[index]
-            if len(candidate) <= self.max_cue_characters:
-                self._candidate_index_by_operation[operation] = (index + 1) % len(candidates)
-                return candidate
-        return None
 
     def _next_rotation_cue(self) -> str:
         cue = self.ROTATION_CUES[self._rotation_index % len(self.ROTATION_CUES)]
@@ -549,6 +514,14 @@ class MidSpeechInjector:
         self._last_injection_at_ms = now
         self._last_cue = cue
         self._used_cues_this_session.add(cue)
+        # Record cue delivery for knowledge state tracking
+        if self.knowledge_store is not None:
+            record_cue_delivery(
+                self.knowledge_store,
+                cue,
+                source_session_id="",
+                confidence=analysis.confidence,
+            )
         intent = _voice_intent_for_analysis(analysis)
         if isinstance(self.speaker, ProfileSpeaker):
             self.speaker.speak(cue, intent=intent)
@@ -651,7 +624,7 @@ class VoiceSession:
                 VoiceEventType.SESSION_ENDED,
             }:
                 try:
-                    self.mid_speech.feed(event)
+                    self.mid_speech.feed(event, context=self.context)
                 except SpeechCancelled:
                     self._awaiting_resume_after_ms = event.at_ms
         turn = self.detector.feed(event)

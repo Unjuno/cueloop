@@ -149,6 +149,52 @@ class IntegratedSessionTests(unittest.TestCase):
             self.assertEqual(speaker.utterances, ["制御理論ではフィードバックを利用"])
             self.assertNotIn("made-up", log["decision"]["source_refs"])
 
+    def test_explicit_knowledge_seeking_question_surfaces_grounded_retrieve(self) -> None:
+        """A direct question that the trusted source addresses produces a grounded
+        RETRIEVE cue instead of silence (regression guard for source grounding)."""
+        class RecordingSpeaker:
+            def __init__(self) -> None:
+                self.utterances: list[str] = []
+
+            def speak(self, text: str) -> None:
+                self.utterances.append(text)
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "source.txt"
+            source.write_text(
+                "データベースの一貫性を保証するには分散トランザクションが必要である。\n"
+                "特に、二相コミットプロトコルは複数のノード間で原子性を維持する。\n",
+                encoding="utf-8",
+            )
+            speaker = RecordingSpeaker()
+            outcome = run_integrated_session(
+                [
+                    '{"type":"speech_started","at_ms":0}',
+                    '{"type":"transcript_final","at_ms":1100,"text":"二相コミットって何？"}',
+                    '{"type":"speech_ended","at_ms":1300}',
+                    '{"type":"tick","at_ms":2200}',
+                    '{"type":"transcript_final","at_ms":3600,"text":"モノリスはデプロイが容易だ。"}',
+                    '{"type":"speech_ended","at_ms":3800}',
+                    '{"type":"tick","at_ms":4700}',
+                    '{"type":"session_ended","at_ms":5300}',
+                ],
+                root / "sessions",
+                goal="分散トランザクションの知識を問う",
+                source_paths=[source],
+                speaker=speaker,
+                session_id="knowledge-seek",
+            )
+            actions = outcome.manifest["action_counts"]
+            self.assertIn("RETRIEVE", actions)
+            self.assertEqual(outcome.manifest["candidate_status_counts"].get("DELIVERED", 0), 2)
+            self.assertTrue(speaker.utterances)
+            delivered = speaker.utterances[0]
+            self.assertLessEqual(len(delivered), 16)
+            # The delivered fragment is drawn from the trusted source, not an
+            # answer: it must surface the topic, not the resolution.
+            self.assertNotIn("原子性を維持する", delivered)
+
     def test_no_transcript_retention_omits_voice_log(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             with (self.root / "experiments/voice-smoke.jsonl").open(encoding="utf-8") as lines:

@@ -1,10 +1,12 @@
 import io
 from pathlib import Path
 import sys
+import tempfile
 import time
 import unittest
 
-from cueloop.core import Action, Analysis, ControllerConfig, InterventionController, State
+from cueloop.core import Action, Analysis, ControllerConfig, HeuristicAnalyzer, InterventionController, State
+from cueloop.knowledge import GroundedRetrievalAnalyzer, KnowledgeIndex
 from cueloop.personalization import AdaptiveController, PersonalizationProfile
 from cueloop.voice import (
     CommandSpeaker,
@@ -386,26 +388,50 @@ class MidSpeechInjectorTests(unittest.TestCase):
         injector.feed(
             VoiceEvent(VoiceEventType.TRANSCRIPT_PARTIAL, 3_000, "うーん、逆に考えた方が良いかな")
         )
-        self.assertIn("逆は？", speaker.utterances)
+        # The user already inverted the view; the complement asks for its boundary.
+        self.assertIn("範囲は？", speaker.utterances)
 
-    def test_cue_is_context_aware_and_bounded_to_vocabulary(self) -> None:
+    def test_cue_is_context_aware_and_gap_driven(self) -> None:
+        cases = [
+            # Uncertainty tokens assert a claim without support: ask for grounding.
+            ("たぶん、そうだと思う", "根拠は？"),
+            # A completed operation is not echoed back: it is complemented instead.
+            # After a conclusion, the missing relation is its support.
+            ("つまり、結論として決まる", "根拠は？"),
+            # After concretizing, the missing relation is support/grounds.
+            ("具体的な例を挙げる", "根拠は？"),
+            # After explaining a mechanism, ask for grounds of the claim.
+            ("なぜなら、こうなるはずだ", "根拠は？"),
+            # Naming a dependency is not itself performative closing; exploring
+            # "依存関係を確認" still warrants a dependency cue.
+            ("前提と依存関係を確認", "何に？"),
+            # Naming unclear conditions still warrants a boundary cue.
+            ("条件と限界が不明瞭", "範囲は？"),
+            # After inverting, ask for the boundary of the flipped view.
+            ("逆に考えれば答えが見える", "範囲は？"),
+        ]
+        for text, expected in cases:
+            speaker = RecordingSpeaker()
+            injector = MidSpeechInjector(speaker=speaker, interval_ms=500, cooldown_ms=0)
+            injector.feed(VoiceEvent(VoiceEventType.SPEECH_STARTED, 0))
+            injector.feed(VoiceEvent(VoiceEventType.TRANSCRIPT_PARTIAL, 1_100, text))
+            self.assertEqual(speaker.utterances, [expected], text)
+
+    def test_stale_echo_is_not_repeated_when_operation_is_performed(self) -> None:
         speaker = RecordingSpeaker()
         injector = MidSpeechInjector(speaker=speaker, interval_ms=500, cooldown_ms=0)
         injector.feed(VoiceEvent(VoiceEventType.SPEECH_STARTED, 0))
-        cases = [
-            ("なぜなら、こうなるはずだ", "仕組みは？"),
-            ("つまり、結論として決まる", "結論は？"),
-            ("たぶん、そうだと思う", "根拠は？"),
-            ("前提と依存関係を確認", "何に？"),
-            ("条件と限界が不明瞭", "範囲は？"),
-            ("逆に考えれば答えが見える", "逆は？"),
-            ("具体的な例を挙げる", "具体は？"),
-        ]
-        at = 1_000
-        for text, expected in cases:
-            injector.feed(VoiceEvent(VoiceEventType.TRANSCRIPT_PARTIAL, at, text))
-            self.assertEqual(speaker.utterances[-1], expected, text)
-            at += 600
+        # The user is already being concrete, so "具体は？" is a stale echo and
+        # must not be spoken. The complement (ground) may still be delivered.
+        injector.feed(
+            VoiceEvent(
+                VoiceEventType.TRANSCRIPT_PARTIAL,
+                1_100,
+                "具体的な例を挙げて説明する。",
+            )
+        )
+        self.assertNotIn("具体は？", speaker.utterances)
+        self.assertEqual(speaker.utterances, ["根拠は？"])
 
     def test_no_injection_when_silent_or_too_short(self) -> None:
         speaker = RecordingSpeaker()
@@ -435,7 +461,56 @@ class MidSpeechInjectorTests(unittest.TestCase):
         injector.feed(
             VoiceEvent(VoiceEventType.TRANSCRIPT_PARTIAL, 1_100, "なぜなら、こうなるはずだ")
         )
-        self.assertEqual(speaker.utterances, ["なぜ？"])
+        # "なぜなら" already performs the mechanism operation; the complement
+        # asks for the support of the asserted claim, still within the limit.
+        self.assertEqual(speaker.utterances, ["根拠は？"])
+
+    def test_mid_speech_never_delivers_answer_pointer(self) -> None:
+        """Mid-speech is a method-steering channel: an explicit knowledge
+        question that would upgrade to a grounded RETRIEVE at the turn boundary
+        must stay silent during ongoing speech, so the user's own reasoning is
+        not derailed by a source fragment."""
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "source.txt"
+            source.write_text(
+                "二相コミットプロトコルは複数のノード間で原子性を維持する。\n",
+                encoding="utf-8",
+            )
+            index = KnowledgeIndex.from_paths([source])
+            grounded = GroundedRetrievalAnalyzer(HeuristicAnalyzer(), index)
+            speaker = RecordingSpeaker()
+            injector = MidSpeechInjector(
+                speaker=speaker, analyzer=grounded, interval_ms=500, cooldown_ms=0
+            )
+            injector.feed(VoiceEvent(VoiceEventType.SPEECH_STARTED, 0))
+            injector.feed(
+                VoiceEvent(
+                    VoiceEventType.TRANSCRIPT_PARTIAL, 1_100, "二相コミットって何？"
+                )
+            )
+            self.assertEqual(speaker.utterances, [])
+            self.assertEqual(injector.delivered_count, 0)
+        # Method nudges still pass through the same channel.
+        speaker = RecordingSpeaker()
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "method.txt"
+            source.write_text("方法の記述。", encoding="utf-8")
+            index = KnowledgeIndex.from_paths([source])
+            injector = MidSpeechInjector(
+                speaker=speaker,
+                analyzer=GroundedRetrievalAnalyzer(HeuristicAnalyzer(), index),
+                interval_ms=500,
+                cooldown_ms=0,
+            )
+            injector.feed(VoiceEvent(VoiceEventType.SPEECH_STARTED, 0))
+            injector.feed(
+                VoiceEvent(
+                    VoiceEventType.TRANSCRIPT_PARTIAL,
+                    1_100,
+                    "たぶん、この方法が良いと思う",
+                )
+            )
+            self.assertEqual(speaker.utterances, ["根拠は？"])
 
     def test_voice_session_wires_mid_speech_injector(self) -> None:
         speaker = RecordingSpeaker()

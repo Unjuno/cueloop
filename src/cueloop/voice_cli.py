@@ -200,13 +200,15 @@ def main(argv: list[str] | None = None) -> int:
             if not tts_command:
                 raise ValueError("--mid-speech requires a TTS delivery channel (--tts-command)")
             mid_speech = MidSpeechInjector(
-                analyzer=HeuristicAnalyzer(),
+                analyzer=analyzer,  # Use the same analyzer (with structural diff if available)
                 speaker=speaker,
                 interval_ms=args.mid_speech_interval_ms,
                 cooldown_ms=args.mid_speech_cooldown_ms,
                 minimum_confidence=args.mid_speech_confidence,
                 always_rotate=args.mid_speech_rotate,
                 log_path=args.log,
+                source_structure=source_structure,
+                knowledge_store=profile.knowledge_store,
             )
         session = VoiceSession(
             analyzer=analyzer,

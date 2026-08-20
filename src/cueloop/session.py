@@ -19,8 +19,9 @@ from .knowledge import GroundedRetrievalAnalyzer, KnowledgeIndex, ground_structu
 from .knowledge_diff import build_source_structure, compare_structures
 from .personalization import AdaptiveController, PersonalizationProfile
 from .structure import extract_structure, write_structure
+from .unified_analyzer import UnifiedSessionAnalyzer
 from .voice import VoiceSession, append_voice_result, read_events, run_live_event_stream
-from .voice import Speaker
+from .voice import Speaker, MidSpeechInjector, NullSpeaker
 
 
 class SessionCondition(StrEnum):
@@ -121,12 +122,41 @@ def run_integrated_session(
                 profile,
             )
         )
+        # Create mid-speech injector for CUELOOP condition with sources
+        mid_speech = None
+        if condition is SessionCondition.CUELOOP and knowledge_index is not None:
+            source_structure = build_source_structure(knowledge_index)
+            mid_speech = MidSpeechInjector(
+                analyzer=selected_analyzer,
+                speaker=speaker or NullSpeaker(),
+                interval_ms=2_500,
+                cooldown_ms=2_000,
+                minimum_confidence=0.6,
+                max_cue_characters=8,
+                min_text_characters=4,
+                always_rotate=False,
+                source_structure=source_structure,
+                knowledge_store=profile.knowledge_store,
+            )
+        # Turn-boundary analyzer: adds structural diff + knowledge state
+        # awareness to the primary decision path. Mid-speech uses its own
+        # MidSpeechUnifiedAnalyzer, but turn-boundary analysis is the
+        # authoritative decision point and must have the same signals.
+        turn_boundary_analyzer: Analyzer = selected_analyzer
+        source_struct = source_structure if condition is SessionCondition.CUELOOP and knowledge_index is not None else None
+        if source_struct is not None or profile.knowledge_store.acquisitions:
+            turn_boundary_analyzer = UnifiedSessionAnalyzer(
+                selected_analyzer,
+                source_structure=source_struct,
+                knowledge_store=profile.knowledge_store,
+            )
         voice_session = VoiceSession(
-            analyzer=selected_analyzer,
+            analyzer=turn_boundary_analyzer,
             controller=controller,
             speaker=speaker,
             max_decision_latency_ms=max_decision_latency_ms,
             cooldown_ms=cooldown_ms,
+            mid_speech=mid_speech,
         )
     except BaseException:
         shutil.rmtree(temporary)
