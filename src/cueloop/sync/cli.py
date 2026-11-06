@@ -1,0 +1,384 @@
+"""Command line entry point for the predictive synchronization loop."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import subprocess
+import sys
+from collections.abc import Iterable
+from pathlib import Path
+
+from .evaluate import summarize
+from .models import SyncEvent
+from .policy import (
+    AsyncDecisionModel,
+    LocalLLMDecisionModel,
+    RuleDecisionModel,
+    build_assigner,
+)
+from .predictors import AsyncPredictor, LocalLLMPredictor, NgramPredictor, Predictor
+from .runtime import CommandSpeaker, NullSpeaker, Speaker, SyncRuntime
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description=(
+            "Predict the speaker's next span, track synchronization, and insert "
+            "a short cue before the predicted span is spoken."
+        )
+    )
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument(
+        "--events", type=Path, help="Replay a JSONL event file; use - for stdin."
+    )
+    source.add_argument(
+        "--event-command", nargs="+", help="Command that streams JSONL events."
+    )
+    source.add_argument(
+        "--event-command-json",
+        help="JSON string array for a streaming command with option-like arguments.",
+    )
+    parser.add_argument(
+        "--decision",
+        choices=["rule", "local"],
+        default="rule",
+        help="Timing/cue decision backend (default: rule).",
+    )
+    parser.add_argument(
+        "--predictor",
+        choices=["ngram", "local"],
+        default="ngram",
+        help="Prediction backend (default: ngram).",
+    )
+    parser.add_argument(
+        "--async-prediction",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Run a local predictor in the background and use ngram as fallback (default: enabled).",
+    )
+    parser.add_argument("--prediction-debounce-ms", type=int, default=200)
+    parser.add_argument(
+        "--async-decision",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Pre-compute the local decision before the boundary (default: enabled).",
+    )
+    parser.add_argument(
+        "--decision-fallback",
+        choices=["rule", "none"],
+        default="rule",
+        help="Instant fallback when a precomputed local decision is not ready.",
+    )
+    parser.add_argument(
+        "--corpus",
+        type=Path,
+        action="append",
+        help="Corpus for the ngram predictor; repeat the flag for multiple files.",
+    )
+    parser.add_argument(
+        "--base-url",
+        default="http://127.0.0.1:11434",
+        help="OpenAI-compatible server URL.",
+    )
+    parser.add_argument(
+        "--model", default=None, help="Model id; resolved from the server when omitted."
+    )
+    parser.add_argument("--temperature", type=float, default=0.4)
+    parser.add_argument("--request-timeout", type=float, default=5.0)
+    parser.add_argument("--max-tokens", type=int, default=64)
+    parser.add_argument(
+        "--assignment",
+        choices=["canonical", "alternate", "random", "fixed"],
+        default="canonical",
+        help="Cue assignment strategy (default: canonical).",
+    )
+    parser.add_argument("--cue", help="Cue used by --assignment fixed.")
+    parser.add_argument(
+        "--seed", type=int, default=0, help="Seed for randomized assignment."
+    )
+    parser.add_argument("--max-cue-characters", type=int, default=8)
+    parser.add_argument("--min-confidence", type=float, default=0.55)
+    parser.add_argument(
+        "--pause-ms", type=int, default=350, help="Pause that marks a clause boundary."
+    )
+    parser.add_argument(
+        "--early-lead-ms",
+        type=int,
+        default=0,
+        help="Plan a cue this many ms before the pause threshold (default: 0, off).",
+    )
+    parser.add_argument(
+        "--cooldown-ms",
+        type=int,
+        default=2_500,
+        help="Minimum gap between delivered cues.",
+    )
+    parser.add_argument(
+        "--insertion-delay-ms",
+        type=int,
+        default=100,
+        help="Delay between the boundary and the cue, after the decision returns.",
+    )
+    parser.add_argument(
+        "--delivery-window-ms",
+        type=int,
+        default=1_200,
+        help="How long a planned cue stays valid.",
+    )
+    parser.add_argument(
+        "--outcome-window-ms",
+        type=int,
+        default=8_000,
+        help="Continuation window for uptake.",
+    )
+    parser.add_argument(
+        "--replan-on-divergence",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Re-predict and re-plan where the speaker diverges (default: enabled).",
+    )
+    parser.add_argument("--min-replan-interval-ms", type=int, default=1_000)
+    parser.add_argument(
+        "--condition-label",
+        default="unspecified",
+        help="Experimental condition written to every log entry.",
+    )
+    parser.add_argument("--min-text-characters", type=int, default=4)
+    parser.add_argument(
+        "--tts-command",
+        nargs="+",
+        help="TTS command; the cue is appended as one argument.",
+    )
+    parser.add_argument(
+        "--tts-command-json", help="JSON string array for the TTS command."
+    )
+    parser.add_argument(
+        "--log",
+        type=Path,
+        help="JSONL log for predictions, decisions, deliveries, outcomes.",
+    )
+    parser.add_argument(
+        "--report",
+        type=Path,
+        default=Path("artifacts/sync-report.json"),
+        help="Aggregate report path (default: artifacts/sync-report.json).",
+    )
+    return parser
+
+
+def _parse_command_json(raw: str) -> list[str]:
+    try:
+        value = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise ValueError("command JSON is invalid") from exc
+    if (
+        not isinstance(value, list)
+        or not value
+        or not all(isinstance(item, str) for item in value)
+    ):
+        raise ValueError("command JSON must be a non-empty array of strings")
+    return value
+
+
+def _event_lines(args: argparse.Namespace) -> Iterable[str]:
+    if args.events is not None:
+        if str(args.events) == "-":
+            for line in sys.stdin:
+                yield line
+            return
+        with args.events.open("r", encoding="utf-8") as handle:
+            for line in handle:
+                yield line
+        return
+    if args.event_command_json:
+        command = _parse_command_json(args.event_command_json)
+    elif args.event_command:
+        command = list(args.event_command)
+    else:
+        raise ValueError("an event source is required")
+    process = subprocess.Popen(
+        command,
+        stdout=subprocess.PIPE,
+        text=True,
+        bufsize=1,
+    )
+    assert process.stdout is not None
+    try:
+        for line in process.stdout:
+            yield line
+    finally:
+        process.stdout.close()
+        return_code = process.wait(timeout=10)
+        if return_code != 0:
+            raise RuntimeError(f"event command exited with status {return_code}")
+
+
+def _parse_events(lines: Iterable[str]) -> Iterable[SyncEvent]:
+    for line_number, line in enumerate(lines, start=1):
+        stripped = line.strip()
+        if not stripped:
+            continue
+        try:
+            yield SyncEvent.from_json(stripped)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"invalid event line {line_number}: {exc}") from exc
+
+
+def _build_predictor(args: argparse.Namespace) -> Predictor:
+    if args.predictor == "local":
+        local = LocalLLMPredictor(
+            base_url=args.base_url,
+            model=args.model,
+            temperature=args.temperature,
+            timeout=args.request_timeout,
+            max_tokens=args.max_tokens,
+        )
+        if args.async_prediction:
+            fallback = (
+                NgramPredictor.from_paths(args.corpus)
+                if args.corpus
+                else NgramPredictor.default()
+            )
+            return AsyncPredictor(
+                local,
+                fallback=fallback,
+                debounce_ms=args.prediction_debounce_ms,
+            )
+        return local
+    if args.corpus:
+        return NgramPredictor.from_paths(args.corpus)
+    return NgramPredictor.default()
+
+
+def _build_speaker(args: argparse.Namespace) -> Speaker:
+    if args.tts_command_json:
+        return CommandSpeaker(_parse_command_json(args.tts_command_json))
+    if args.tts_command:
+        return CommandSpeaker(list(args.tts_command))
+    return NullSpeaker()
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = build_parser().parse_args(argv)
+    try:
+        predictor = _build_predictor(args)
+        assigner = build_assigner(
+            args.assignment,
+            seed=args.seed,
+            cue=args.cue,
+            max_characters=args.max_cue_characters,
+        )
+        if args.decision == "local":
+            decision_model = LocalLLMDecisionModel(
+                base_url=args.base_url,
+                model=args.model,
+                assigner=assigner,
+                timeout=args.request_timeout,
+                max_tokens=args.max_tokens,
+                max_characters=args.max_cue_characters,
+                delivery_window_ms=args.delivery_window_ms,
+                insertion_delay_ms=args.insertion_delay_ms,
+                min_confidence=args.min_confidence,
+            )
+        else:
+            decision_model = RuleDecisionModel(
+                assigner,
+                min_confidence=args.min_confidence,
+                max_characters=args.max_cue_characters,
+                delivery_window_ms=args.delivery_window_ms,
+                insertion_delay_ms=args.insertion_delay_ms,
+            )
+        if args.decision == "local" and args.async_decision:
+            fallback = (
+                RuleDecisionModel(
+                    assigner,
+                    min_confidence=args.min_confidence,
+                    max_characters=args.max_cue_characters,
+                    delivery_window_ms=args.delivery_window_ms,
+                    insertion_delay_ms=args.insertion_delay_ms,
+                )
+                if args.decision_fallback == "rule"
+                else None
+            )
+            decision_model = AsyncDecisionModel(
+                decision_model,
+                fallback=fallback,
+            )
+        if args.predictor == "local" and hasattr(predictor, "warmup"):
+            predictor.warmup()
+        if args.decision == "local" and hasattr(decision_model, "warmup"):
+            decision_model.warmup()
+        runtime = SyncRuntime(
+            predictor=predictor,
+            decision_model=decision_model,
+            speaker=_build_speaker(args),
+            log_path=args.log,
+            pause_ms=args.pause_ms,
+            early_lead_ms=args.early_lead_ms,
+            cooldown_ms=args.cooldown_ms,
+            min_text_characters=args.min_text_characters,
+            outcome_window_ms=args.outcome_window_ms,
+            replan_on_divergence=args.replan_on_divergence,
+            min_replan_interval_ms=args.min_replan_interval_ms,
+            condition=args.condition_label,
+        )
+        last_at_ms = 0
+        try:
+            for event in _parse_events(_event_lines(args)):
+                last_at_ms = max(last_at_ms, event.at_ms)
+                produced = runtime.feed(event)
+                for delivery in produced:
+                    print(
+                        f"[{delivery.delivered_at_ms:>6}ms] {delivery.status:9} "
+                        f"cue={delivery.intervention.cue!r} "
+                        f"op={delivery.intervention.operation}"
+                    )
+        except KeyboardInterrupt:
+            pass
+        finally:
+            for component in (predictor, decision_model):
+                close = getattr(component, "close", None)
+                if close is not None:
+                    close()
+        runtime.feed(
+            SyncEvent.from_json(
+                json.dumps({"type": "session_ended", "at_ms": last_at_ms + 1})
+            )
+        )
+        report = runtime.report()
+        report["summary"] = summarize(runtime.outcomes)
+        args.report.parent.mkdir(parents=True, exist_ok=True)
+        args.report.write_text(
+            json.dumps(report, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+    except (
+        OSError,
+        TypeError,
+        ValueError,
+        RuntimeError,
+        subprocess.TimeoutExpired,
+    ) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+
+    print(
+        f"predictor={report['predictor']} decision={report['decision_model']} "
+        f"utterances={report['utterances']} predictions={report['predictions']} "
+        f"delivered={report['delivered']} cancelled={report['cancelled']} "
+        f"expired={report['expired']}"
+    )
+    for operation, bucket in sorted(report["per_operation"].items()):
+        print(
+            f"  {operation:12} delivered={bucket['delivered']} "
+            f"uptake={bucket['uptake']} rate={bucket['rate']:.2f}"
+        )
+    if args.log is not None:
+        print(f"log={args.log}")
+    print(f"report={args.report}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

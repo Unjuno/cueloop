@@ -1,104 +1,125 @@
 # Experiment Protocol
 
-Two distinct claims require two distinct experiments. The automated replay validates software policy behavior. Only a preregistered human study can test whether the intervention improves retained reasoning.
+This protocol tests whether a short cue inserted during speech shifts the
+operation the speaker performs next, and whether repeated cueing changes a
+delayed, unassisted reconstruction. It does not assume linguistic determinism.
 
-## Experiment A: deterministic policy replay
+## Hypotheses
 
-Hypothesis: controller suppression reduces harmful interruptions relative to delivering analyzer proposals directly, without producing excessive missed interventions.
+- **H1 (mechanism).** At an announced operation boundary, a cue increases the
+  probability that the next clause performs the cued operation relative to
+  silence and a length-matched neutral filler.
+- **H2 (retention).** Repeated cueing improves a delayed, unassisted
+  reconstruction scored by a blinded rubric.
+- **H0.** Cueing changes neither the next operation nor the delayed
+  reconstruction beyond the neutral condition.
 
-Run:
+H1 and H2 are separate. A positive H1 with a null H2 means the cue changed the
+local continuation but did not transfer. Report both.
 
-```bash
-cueloop-experiment \
-  --dataset experiments/policy-eval.jsonl \
-  --report artifacts/policy-experiment.json \
-  --policy-out artifacts/policy.json
+## Design
+
+Within-participant, clause-level randomization. Every eligible boundary is
+assigned to one of:
+
+- `SILENCE`: predict and log, but do not speak.
+- `NEUTRAL`: speak a length-matched neutral filler at the same boundary.
+- `CUE`: speak the operation cue assigned for that clause.
+
+Hold constant across conditions:
+
+- predictor and decision model (including `--async-decision` and
+  `--decision-fallback`; both are part of the timing condition)
+- boundary detector, pause threshold, and trigger phrases
+- insertion delay and delivery window
+- cue assignment policy (the cue wording is randomized within `CUE`)
+- task prompt, microphone, and ASR locale
+
+Only the spoken content varies.
+
+## Procedure
+
+1. Consent, audio/transcript retention choice, and a microphone check.
+2. A short practice task with cues disabled.
+3. Three timed speaking tasks of comparable difficulty, counterbalanced.
+4. A filler task (5–10 minutes) before reconstruction.
+5. A delayed, unassisted written reconstruction of each task.
+6. A short debrief; allow withdrawal and deletion.
+
+The system must remain silent when the predictor or decision model fails. A
+failed decision is not a `SILENCE` condition; log it separately and exclude it
+from the condition comparison.
+
+## Primary outcome: operation uptake
+
+For each delivery, take the continuation window (default 8 s) and tag its
+operations with the same vocabulary used by the policy. Define **uptake** as
+the cued operation appearing in the continuation.
+
+For each operation, compare:
+
+```text
+P(uptake | CUE) - P(uptake | NEUTRAL)
+P(uptake | CUE) - P(uptake | SILENCE)
 ```
 
-The dataset has separate `tune` and `eval` sessions. Candidate settings are selected on `tune`. A setting is adopted only if it improves tuning loss, does not increase harmful interruptions, and does not regress held-out evaluation loss or harmful interruptions. A harmful interruption has weight 3, a wrong intervention weight 2, and a missed intervention weight 1.
+Use clause-level paired differences and a seeded bootstrap interval. Report
+the number of eligible boundaries, deliveries, cancellations, expirations, and
+failed decisions. Do not drop cancelled cues silently; cancellation is a
+timing outcome, not a random omission.
 
-This test checks implementation behavior against human-authored labels. It cannot demonstrate cognitive enhancement.
+## Secondary outcome: delayed reconstruction
 
-## Experiment B: within-person retained-reasoning pilot
-
-Primary question: after assistance is removed, does minimal intervention improve the participant's retained reasoning structure compared with silent capture?
-
-### Conditions
-
-- `CONTROL`: transcript capture; the system always stays silent.
-- `CUELOOP`: the same capture path with the deterministic controller enabled.
-
-Use matched tasks of comparable difficulty and counterbalance condition order. Keep ASR, duration, environment, and source material constant. A practical pilot is six sessions per participant, three per condition, on separate matched tasks.
-
-### Primary outcome
-
-Ten minutes after each session, with CUELOOP removed, ask the participant to reconstruct the argument or decision. Blindly score a fixed rubric:
+Score the delayed reconstruction with a rubric fixed before data collection:
 
 - explicit claims
-- relevant premises
-- valid dependencies
-- counterexamples considered
-- calibrated unresolved questions
-- unsupported factual claims
+- premises and evidence
+- dependencies between claims
+- counterexamples or alternative explanations
+- unresolved questions
+- unsupported assertions
+- global coherence
 
-The primary endpoint is the difference in delayed rubric score between conditions. Do not substitute the assisted-session output for this endpoint.
+Two raters blind to condition score each reconstruction. Report inter-rater
+agreement; adjudicate disagreements with a third rater. Pre-register the rubric
+and the primary comparison.
 
-The analyzer reports each participant's paired difference, a seeded bootstrap 95% interval, and a paired sign-randomization p-value. It marks the primary endpoint confirmatory only when every enrolled participant has at least three sessions per condition, session duration is 9.5–10.5 minutes, recall delay is 9–11 minutes, every scorer was blinded, nobody requested a stop, and no ASR/analyzer failure occurred. Smaller or deviating runs remain exploratory and retain explicit deviation reasons.
+## Controls
 
-### Safety and interaction outcomes
+- Cue wording is assigned, not selected by a model from live effectiveness.
+- Length-match `NEUTRAL` to `CUE` so duration is not confounded.
+- Randomize condition within person and clause, not by session.
+- Counterbalance task order.
+- Record speech rate, pause structure, ASR confidence, delivery latency, and
+  `decision_source` (precomputed/fallback/synchronous).
+- Exclude boundaries whose delivery arrives after the next clause begins.
+- Keep the decision model and its fallback policy identical across conditions;
+  if the model is stochastic, fix its temperature and seed.
+- Log the model identifier and version.
 
-- interruptions during productive speech
-- interventions rated disruptive
-- intervention count per minute
-- time to resume self-generation
-- participant-requested stops
-- ASR and analyzer failures
+## Analysis
 
-### Stop rules
+Primary: mixed-effects logistic regression of uptake on condition, with random
+intercepts for participant and task, and fixed effects for speech rate,
+operation, and cue position. Report the `CUE - NEUTRAL` contrast as the
+focal estimate.
 
-Stop the session on participant request, privacy uncertainty, repeated interruption during speech, or any indication that the tool is being interpreted as diagnosis or therapy. Stop policy rollout if harmful interruptions increase on held-out evaluation.
+Secondary: the same structure for rubric total and subscores. Report effect
+sizes with intervals, not only p-values.
 
-### Interpretation
+## Stopping and exclusions
 
-A small personal pilot can identify failure modes and estimate variance. It cannot establish general cognitive improvement. Report null and negative results, preserve raw task-level outcomes, and distinguish exploratory changes from preregistered analyses.
+Pre-register the target sample and stopping rule. Exclude a session only for a
+documented technical failure (ASR unavailable, TTS failure, audio loss).
+Report all exclusions and their reasons. A null result is a valid result.
 
-## Pilot tooling
+## Threats to validity
 
-Create a seeded, counterbalanced assignment:
-
-```bash
-cueloop-pilot assign \
-  --participants p1 p2 \
-  --tasks task-a task-b task-c task-d \
-  --output artifacts/pilot-assignment.json
-```
-
-Record one JSONL object per completed session using the fields demonstrated in `experiments/pilot-synthetic.jsonl`, then analyze it:
-
-```bash
-cueloop-pilot analyze experiments/pilot-results.jsonl \
-  --assignment artifacts/pilot-assignment.json \
-  --output artifacts/pilot-report.json
-```
-
-The included synthetic file only verifies the analysis pipeline. Its numbers are fabricated and must never be reported as evidence of efficacy. A report cannot be marked confirmatory unless the supplied assignment file matches every recorded participant/task/condition row.
-
-Run both conditions through the same integrated event and analysis path; only delivery differs:
-
-```bash
-cueloop-session run --condition CONTROL --event-command-json '[".build/macos-speech-events","--duration","600"]' --goal "task prompt" --consent-acknowledged
-cueloop-session run --condition CUELOOP --event-command-json '[".build/macos-speech-events","--duration","600"]' --goal "matched task prompt" --tts-command say --consent-acknowledged
-```
-
-After the ten-minute unassisted recall and blind scoring, append a verified session record:
-
-```bash
-cueloop-pilot record data/sessions/SESSION_ID \
-  --participant p1 --task task-a \
-  --claims 1 --premises 1 --dependencies 1 \
-  --counterexamples 1 --questions 1 \
-  --unsupported-claim-calibration 1 \
-  --recall-delay-minutes 10 --scorer-blinded
-```
-
-The record command derives condition, duration, session ID, participant-stop status, and intervention count from the integrity-checked manifest rather than accepting those fields from the scorer. The report marks the primary endpoint exploratory when the recall delay is outside 9–11 minutes or the scorer was not blinded.
+- The operation tagger is a proxy; manual adjudication is required for any
+  publication claim.
+- Cueing may change local wording without changing reasoning quality.
+- Repeated exposure may create demand characteristics; the neutral condition
+  controls for speaking at the boundary but not for knowing the hypothesis.
+- A single session cannot establish durable learning.
+- The local model's latency can bias which boundaries are eligible; log and
+  report latency and cancellation rates by condition.

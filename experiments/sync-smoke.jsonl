@@ -1,0 +1,13 @@
+{"type":"speech_started","at_ms":0}
+{"type":"transcript_partial","at_ms":400,"text":"この設計は前提を分けて考える"}
+{"type":"transcript_partial","at_ms":900,"text":"この設計は前提を分けて考える。結論は"}
+{"type":"tick","at_ms":1000}
+{"type":"tick","at_ms":1100}
+{"type":"tick","at_ms":1200}
+{"type":"tick","at_ms":1300}
+{"type":"tick","at_ms":1400}
+{"type":"transcript_partial","at_ms":1500,"text":"この設計は前提を分けて考える。結論は、たぶん成立する"}
+{"type":"tick","at_ms":2200}
+{"type":"transcript_final","at_ms":2600,"text":"この設計は前提を分けて考える。結論は、たぶん成立する。"}
+{"type":"speech_ended","at_ms":2800}
+{"type":"session_ended","at_ms":3000}

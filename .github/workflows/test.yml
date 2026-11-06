@@ -23,12 +23,12 @@ jobs:
         run: python -m pip install -e .
       - name: Run unit tests
         run: python -m unittest discover -s tests -v
-      - name: Run held-out policy experiment
-        run: cueloop-experiment --report /tmp/policy-report.json --policy-out /tmp/policy.json
-      - name: Run continuous-session invariants
-        run: cueloop-soak --minutes 10 --report /tmp/voice-soak.json
-      - name: Audit software completion evidence
-        run: cueloop-audit
+      - name: Replay the deterministic sync fixture
+        run: |
+          python -m cueloop.sync.cli \
+            --events experiments/sync-smoke.jsonl \
+            --report /tmp/sync-report.json \
+            --log /tmp/sync-log.jsonl
       - name: Build distribution wheel
         run: python -m pip wheel --no-deps . --wheel-dir /tmp/wheels
 

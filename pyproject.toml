@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cueloop"
-version = "0.1.0"
-description = "A minimal-intervention CLI for human-first reasoning sessions."
+version = "0.2.0"
+description = "Predict the next spoken span and insert a cue before it is said."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "All rights reserved" }
@@ -13,18 +13,7 @@ authors = [{ name = "Unjuno" }]
 dependencies = []
 
 [project.scripts]
-cueloop = "cueloop.cli:main"
-cueloop-voice = "cueloop.voice_cli:main"
-cueloop-experiment = "cueloop.experiment_cli:main"
-cueloop-structure = "cueloop.structure_cli:main"
-cueloop-ground = "cueloop.knowledge_cli:main"
-cueloop-feedback = "cueloop.feedback_cli:main"
-cueloop-soak = "cueloop.soak_cli:main"
-cueloop-delete-data = "cueloop.privacy_cli:main"
-cueloop-pilot = "cueloop.pilot_cli:main"
-cueloop-audit = "cueloop.audit_cli:main"
-cueloop-session = "cueloop.session_cli:main"
-cueloop-memory = "cueloop.memory_cli:main"
+cueloop-sync = "cueloop.sync.cli:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
@@ -34,3 +23,7 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
