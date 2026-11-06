@@ -165,8 +165,15 @@ Add audible cues with a TTS command. The cue is appended as one argument:
 
 ```bash
 cueloop-sync --events experiments/sync-smoke.jsonl \
-  --tts-command-json '["say","-v","Kyoko"]'
+  --tts-command-json '["say","-v","Kyoko"]' \
+  --tts-async
 ```
+
+`--tts-async` (default) starts the cue without blocking the event loop, so
+partial transcripts keep arriving during playback. Because the process has not
+finished, the runtime suppresses echo for a conservative estimate
+(`1000 ms + 150 ms per cue character`, capped at 8 s). `--no-tts-async` waits
+and uses the measured duration.
 
 Experimental controls:
 
@@ -222,8 +229,9 @@ honored as controls.
   delivery, when speech ends, or when the participant pauses interventions.
 - A cue that is not delivered inside its window is marked `EXPIRED`.
 - A speaker command failure is logged as `SUPPRESSED`, not as delivered.
-- After a TTS cue, transcript events inside the measured speech duration plus
-  250 ms are ignored, so the cue is not mistaken for the participant's words.
+- After a TTS cue, transcript events inside the measured or estimated speech
+  duration plus 250 ms are ignored, so the cue is not mistaken for the
+  participant's words.
 - Observations are capped by the context window; long sessions do not grow
   the prompt without bound.
 

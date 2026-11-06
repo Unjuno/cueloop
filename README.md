@@ -163,7 +163,8 @@ blinded rubric. See `docs/experiment-protocol.md` and `docs/sync-core.md`.
 - A cue is cancelled when the speaker diverges from the prediction before
   delivery, when speech ends, or when the participant pauses interventions.
 - A cue not delivered inside its window is `EXPIRED`.
-- TTS echo is suppressed for the measured cue duration plus 250 ms.
+- TTS echo is suppressed for the measured (or, in async mode, estimated) cue
+  duration plus 250 ms.
 - A speaker command failure is logged as `SUPPRESSED`, not delivered.
 - Context is capped; long sessions do not grow the prompt without bound.
 

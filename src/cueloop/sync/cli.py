@@ -154,6 +154,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--tts-command-json", help="JSON string array for the TTS command."
     )
     parser.add_argument(
+        "--tts-async",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Speak without blocking the event loop (default: enabled).",
+    )
+    parser.add_argument(
         "--log",
         type=Path,
         help="JSONL log for predictions, decisions, deliveries, outcomes.",
@@ -253,9 +259,12 @@ def _build_predictor(args: argparse.Namespace) -> Predictor:
 
 def _build_speaker(args: argparse.Namespace) -> Speaker:
     if args.tts_command_json:
-        return CommandSpeaker(_parse_command_json(args.tts_command_json))
+        return CommandSpeaker(
+            _parse_command_json(args.tts_command_json),
+            background=args.tts_async,
+        )
     if args.tts_command:
-        return CommandSpeaker(list(args.tts_command))
+        return CommandSpeaker(list(args.tts_command), background=args.tts_async)
     return NullSpeaker()
 
 
@@ -309,10 +318,11 @@ def main(argv: list[str] | None = None) -> int:
             predictor.warmup()
         if args.decision == "local" and hasattr(decision_model, "warmup"):
             decision_model.warmup()
+        speaker = _build_speaker(args)
         runtime = SyncRuntime(
             predictor=predictor,
             decision_model=decision_model,
-            speaker=_build_speaker(args),
+            speaker=speaker,
             log_path=args.log,
             pause_ms=args.pause_ms,
             early_lead_ms=args.early_lead_ms,
@@ -337,7 +347,7 @@ def main(argv: list[str] | None = None) -> int:
         except KeyboardInterrupt:
             pass
         finally:
-            for component in (predictor, decision_model):
+            for component in (speaker, predictor, decision_model):
                 close = getattr(component, "close", None)
                 if close is not None:
                     close()

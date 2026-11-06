@@ -1,4 +1,5 @@
 import json
+import sys
 import tempfile
 import time
 import unittest
@@ -12,7 +13,7 @@ from cueloop.sync.policy import (
     RuleDecisionModel,
 )
 from cueloop.sync.predictors import NgramPredictor, ScriptedPredictor
-from cueloop.sync.runtime import CallableSpeaker, SyncRuntime
+from cueloop.sync.runtime import CallableSpeaker, CommandSpeaker, SyncRuntime
 
 
 def event(event_type: str, at_ms: int, text: str = "") -> SyncEvent:
@@ -252,6 +253,32 @@ class AsyncDecisionRuntimeTests(unittest.TestCase):
         self.assertEqual(produced[0].status, "DELIVERED")
         self.assertEqual(produced[0].delivered_at_ms, 800)
         self.assertEqual(runtime.decision_model.last_source, "fallback")
+
+
+class CommandSpeakerTests(unittest.TestCase):
+    def test_background_speaker_does_not_block(self) -> None:
+        speaker = CommandSpeaker(
+            [sys.executable, "-c", "import time; time.sleep(0.2)"],
+            background=True,
+        )
+        try:
+            started = time.perf_counter()
+            speaker.speak("何に？")
+            elapsed = time.perf_counter() - started
+            self.assertLess(elapsed, 0.15)
+            self.assertGreaterEqual(speaker.last_duration_ms, 500)
+        finally:
+            speaker.close()
+
+    def test_synchronous_speaker_reports_elapsed_time(self) -> None:
+        speaker = CommandSpeaker(
+            [sys.executable, "-c", "import time; time.sleep(0.05)"],
+            background=False,
+        )
+        started = time.perf_counter()
+        speaker.speak("何に？")
+        self.assertGreaterEqual(time.perf_counter() - started, 0.05)
+        self.assertGreaterEqual(speaker.last_duration_ms, 50)
 
 
 class SyncCliTests(unittest.TestCase):

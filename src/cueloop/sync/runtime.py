@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+import threading
 import time
 from collections.abc import Callable, Sequence
 from dataclasses import replace
@@ -45,24 +46,77 @@ class CallableSpeaker:
 
 
 class CommandSpeaker:
-    """Runs a TTS command with the cue appended as one argument."""
+    """Runs a TTS command with the cue appended as one argument.
 
-    def __init__(self, command: Sequence[str], *, timeout_seconds: float = 8.0) -> None:
+    In background mode the runtime keeps consuming transcript events while the
+    cue is being spoken. The runtime uses ``last_duration_ms`` for echo
+    suppression; in background mode this is a conservative estimate because
+    the actual process has not finished yet.
+    """
+
+    def __init__(
+        self,
+        command: Sequence[str],
+        *,
+        timeout_seconds: float = 8.0,
+        background: bool = True,
+    ) -> None:
         if not command:
             raise ValueError("speaker command must not be empty")
         self.command = tuple(command)
         self.timeout_seconds = timeout_seconds
+        self.background = background
+        self.last_duration_ms = 0
+        self._processes: list[subprocess.Popen[bytes]] = []
+        self._lock = threading.Lock()
 
     def speak(self, text: str) -> None:
+        if self.background:
+            self._reap()
+            self.last_duration_ms = _estimate_speech_ms(text)
+            process = subprocess.Popen(
+                [*self.command, text],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            with self._lock:
+                self._processes.append(process)
+            return
+        started = time.perf_counter()
         completed = subprocess.run(
             [*self.command, text],
             check=False,
             capture_output=True,
             timeout=self.timeout_seconds,
         )
+        self.last_duration_ms = round((time.perf_counter() - started) * 1_000)
         if completed.returncode != 0:
             message = completed.stderr.decode("utf-8", "replace").strip()
             raise RuntimeError(f"speaker command failed: {message}")
+
+    def _reap(self) -> None:
+        with self._lock:
+            self._processes = [
+                process for process in self._processes if process.poll() is None
+            ]
+
+    def close(self) -> None:
+        with self._lock:
+            processes = list(self._processes)
+            self._processes.clear()
+        for process in processes:
+            try:
+                process.wait(timeout=self.timeout_seconds)
+            except subprocess.TimeoutExpired:
+                process.terminate()
+                try:
+                    process.wait(timeout=1)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+
+
+def _estimate_speech_ms(text: str) -> int:
+    return min(8_000, max(500, 1_000 + 150 * len(text)))
 
 
 class SyncRuntime:
@@ -476,7 +530,8 @@ class SyncRuntime:
                     "error": str(exc),
                 },
             )
-        speak_ms = round((time.perf_counter() - speak_started) * 1_000)
+        measured_ms = round((time.perf_counter() - speak_started) * 1_000)
+        speak_ms = int(getattr(self.speaker, "last_duration_ms", 0)) or measured_ms
         if speak_ms >= 20:
             self._suppress_text_until_ms = max(
                 self._suppress_text_until_ms, now_ms + speak_ms + 250
