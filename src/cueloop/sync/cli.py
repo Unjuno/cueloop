@@ -394,8 +394,14 @@ def main(argv: list[str] | None = None) -> int:
     for operation, bucket in sorted(report["per_operation"].items()):
         print(
             f"  {operation:12} delivered={bucket['delivered']} "
-            f"uptake={bucket['uptake']} rate={bucket['rate']:.2f}"
+            f"uptake={bucket['uptake']} rate={bucket['rate']:.2f} "
+            f"carryover={bucket['carryover']}"
         )
+    summary = report["summary"]
+    print(
+        f"  carryover={summary['carryover']} rate={summary['carryover_rate']:.2f} "
+        f"repertoire_growth={','.join(report['repertoire_growth']) or '-'}"
+    )
     if args.log is not None:
         print(f"log={args.log}")
     print(f"report={args.report}")

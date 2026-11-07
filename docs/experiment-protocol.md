@@ -64,7 +64,7 @@ that an externally supplied operation the speaker did not produce can enter the
 next clause and, with repetition, change the operations available in later
 uncued speech. Immediate uptake is necessary but not sufficient.
 
-## Primary outcome: operation uptake
+## Immediate outcome: operation uptake
 
 For each delivery, take the continuation window (default 8 s) and tag its
 operations with the same vocabulary used by the policy. Define **uptake** as
@@ -74,12 +74,30 @@ Also report `novel_uptake`: uptake of a cued operation that was absent from the
 speaker's text before the cue. This is the mechanism check for an external
 frame, as opposed to a cue that merely repeats what the speaker already said.
 
+## Primary persistence outcome: carryover
+
+Uptake inside the outcome window still measures immediate compliance. Define
+**carryover** as the cued operation appearing after the outcome window and
+before the next cue for that operation. This excludes text that a later cue
+could explain. Report `carryover_rate = carryover / delivered` and compare it
+across conditions as above.
+
+Carryover is stronger evidence than uptake, but it is not proof of a durable
+change: the operation may be repeated because of the task, not because the
+speaker's operational repertoire changed. Report `novel_carryover` separately:
+carryover of an operation that was absent before the cue. Also report
+`repertoire_growth`, the operations observed by session end that were absent
+before the first cue.
+
 For each operation, compare:
 
 ```text
 P(uptake | CUE) - P(uptake | NEUTRAL)
 P(uptake | CUE) - P(uptake | SILENCE)
 ```
+
+Repeat the same contrasts for carryover. Use the delayed reconstruction as the
+final test of persistence.
 
 Use clause-level paired differences and a seeded bootstrap interval. Report
 the number of eligible boundaries, deliveries, cancellations, expirations, and

@@ -145,4 +145,6 @@ class Outcome:
     continuation: str = ""
     target_operation_seen: bool = False
     prediction_followed: bool = False
+    carryover: str = ""
+    carryover_seen: bool = False
     finalized: bool = False

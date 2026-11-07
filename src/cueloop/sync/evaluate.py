@@ -21,18 +21,26 @@ def summarize(outcomes: Sequence[Outcome]) -> dict[str, object]:
     per_operation: dict[str, dict[str, float | int]] = {}
     novel = 0
     novel_uptake = 0
+    novel_carryover = 0
+    carryover = 0
     for outcome in finalized:
         operation = outcome.delivery.intervention.operation
         bucket = per_operation.setdefault(
-            operation, {"delivered": 0, "uptake": 0, "rate": 0.0}
+            operation,
+            {"delivered": 0, "uptake": 0, "carryover": 0, "rate": 0.0},
         )
         bucket["delivered"] = int(bucket["delivered"]) + 1
         if outcome.target_operation_seen:
             bucket["uptake"] = int(bucket["uptake"]) + 1
+        if outcome.carryover_seen:
+            bucket["carryover"] = int(bucket["carryover"]) + 1
+            carryover += 1
         if operation not in tag_operations(outcome.delivery.intervention.base_text):
             novel += 1
             if outcome.target_operation_seen:
                 novel_uptake += 1
+            if outcome.carryover_seen:
+                novel_carryover += 1
     for bucket in per_operation.values():
         count = int(bucket["delivered"])
         bucket["rate"] = int(bucket["uptake"]) / count if count else 0.0
@@ -45,5 +53,9 @@ def summarize(outcomes: Sequence[Outcome]) -> dict[str, object]:
         "novel_operation": novel,
         "novel_uptake": novel_uptake,
         "novel_uptake_rate": novel_uptake / novel if novel else 0.0,
+        "carryover": carryover,
+        "carryover_rate": carryover / delivered if delivered else 0.0,
+        "novel_carryover": novel_carryover,
+        "novel_carryover_rate": novel_carryover / novel if novel else 0.0,
         "per_operation": per_operation,
     }

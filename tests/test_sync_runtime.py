@@ -208,6 +208,66 @@ class EarlyInsertionTests(unittest.TestCase):
         self.assertEqual(produced[0].delivered_at_ms, 750)
 
 
+class CarryoverTests(unittest.TestCase):
+    def _runtime(self) -> SyncRuntime:
+        return SyncRuntime(
+            predictor=ScriptedPredictor({"この設計": ("だから結論は決まる。", 0.9)}),
+            decision_model=RuleDecisionModel(CanonicalAssigner()),
+            speaker=CallableSpeaker(lambda text: None),
+            cooldown_ms=2_500,
+            outcome_window_ms=1_000,
+        )
+
+    def test_counts_cued_operation_after_the_outcome_window(self) -> None:
+        runtime = self._runtime()
+        runtime.feed(event("speech_started", 0))
+        runtime.feed(event("transcript_partial", 800, "この設計は前提を分けて考える。"))
+        runtime.feed(
+            event(
+                "transcript_partial",
+                1_200,
+                "この設計は前提を分けて考える。根拠は観測データだ。",
+            )
+        )
+        runtime.feed(event("tick", 1_900))
+        runtime.feed(
+            event(
+                "transcript_partial",
+                2_000,
+                "この設計は前提を分けて考える。根拠は観測データだ。根拠を再確認する。",
+            )
+        )
+        runtime.feed(event("session_ended", 2_500))
+        outcome = runtime.outcomes[0]
+        self.assertTrue(outcome.carryover_seen)
+        self.assertIn("根拠を再確認する。", outcome.carryover)
+        report = runtime.report()
+        self.assertEqual(report["carryover"], 1)
+        self.assertIn("ground", report["repertoire_growth"])
+
+    def test_does_not_count_unrelated_text_after_the_window(self) -> None:
+        runtime = self._runtime()
+        runtime.feed(event("speech_started", 0))
+        runtime.feed(event("transcript_partial", 800, "この設計は前提を分けて考える。"))
+        runtime.feed(
+            event(
+                "transcript_partial",
+                1_200,
+                "この設計は前提を分けて考える。根拠は観測データだ。",
+            )
+        )
+        runtime.feed(event("tick", 1_900))
+        runtime.feed(
+            event(
+                "transcript_partial",
+                2_000,
+                "この設計は前提を分けて考える。根拠は観測データだ。逆に考える。",
+            )
+        )
+        runtime.feed(event("session_ended", 2_500))
+        self.assertFalse(runtime.outcomes[0].carryover_seen)
+
+
 class _SlowDecisionModel:
     label = "slow-decision"
 

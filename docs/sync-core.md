@@ -22,7 +22,7 @@ assign a cue (experimental variable)
         ↓
 speak the cue before the next clause is produced
         ↓
-record continuation → operation uptake / prediction agreement
+record continuation → uptake, carryover / prediction agreement
 ```
 
 ## Why prediction rather than classification
@@ -228,10 +228,15 @@ honored as controls.
   prediction and decision latency
 - `delivery` — `DELIVERED`, `CANCELLED`, or `EXPIRED`
 - `outcome` — continuation window, cue uptake, prediction agreement
+- `carryover` — cued operation in later uncued text, emitted at session end
 
-`--report` aggregates deliveries, cancellations, and per-operation uptake. The
-`summary` block reports prediction agreement. Every log entry carries the
-`condition` label.
+`--report` aggregates deliveries, cancellations, per-operation uptake,
+`novel_uptake`, `carryover`, and `novel_carryover`. Carryover is the cued operation appearing in
+text after the outcome window and before the next cue for that operation.
+`repertoire_before`, `repertoire_after`, and `repertoire_growth` show which
+operations were observed before the first cue and by session end.
+
+Every log entry carries the `condition` label.
 
 ## Failure behavior
 

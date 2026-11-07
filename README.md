@@ -28,7 +28,7 @@ assign a cue (experimental variable)
         ↓
 speak the cue before the next clause is produced
         ↓
-record continuation → operation uptake / prediction agreement
+record continuation → uptake, carryover / prediction agreement
 ```
 
 The two concerns are deliberately separate:
@@ -182,22 +182,30 @@ uncued speech or a delayed reconstruction.
   `decision_source` (`precomputed`/`fallback`/`synchronous`), `precomputed`
 - `delivery` — `DELIVERED`, `CANCELLED`, or `EXPIRED`
 - `outcome` — continuation window, cue uptake, prediction agreement
+- `carryover` — cued operation in later uncued text, emitted at session end
 
 `--report` aggregates deliveries, cancellations, and per-operation uptake. The
-`summary` block also reports prediction agreement and `novel_uptake`: whether a
-cued operation that was absent before the cue appears in the continuation. That
-is the closest current mechanism check for the external-framing hypothesis; it
-is still not evidence of durable writing or reasoning improvement. Carryover
-into later, uncued speech and the delayed reconstruction remain the outcomes
-that can support that claim.
+`summary` block also reports prediction agreement, `novel_uptake` (a cued
+operation absent before the cue that then appears in the continuation), and
+`carryover` (the operation appearing in later uncued speech), and
+`novel_carryover` (carryover for an operation absent before the cue).
+`repertoire_*`
+lists the operations observed before the first cue, by session end, and the
+growth between them.
+
+Immediate uptake is only the mechanism check. It is not evidence of durable
+writing or reasoning improvement. Carryover is a stronger signal but still not
+proof: a delayed unassisted reconstruction scored by a blinded rubric remains
+the outcome that can support the claim.
 
 ## Experiment
 
 Use `SILENCE`, `NEUTRAL`, and `CUE` conditions with the same predictor,
 boundary detector, assignment policy, and timing. Only the spoken content
-differs. The primary outcome is operation uptake in the continuation window.
-The secondary outcome is a delayed, unassisted reconstruction scored by a
-blinded rubric. See `docs/experiment-protocol.md` and `docs/sync-core.md`.
+differs. Immediate uptake in the continuation window is the mechanism check.
+Carryover into later uncued speech is the primary persistence outcome; a
+delayed, unassisted reconstruction scored by a blinded rubric is the final test
+of durable change. See `docs/experiment-protocol.md` and `docs/sync-core.md`.
 
 ## Failure behavior
 

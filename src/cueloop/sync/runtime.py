@@ -187,6 +187,9 @@ class SyncRuntime:
         self._last_plan_at_ms = -(10**9)
         self._suppress_text_until_ms = 0
         self._operation_delivery_at: dict[str, int] = {}
+        self._text_timeline: list[tuple[int, str]] = []
+        self._carryover_logged: set[str] = set()
+        self._session_ended = False
 
     def feed(self, event: SyncEvent) -> list[Delivery]:
         produced: list[Delivery] = []
@@ -204,11 +207,14 @@ class SyncRuntime:
             self._cancel_pending(event.at_ms, "participant requested stop")
             return produced
         if event.type is EventType.SESSION_ENDED:
+            self._session_ended = True
             if self.speaking:
                 self._commit_current_text()
                 self.speaking = False
+                self._record_text(event.at_ms)
             self._cancel_pending(event.at_ms, "session ended before delivery")
             self._finalize_outcomes(event.at_ms, force=True)
+            self._score_carryover()
             return produced
         if event.type is EventType.SPEECH_STARTED:
             self._begin_utterance(event.at_ms)
@@ -219,6 +225,7 @@ class SyncRuntime:
                 self._cancel_pending(event.at_ms, "speech ended before delivery")
                 self._commit_current_text()
                 self.speaking = False
+                self._record_text(event.at_ms)
                 self._finalize_outcomes(event.at_ms)
             return produced
 
@@ -232,6 +239,7 @@ class SyncRuntime:
                 return produced
             boundary = self.synchronizer.observe(text, now_ms=event.at_ms)
             self._current_text = text
+            self._record_text(event.at_ms)
             self._submit_prediction(event.at_ms)
             self._submit_decision(event.at_ms)
             self._update_outcomes(event.at_ms)
@@ -617,6 +625,67 @@ class SyncRuntime:
         )
         return delivery
 
+    def _record_text(self, at_ms: int) -> None:
+        text = self._full_text()
+        if self._text_timeline and self._text_timeline[-1][1] == text:
+            return
+        self._text_timeline.append((at_ms, text))
+
+    def _text_at(self, at_ms: int) -> str:
+        text = ""
+        for recorded_at, snapshot in self._text_timeline:
+            if recorded_at > at_ms:
+                break
+            text = snapshot
+        return text
+
+    def _score_carryover(self) -> None:
+        delivered = sorted(
+            (
+                delivery
+                for delivery in self.deliveries
+                if delivery.status == "DELIVERED"
+            ),
+            key=lambda delivery: delivery.delivered_at_ms,
+        )
+        for outcome in self.outcomes:
+            if not outcome.finalized:
+                continue
+            operation = outcome.delivery.intervention.operation
+            start_ms = min(outcome.window_end_ms, self.now_ms)
+            if start_ms >= self.now_ms:
+                outcome.carryover = ""
+                outcome.carryover_seen = False
+                continue
+            end_ms = self.now_ms
+            for delivery in delivered:
+                if (
+                    delivery.intervention.operation == operation
+                    and delivery.delivered_at_ms > start_ms
+                ):
+                    end_ms = min(end_ms, delivery.delivered_at_ms)
+                    break
+            start_text = self._text_at(start_ms)
+            end_text = (
+                self._full_text() if end_ms >= self.now_ms else self._text_at(end_ms)
+            )
+            prefix = longest_common_prefix(start_text, end_text)
+            outcome.carryover = end_text[prefix:]
+            outcome.carryover_seen = operation in tag_operations(outcome.carryover)
+            intervention_id = outcome.delivery.intervention.intervention_id
+            if self._session_ended and intervention_id not in self._carryover_logged:
+                self._carryover_logged.add(intervention_id)
+                self._log(
+                    "carryover",
+                    {
+                        "at_ms": self.now_ms,
+                        "intervention_id": intervention_id,
+                        "operation": operation,
+                        "carryover": outcome.carryover,
+                        "carryover_seen": outcome.carryover_seen,
+                    },
+                )
+
     def _update_outcomes(self, now_ms: int) -> None:
         full_text = self._full_text()
         for outcome in self.outcomes:
@@ -687,6 +756,7 @@ class SyncRuntime:
             handle.write(json.dumps(record, ensure_ascii=False) + "\n")
 
     def report(self) -> dict[str, object]:
+        self._score_carryover()
         delivered = [
             delivery for delivery in self.deliveries if delivery.status == "DELIVERED"
         ]
@@ -695,11 +765,14 @@ class SyncRuntime:
         for outcome in finalized:
             operation = outcome.delivery.intervention.operation
             bucket = per_operation.setdefault(
-                operation, {"delivered": 0, "uptake": 0, "rate": 0.0}
+                operation,
+                {"delivered": 0, "uptake": 0, "carryover": 0, "rate": 0.0},
             )
             bucket["delivered"] = int(bucket["delivered"]) + 1
             if outcome.target_operation_seen:
                 bucket["uptake"] = int(bucket["uptake"]) + 1
+            if outcome.carryover_seen:
+                bucket["carryover"] = int(bucket["carryover"]) + 1
         for bucket in per_operation.values():
             delivered_count = int(bucket["delivered"])
             bucket["rate"] = (
@@ -712,6 +785,16 @@ class SyncRuntime:
         median_delay = (
             boundary_delays[len(boundary_delays) // 2] if boundary_delays else None
         )
+        first_delivery = None
+        if delivered:
+            first_delivery = min(delivered, key=lambda item: item.delivered_at_ms)
+        before_text = (
+            self._text_at(first_delivery.delivered_at_ms) if first_delivery else ""
+        )
+        before_operations = set(tag_operations(before_text))
+        after_operations = set(tag_operations(self._full_text()))
+        repertoire_growth = sorted(after_operations - before_operations)
+        carryover = sum(1 for outcome in finalized if outcome.carryover_seen)
         return {
             "predictor": self.predictor.label,
             "decision_model": self.decision_model.label,
@@ -732,6 +815,11 @@ class SyncRuntime:
             "per_operation": per_operation,
             "boundary_to_delivery_ms": boundary_delays,
             "median_boundary_to_delivery_ms": median_delay,
+            "carryover": carryover,
+            "carryover_rate": carryover / len(finalized) if finalized else 0.0,
+            "repertoire_before": sorted(before_operations),
+            "repertoire_after": sorted(after_operations),
+            "repertoire_growth": repertoire_growth,
             "outcomes": [
                 {
                     "intervention_id": outcome.delivery.intervention.intervention_id,
@@ -741,6 +829,8 @@ class SyncRuntime:
                     "continuation": outcome.continuation,
                     "target_operation_seen": outcome.target_operation_seen,
                     "prediction_followed": outcome.prediction_followed,
+                    "carryover": outcome.carryover,
+                    "carryover_seen": outcome.carryover_seen,
                 }
                 for outcome in self.outcomes
             ],

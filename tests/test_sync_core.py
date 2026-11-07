@@ -109,6 +109,15 @@ class SummaryTests(unittest.TestCase):
         )
         self.assertEqual(summary["novel_operation"], 0)
 
+    def test_counts_carryover(self) -> None:
+        outcome = _outcome()
+        outcome.carryover_seen = True
+        summary = summarize([outcome])
+        self.assertEqual(summary["carryover"], 1)
+        self.assertEqual(summary["carryover_rate"], 1.0)
+        self.assertEqual(summary["novel_carryover"], 1)
+        self.assertEqual(summary["novel_carryover_rate"], 1.0)
+
 
 class VocabularyTests(unittest.TestCase):
     def test_orders_by_first_appearance_and_dedupes(self) -> None:
