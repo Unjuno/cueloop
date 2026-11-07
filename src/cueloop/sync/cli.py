@@ -76,8 +76,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--policy-model",
         type=Path,
-        default=Path("artifacts/policy.json"),
-        help="Linear policy model used by --decision linear.",
+        default=Path("artifacts/sync-policy.json"),
+        help="Linear policy model used by --decision linear (default: artifacts/sync-policy.json).",
     )
     parser.add_argument(
         "--corpus",

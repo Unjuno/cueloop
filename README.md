@@ -68,7 +68,7 @@ fast linear policy can be trained offline from the same logs:
 cueloop-sync --events experiments/sync-smoke.jsonl --decision local \
   --log logs/session-001.jsonl
 scripts/train_policy.py logs/*.jsonl \
-  --label carryover --output artifacts/policy.json
+  --label carryover --output artifacts/sync-policy.json
 cueloop-sync --events experiments/sync-smoke.jsonl --decision linear
 ```
 
@@ -158,7 +158,7 @@ The adapter emits the same event contract used by replay:
   priority operation.
 - `--decision linear`: score the missing operations with a small linear model
   trained offline from `intervention`, `outcome`, and `carryover` records.
-  `--policy-model` defaults to `artifacts/policy.json`. Train it with
+  `--policy-model` defaults to `artifacts/sync-policy.json`. Train it with
   `scripts/train_policy.py`; the default reward is `carryover`, and `uptake`
   and `blend` are also available. If the model predicts no carryover above its
   threshold, the runtime stays silent. This is a contextual reward model, not

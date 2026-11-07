@@ -38,7 +38,7 @@ if [[ "$decision" == "local" ]]; then
   args+=(--decision-fallback rule)
 fi
 if [[ "$decision" == "linear" ]]; then
-  args+=(--policy-model "${CUELOOP_POLICY_MODEL:-artifacts/policy.json}")
+  args+=(--policy-model "${CUELOOP_POLICY_MODEL:-artifacts/sync-policy.json}")
 fi
 args+=("${tts[@]}")
 

@@ -33,8 +33,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--output",
         type=Path,
-        default=ROOT / "artifacts" / "policy.json",
-        help="Output model path (default: artifacts/policy.json).",
+        default=ROOT / "artifacts" / "sync-policy.json",
+        help="Output model path (default: artifacts/sync-policy.json).",
     )
     parser.add_argument(
         "--label",

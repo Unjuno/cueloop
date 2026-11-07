@@ -106,8 +106,8 @@ decision model, and every session emits a `carryover` record. The linear policy
 is trained from these tuples:
 
 ```bash
-scripts/train_policy.py logs/*.jsonl --label carryover --output artifacts/policy.json
-cueloop-sync ... --decision linear --policy-model artifacts/policy.json
+scripts/train_policy.py logs/*.jsonl --label carryover --output artifacts/sync-policy.json
+cueloop-sync ... --decision linear --policy-model artifacts/sync-policy.json
 ```
 
 The model predicts carryover for a candidate operation and stays silent below
