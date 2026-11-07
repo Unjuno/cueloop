@@ -6,6 +6,7 @@ import argparse
 import json
 import subprocess
 import sys
+import time
 from collections.abc import Iterable
 from pathlib import Path
 
@@ -158,6 +159,11 @@ def build_parser() -> argparse.ArgumentParser:
         action=argparse.BooleanOptionalAction,
         default=True,
         help="Speak without blocking the event loop (default: enabled).",
+    )
+    parser.add_argument(
+        "--realtime",
+        action="store_true",
+        help="Pace file replay by event timestamps (ignored for live commands).",
     )
     parser.add_argument(
         "--log",
@@ -334,8 +340,13 @@ def main(argv: list[str] | None = None) -> int:
             condition=args.condition_label,
         )
         last_at_ms = 0
+        replay_started = time.monotonic()
         try:
             for event in _parse_events(_event_lines(args)):
+                if args.realtime and args.events is not None:
+                    delay = replay_started + event.at_ms / 1_000 - time.monotonic()
+                    if delay > 0:
+                        time.sleep(delay)
                 last_at_ms = max(last_at_ms, event.at_ms)
                 produced = runtime.feed(event)
                 for delivery in produced:

@@ -333,6 +333,32 @@ class SyncCliTests(unittest.TestCase):
             self.assertIn("delivered", report)
             self.assertTrue(log_path.exists())
 
+    def test_realtime_paces_file_replay(self) -> None:
+        lines = [
+            {"type": "speech_started", "at_ms": 0},
+            {"type": "tick", "at_ms": 120},
+            {"type": "session_ended", "at_ms": 120},
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            events = root / "events.jsonl"
+            events.write_text(
+                "\n".join(json.dumps(line) for line in lines) + "\n",
+                encoding="utf-8",
+            )
+            started = time.perf_counter()
+            status = sync_cli.main(
+                [
+                    "--events",
+                    str(events),
+                    "--realtime",
+                    "--report",
+                    str(root / "report.json"),
+                ]
+            )
+            self.assertEqual(status, 0)
+            self.assertGreaterEqual(time.perf_counter() - started, 0.1)
+
     def test_invalid_event_line_exits_with_error(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             events = Path(directory) / "events.jsonl"

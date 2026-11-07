@@ -70,6 +70,31 @@ cueloop-sync --events experiments/sync-smoke.jsonl \
   --condition-label CUE
 ```
 
+## Demo
+
+Run the deterministic replay in real time (about 3 seconds):
+
+```bash
+scripts/demo.sh replay
+```
+
+The script uses the local `.venv` entry point when present, speaks the cue with
+macOS `say`, and writes logs under `artifacts/demo/`. Set `CUELOOP_TTS=0` to
+mute, or `CUELOOP_DECISION=local` to use the local model with a rule fallback.
+
+Run the live microphone demo (speak a sentence containing `結論は`, `つまり`,
+`前提は`, or `逆に`):
+
+```bash
+scripts/demo.sh live 45
+```
+
+This requires `.build/macos-speech-events`; build it with the command in the
+next section. `scripts/demo.sh live 10` is a quick check.
+
+`cueloop-sync --realtime --events <file>` paces any replay by event timestamps;
+without it, replay runs as fast as possible.
+
 ## Live macOS session
 
 Build the microphone adapter once:
@@ -172,6 +197,7 @@ blinded rubric. See `docs/experiment-protocol.md` and `docs/sync-core.md`.
 
 ```text
 src/cueloop/sync/       event loop, predictors, policy, runtime, CLI
+scripts/demo.sh         replay and live microphone demo
 tools/macos_speech_events.swift  macOS ASR adapter
 tests/                  deterministic unit and replay tests
 experiments/            replay fixtures

@@ -144,6 +144,10 @@ cueloop-sync --events experiments/sync-smoke.jsonl \
   --report artifacts/sync-report.json
 ```
 
+Add `--realtime` to pace the replay by event timestamps instead of running as
+fast as possible. `scripts/demo.sh replay` wraps this for a short audible demo,
+and `scripts/demo.sh live 45` runs the macOS microphone loop.
+
 Use a local OpenAI-compatible model for the decision:
 
 ```bash
