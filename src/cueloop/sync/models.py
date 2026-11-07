@@ -107,6 +107,7 @@ class Intervention:
     """A scheduled cue that will be spoken if the speaker has not diverged."""
 
     intervention_id: str
+    detected_at_ms: int
     operation: str
     requested_operation: str
     cue: str

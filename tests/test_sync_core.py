@@ -5,7 +5,8 @@ import time
 import unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from cueloop.sync.models import Prediction, SyncState
+from cueloop.sync.evaluate import summarize
+from cueloop.sync.models import Delivery, Intervention, Outcome, Prediction, SyncState
 from cueloop.sync.policy import (
     AlternateAssigner,
     AsyncDecisionModel,
@@ -56,6 +57,57 @@ def _state(**overrides):
     }
     values.update(overrides)
     return SyncState(**values)
+
+
+def _outcome(
+    *,
+    operation: str = "ground",
+    base_text: str = "この設計は前提を分けて考える。",
+    continuation: str = "根拠は観測データだ。",
+) -> Outcome:
+    prediction = _prediction("だから結論は決まる。", base_length=len(base_text))
+    intervention = Intervention(
+        intervention_id="cue-test",
+        detected_at_ms=900,
+        operation=operation,
+        requested_operation=operation,
+        cue="根拠は？",
+        reason="test",
+        confidence=0.9,
+        scheduled_at_ms=1_000,
+        expires_at_ms=2_000,
+        insertion_delay_ms=100,
+        assignment="canonical",
+        base_text=base_text,
+        prediction=prediction,
+    )
+    delivery = Delivery(
+        intervention=intervention,
+        status="DELIVERED",
+        delivered_at_ms=1_000,
+        text_at_delivery=base_text,
+    )
+    return Outcome(
+        delivery=delivery,
+        window_end_ms=3_000,
+        continuation=continuation,
+        target_operation_seen=True,
+        finalized=True,
+    )
+
+
+class SummaryTests(unittest.TestCase):
+    def test_counts_novel_operation_uptake(self) -> None:
+        summary = summarize([_outcome()])
+        self.assertEqual(summary["novel_operation"], 1)
+        self.assertEqual(summary["novel_uptake"], 1)
+        self.assertEqual(summary["novel_uptake_rate"], 1.0)
+
+    def test_operation_already_in_base_text_is_not_novel(self) -> None:
+        summary = summarize(
+            [_outcome(base_text="根拠はある。この設計は前提を分ける。")]
+        )
+        self.assertEqual(summary["novel_operation"], 0)
 
 
 class VocabularyTests(unittest.TestCase):

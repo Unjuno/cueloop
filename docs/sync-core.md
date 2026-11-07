@@ -132,7 +132,15 @@ The smoke replay originally delivered at 1400–1500 ms with an unprepared
 local decision. With async prediction, async decision, and the rule fallback,
 the same 900 ms boundary delivers at 1000 ms; the local model is used when its
 pre-computed result exists, otherwise the rule fallback keeps the timing
-budget.
+budget. The 1000 ms number is the fixture boundary (900 ms) plus the default
+insertion delay (100 ms), not a latency target.
+
+The relevant measure is boundary-relative: `boundary_at_ms`,
+`boundary_to_delivery_ms`, and `text_at_delivery` show whether the cue landed
+while the speaker was still in the announced operation or had already moved
+into the next content. An inserted cue is anticipatory by design. It is not a
+post-hoc summary: the external operation must be heard before the next clause
+is committed, or the experiment tests a different mechanism.
 
 ## Run
 

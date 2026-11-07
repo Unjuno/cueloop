@@ -477,6 +477,7 @@ class SyncRuntime:
                 "reason": intervention.reason,
                 "confidence": intervention.confidence,
                 "scheduled_at_ms": intervention.scheduled_at_ms,
+                "boundary_at_ms": intervention.detected_at_ms,
                 "prediction_latency_ms": prediction_latency_ms,
                 "prediction_penalty_ms": prediction_penalty_ms,
                 "prediction_precomputed": prediction_precomputed,
@@ -556,6 +557,8 @@ class SyncRuntime:
                 "cue": intervention.cue,
                 "assignment": intervention.assignment,
                 "text_at_delivery": delivery.text_at_delivery,
+                "boundary_at_ms": intervention.detected_at_ms,
+                "boundary_to_delivery_ms": (now_ms - intervention.detected_at_ms),
                 "speak_ms": speak_ms,
                 "echo_suppression_until_ms": self._suppress_text_until_ms
                 if speak_ms >= 20
@@ -702,6 +705,13 @@ class SyncRuntime:
             bucket["rate"] = (
                 int(bucket["uptake"]) / delivered_count if delivered_count else 0.0
             )
+        boundary_delays = sorted(
+            delivery.delivered_at_ms - delivery.intervention.detected_at_ms
+            for delivery in delivered
+        )
+        median_delay = (
+            boundary_delays[len(boundary_delays) // 2] if boundary_delays else None
+        )
         return {
             "predictor": self.predictor.label,
             "decision_model": self.decision_model.label,
@@ -720,6 +730,8 @@ class SyncRuntime:
                 1 for delivery in self.deliveries if delivery.status == "SUPPRESSED"
             ),
             "per_operation": per_operation,
+            "boundary_to_delivery_ms": boundary_delays,
+            "median_boundary_to_delivery_ms": median_delay,
             "outcomes": [
                 {
                     "intervention_id": outcome.delivery.intervention.intervention_id,

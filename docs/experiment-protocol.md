@@ -50,11 +50,29 @@ The system must remain silent when the predictor or decision model fails. A
 failed decision is not a `SILENCE` condition; log it separately and exclude it
 from the condition comparison.
 
+## Why the timing is boundary-relative
+
+The intervention is anticipatory. The cue must be heard at the moment the
+speaker announces an operation, before the next clause is produced. A fixed
+delivery latency is not the target: the same absolute millisecond can be early
+in one pause and late in another. Record `boundary_at_ms`,
+`boundary_to_delivery_ms`, and `text_at_delivery`; exclude deliveries that
+arrive after the next clause begins.
+
+The hypothesis is not that the cue summarizes the speaker's own thought. It is
+that an externally supplied operation the speaker did not produce can enter the
+next clause and, with repetition, change the operations available in later
+uncued speech. Immediate uptake is necessary but not sufficient.
+
 ## Primary outcome: operation uptake
 
 For each delivery, take the continuation window (default 8 s) and tag its
 operations with the same vocabulary used by the policy. Define **uptake** as
 the cued operation appearing in the continuation.
+
+Also report `novel_uptake`: uptake of a cued operation that was absent from the
+speaker's text before the cue. This is the mechanism check for an external
+frame, as opposed to a cue that merely repeats what the speaker already said.
 
 For each operation, compare:
 

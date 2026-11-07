@@ -438,6 +438,7 @@ class LocalLLMDecisionModel:
         ).hexdigest()[:12]
         return Intervention(
             intervention_id=f"cue-{digest}",
+            detected_at_ms=state.now_ms,
             operation=actual_operation,
             requested_operation=requested_operation,
             cue=cue,
@@ -510,6 +511,7 @@ class RuleDecisionModel:
         ).hexdigest()[:12]
         return Intervention(
             intervention_id=f"cue-{digest}",
+            detected_at_ms=state.now_ms,
             operation=operation,
             requested_operation=requested_operation,
             cue=cue,

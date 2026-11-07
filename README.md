@@ -47,7 +47,7 @@ can rank cues offline; the experiment assigns them.
 ```bash
 python -m pip install -e .
 
-# Deterministic replay: predicts, decides, delivers a cue at 1000 ms.
+# Deterministic replay: at the 900 ms boundary, delivers a cue 100 ms later.
 cueloop-sync --events experiments/sync-smoke.jsonl \
   --log artifacts/sync-smoke.jsonl \
   --report artifacts/sync-report.json
@@ -154,9 +154,22 @@ The adapter emits the same event contract used by replay:
 The reliable low-latency live configuration is n-gram prediction plus the local
 decision model with async decision. Measured on an M-series laptop with Ollama,
 a 1.5B decision model adds roughly 0.2–0.6 s; `--insertion-delay-ms` defaults to
-100 ms. On the smoke replay the boundary at 900 ms now delivers at 1000 ms
-(rule fallback); a ready pre-computed decision removes the model latency from
-the schedule.
+100 ms.
+
+There is no fixed delivery-latency target. The smoke fixture has a boundary at
+900 ms and delivers at 1000 ms because the insertion delay is 100 ms; that is a
+property of the fixture, not a goal. The meaningful timing is relative to the
+announced operation: the cue should start at the boundary and land before the
+next clause is produced. The delivery log records `boundary_at_ms` and
+`boundary_to_delivery_ms` so the timing can be checked against the transcript
+(`text_at_delivery`) instead of optimized for a round number.
+
+Real-time insertion exists because the hypothesis is anticipatory: an external
+cue must frame the clause that is about to be produced. A later summary or
+post-hoc suggestion would test a different mechanism. The experiment asks
+whether hearing an operation the speaker did not produce changes the next
+clause, and whether that externally supplied operation carries into later,
+uncued speech or a delayed reconstruction.
 
 ## Output and measurement
 
@@ -171,8 +184,12 @@ the schedule.
 - `outcome` — continuation window, cue uptake, prediction agreement
 
 `--report` aggregates deliveries, cancellations, and per-operation uptake. The
-`summary` block also reports prediction agreement. These are mechanism checks,
-not evidence of improved writing or reasoning.
+`summary` block also reports prediction agreement and `novel_uptake`: whether a
+cued operation that was absent before the cue appears in the continuation. That
+is the closest current mechanism check for the external-framing hypothesis; it
+is still not evidence of durable writing or reasoning improvement. Carryover
+into later, uncued speech and the delayed reconstruction remain the outcomes
+that can support that claim.
 
 ## Experiment
 

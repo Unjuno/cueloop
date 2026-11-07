@@ -55,6 +55,8 @@ class RuntimeDeliveryTests(unittest.TestCase):
         self.assertEqual(produced[0].intervention.cue, "根拠は？")
         self.assertEqual(produced[0].intervention.operation, "ground")
         self.assertEqual(speaker.spoken, ["根拠は？"])
+        report = runtime.report()
+        self.assertEqual(report["median_boundary_to_delivery_ms"], 0)
 
     def test_records_uptake_in_continuation(self) -> None:
         runtime, _ = build_runtime()

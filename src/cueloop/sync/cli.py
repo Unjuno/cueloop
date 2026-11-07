@@ -353,7 +353,8 @@ def main(argv: list[str] | None = None) -> int:
                     print(
                         f"[{delivery.delivered_at_ms:>6}ms] {delivery.status:9} "
                         f"cue={delivery.intervention.cue!r} "
-                        f"op={delivery.intervention.operation}"
+                        f"op={delivery.intervention.operation} "
+                        f"+{delivery.delivered_at_ms - delivery.intervention.detected_at_ms}ms"
                     )
         except KeyboardInterrupt:
             pass
