@@ -14,10 +14,12 @@ from .evaluate import summarize
 from .models import SyncEvent
 from .policy import (
     AsyncDecisionModel,
+    LinearDecisionModel,
     LocalLLMDecisionModel,
     RuleDecisionModel,
     build_assigner,
 )
+from .policy_model import LinearPolicyModel
 from .predictors import AsyncPredictor, LocalLLMPredictor, NgramPredictor, Predictor
 from .runtime import CommandSpeaker, NullSpeaker, Speaker, SyncRuntime
 
@@ -42,7 +44,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--decision",
-        choices=["rule", "local"],
+        choices=["rule", "linear", "local"],
         default="rule",
         help="Timing/cue decision backend (default: rule).",
     )
@@ -70,6 +72,12 @@ def build_parser() -> argparse.ArgumentParser:
         choices=["rule", "none"],
         default="rule",
         help="Instant fallback when a precomputed local decision is not ready.",
+    )
+    parser.add_argument(
+        "--policy-model",
+        type=Path,
+        default=Path("artifacts/policy.json"),
+        help="Linear policy model used by --decision linear.",
     )
     parser.add_argument(
         "--corpus",
@@ -284,7 +292,15 @@ def main(argv: list[str] | None = None) -> int:
             cue=args.cue,
             max_characters=args.max_cue_characters,
         )
-        if args.decision == "local":
+        if args.decision == "linear":
+            decision_model = LinearDecisionModel(
+                LinearPolicyModel.load(args.policy_model),
+                assigner,
+                max_characters=args.max_cue_characters,
+                delivery_window_ms=args.delivery_window_ms,
+                insertion_delay_ms=args.insertion_delay_ms,
+            )
+        elif args.decision == "local":
             decision_model = LocalLLMDecisionModel(
                 base_url=args.base_url,
                 model=args.model,

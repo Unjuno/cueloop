@@ -99,6 +99,25 @@ P(uptake | CUE) - P(uptake | SILENCE)
 Repeat the same contrasts for carryover. Use the delayed reconstruction as the
 final test of persistence.
 
+## Training the fast intervention policy
+
+Every intervention log now contains the observation features used by the
+decision model, and every session emits a `carryover` record. The linear policy
+is trained from these tuples:
+
+```bash
+scripts/train_policy.py logs/*.jsonl --label carryover --output artifacts/policy.json
+cueloop-sync ... --decision linear --policy-model artifacts/policy.json
+```
+
+The model predicts carryover for a candidate operation and stays silent below
+its threshold. It is deliberately a reward model over the actions that were
+actually logged. That creates selection bias: untried operations have no
+outcome. For causal claims, randomize cue assignment (`--assignment random`) or
+run an explicit exploration condition, and evaluate the policy off-policy
+before trusting it live. The local LLM can remain the semantic prior or the
+exploration policy; the linear model is the fast exploitation path.
+
 Use clause-level paired differences and a seeded bootstrap interval. Report
 the number of eligible boundaries, deliveries, cancellations, expirations, and
 failed decisions. Do not drop cancelled cues silently; cancellation is a

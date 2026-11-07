@@ -35,7 +35,7 @@ The two concerns are deliberately separate:
 
 | Concern | Owner | Experimental role |
 | --- | --- | --- |
-| When to intervene | `RuleDecisionModel` or `LocalLLMDecisionModel` | held comparable across conditions |
+| When to intervene | `RuleDecisionModel`, `LinearDecisionModel`, or `LocalLLMDecisionModel` | held comparable across conditions |
 | What cue is heard | `CueAssigner` | manipulation (canonical, fixed, alternate, randomized) |
 
 A model must not choose the cue from measured effectiveness in a live
@@ -60,6 +60,21 @@ is Ollama at `http://127.0.0.1:11434`; the model is chosen from the server's lis
 cueloop-sync --events experiments/sync-smoke.jsonl \
   --decision local
 ```
+
+The local LLM is a semantic prior, but it is too slow for every boundary. A
+fast linear policy can be trained offline from the same logs:
+
+```bash
+cueloop-sync --events experiments/sync-smoke.jsonl --decision local \
+  --log logs/session-001.jsonl
+scripts/train_policy.py logs/*.jsonl \
+  --label carryover --output artifacts/policy.json
+cueloop-sync --events experiments/sync-smoke.jsonl --decision linear
+```
+
+The linear backend scores only the operations the rule policy considers
+missing. It is a dot product plus a threshold, so it does not add LLM latency
+at the boundary.
 
 Record the experimental condition in every log entry:
 
@@ -141,6 +156,13 @@ The adapter emits the same event contract used by replay:
   fail the JSON contract; the log shows the fallback source.
 - `--decision rule` (default): insert when the predicted next span omits a
   priority operation.
+- `--decision linear`: score the missing operations with a small linear model
+  trained offline from `intervention`, `outcome`, and `carryover` records.
+  `--policy-model` defaults to `artifacts/policy.json`. Train it with
+  `scripts/train_policy.py`; the default reward is `carryover`, and `uptake`
+  and `blend` are also available. If the model predicts no carryover above its
+  threshold, the runtime stays silent. This is a contextual reward model, not
+  full RL: causal claims still require randomized cues and exploration.
 - `--early-lead-ms` (default 0): plan a cue before the pause threshold is
   reached, using the current prediction. This is a predicted early insert; the
   speaker may resume first, so keep the lead small and keep cancellation on.
@@ -151,10 +173,10 @@ The adapter emits the same event contract used by replay:
   ready, `--decision-fallback rule` (default) keeps the cue on time;
   `--decision-fallback none` waits for the local model.
 
-The reliable low-latency live configuration is n-gram prediction plus the local
-decision model with async decision. Measured on an M-series laptop with Ollama,
-a 1.5B decision model adds roughly 0.2–0.6 s; `--insertion-delay-ms` defaults to
-100 ms.
+The reliable low-latency live configuration is n-gram prediction plus a fast
+decision backend. A local 1.5B decision model measured on an M-series laptop
+adds roughly 0.2–0.6 s even with async pre-computation; that is why the linear
+policy exists. `--insertion-delay-ms` defaults to 100 ms.
 
 There is no fixed delivery-latency target. The smoke fixture has a boundary at
 900 ms and delivers at 1000 ms because the insertion delay is 100 ms; that is a
@@ -223,6 +245,7 @@ of durable change. See `docs/experiment-protocol.md` and `docs/sync-core.md`.
 ```text
 src/cueloop/sync/       event loop, predictors, policy, runtime, CLI
 scripts/demo.sh         replay and live microphone demo
+scripts/train_policy.py offline linear policy trainer
 tools/macos_speech_events.swift  macOS ASR adapter
 tests/                  deterministic unit and replay tests
 experiments/            replay fixtures

@@ -19,6 +19,7 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from .models import Intervention, SyncState
+from .policy_model import LinearPolicyModel, PolicyObservation
 from .predictors import PREFERRED_DECISION_MODELS, chat_completion, resolve_model
 from .vocabulary import (
     CUE_BY_OPERATION,
@@ -520,6 +521,73 @@ class RuleDecisionModel:
                 "the next clause is produced"
             ),
             confidence=prediction.confidence,
+            scheduled_at_ms=scheduled_at,
+            expires_at_ms=scheduled_at + self.delivery_window_ms,
+            insertion_delay_ms=self.insertion_delay_ms,
+            assignment=self.assigner.label,
+            base_text=state.text,
+            prediction=prediction,
+        )
+
+
+class LinearDecisionModel:
+    """Fast learned policy: score each missing operation with a linear model.
+
+    The model is trained offline from logged states and carryover outcomes.
+    Inference is a dot product over a fixed feature vector, so it can run at
+    the boundary without the latency of a local LLM. It deliberately only
+    chooses among operations the prediction-gap policy would consider.
+    """
+
+    def __init__(
+        self,
+        model: LinearPolicyModel,
+        assigner: CueAssigner,
+        *,
+        delivery_window_ms: int = 1_200,
+        insertion_delay_ms: int = 0,
+        max_characters: int = 8,
+    ) -> None:
+        if delivery_window_ms < 1:
+            raise ValueError("delivery_window_ms must be positive")
+        if insertion_delay_ms < 0:
+            raise ValueError("insertion_delay_ms must be non-negative")
+        self.model = model
+        self.assigner = assigner
+        self.delivery_window_ms = delivery_window_ms
+        self.insertion_delay_ms = insertion_delay_ms
+        self.max_characters = max_characters
+        self.label = f"linear-policy({model.label})"
+
+    def decide(self, state: SyncState) -> Intervention | None:
+        prediction = state.prediction
+        if not state.at_boundary or prediction is None or state.diverged:
+            return None
+        if not _span_has_content(prediction.span):
+            return None
+        observation = PolicyObservation.from_state(state)
+        candidates = observation.missing_operations()
+        chosen = self.model.choose(observation, candidates)
+        if chosen is None:
+            return None
+        requested_operation, score = chosen
+        cue = self.assigner.assign(requested_operation)
+        operation = operation_for_cue(cue) or "unmapped"
+        scheduled_at = state.now_ms + self.insertion_delay_ms
+        digest = hashlib.sha256(
+            f"{state.utterance_id}:{state.now_ms}:{operation}:{cue}:{state.text}".encode()
+        ).hexdigest()[:12]
+        return Intervention(
+            intervention_id=f"cue-{digest}",
+            detected_at_ms=state.now_ms,
+            operation=operation,
+            requested_operation=requested_operation,
+            cue=cue,
+            reason=(
+                f"linear policy chose {requested_operation} "
+                f"(carryover probability {score:.2f})"
+            ),
+            confidence=score,
             scheduled_at_ms=scheduled_at,
             expires_at_ms=scheduled_at + self.delivery_window_ms,
             insertion_delay_ms=self.insertion_delay_ms,

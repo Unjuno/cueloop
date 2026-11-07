@@ -32,9 +32,16 @@ from .policy import (
     CueAssigner,
     DecisionModel,
     FixedAssigner,
+    LinearDecisionModel,
     LocalLLMDecisionModel,
     RandomAssigner,
     RuleDecisionModel,
+)
+from .policy_model import (
+    LinearPolicyModel,
+    PolicyObservation,
+    samples_from_records,
+    train_linear_policy,
 )
 from .predictors import (
     AsyncPredictor,
@@ -60,10 +67,13 @@ __all__ = [
     "EventType",
     "FixedAssigner",
     "Intervention",
+    "LinearDecisionModel",
+    "LinearPolicyModel",
     "LocalLLMDecisionModel",
     "LocalLLMPredictor",
     "NgramPredictor",
     "Outcome",
+    "PolicyObservation",
     "Prediction",
     "Predictor",
     "RandomAssigner",
@@ -73,6 +83,8 @@ __all__ = [
     "SyncRuntime",
     "SyncState",
     "Synchronizer",
+    "samples_from_records",
     "summarize",
     "tag_operations",
+    "train_linear_policy",
 ]

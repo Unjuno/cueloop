@@ -37,6 +37,9 @@ args=(--log "$log" --report "$report" --decision "$decision")
 if [[ "$decision" == "local" ]]; then
   args+=(--decision-fallback rule)
 fi
+if [[ "$decision" == "linear" ]]; then
+  args+=(--policy-model "${CUELOOP_POLICY_MODEL:-artifacts/policy.json}")
+fi
 args+=("${tts[@]}")
 
 case "$mode" in

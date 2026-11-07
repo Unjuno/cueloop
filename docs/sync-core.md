@@ -46,8 +46,10 @@ linguistic-framing intervention the project is trying to measure.
 - `cueloop.sync.synchronizer` — clause boundaries, trigger phrases, divergence
 - `cueloop.sync.predictors` — `NgramPredictor`, `LocalLLMPredictor`,
   `AsyncPredictor`, `ScriptedPredictor`
-- `cueloop.sync.policy` — `RuleDecisionModel`, `LocalLLMDecisionModel`,
-  `AsyncDecisionModel`, and cue assignment
+- `cueloop.sync.policy` — `RuleDecisionModel`, `LinearDecisionModel`,
+  `LocalLLMDecisionModel`, `AsyncDecisionModel`, and cue assignment
+- `cueloop.sync.policy_model` — policy observation features, the linear
+  carryover model, and its offline trainer
 - `cueloop.sync.runtime` — event loop, delivery, cancellation, echo
   suppression, logging
 - `cueloop.sync.evaluate` — uptake and prediction-agreement summary
@@ -57,7 +59,7 @@ linguistic-framing intervention the project is trying to measure.
 
 | Concern | Owner | Experimental role |
 | --- | --- | --- |
-| When to intervene | `RuleDecisionModel` or `LocalLLMDecisionModel` | held comparable across conditions |
+| When to intervene | `RuleDecisionModel`, `LinearDecisionModel`, or `LocalLLMDecisionModel` | held comparable across conditions |
 | What cue is heard | `CueAssigner` | manipulation (canonical, fixed, alternate, randomized) |
 
 Do not let a model choose the cue from measured effectiveness in a live
@@ -68,6 +70,17 @@ bias. Effectiveness can rank cues offline; the experiment should assign them.
 
 `RuleDecisionModel` inserts when the predicted next span omits the highest
 priority operation not already present in the clause or recent deliveries.
+
+`LinearDecisionModel` scores the missing operations with a small linear model
+trained offline from logged interventions. It is a contextual reward model:
+the log records the observation, the chosen operation, and the carryover
+outcome. It chooses the highest-scoring missing operation only if the predicted
+carryover probability exceeds the model threshold; otherwise it stays silent.
+Inference is a dot product, so it adds no model latency at the boundary. The
+trainer is `scripts/train_policy.py`; `--label carryover` is the default,
+`uptake` and `blend` are alternatives. Because only chosen actions are logged,
+this is not yet full off-policy RL. Causal comparisons still require randomized
+cues or explicit exploration.
 
 `LocalLLMDecisionModel` sends the local model a narrowed prompt containing only
 the missing operations. It returns one of:
@@ -118,9 +131,10 @@ boundary the cue is scheduled at the boundary; with early insertion it is
 scheduled at the tick that enters the lead window. The feature only fires when
 a prediction exists.
 
-The reliable live configuration is n-gram prediction plus the local decision
-model. The local decision model adds roughly 0.2–0.6 s for a 1.5B model on an
-M-series laptop. The default insertion delay is 100 ms. Without a speculative
+The reliable live configuration is n-gram prediction plus a fast decision
+backend. A local 1.5B decision model adds roughly 0.2–0.6 s on an M-series
+laptop even with pre-computation; that latency is why `LinearDecisionModel`
+exists. The linear policy is trained offline and adds only a dot product. The default insertion delay is 100 ms. Without a speculative
 decision the cue is scheduled at the boundary plus the decision and predictor
 latency plus the insertion delay; with `AsyncDecisionModel` and a ready
 decision, the model latency is removed from the schedule. If the speaker has
