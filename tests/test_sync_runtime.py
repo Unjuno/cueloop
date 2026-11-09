@@ -243,7 +243,12 @@ class CarryoverTests(unittest.TestCase):
         self.assertIn("根拠を再確認する。", outcome.carryover)
         report = runtime.report()
         self.assertEqual(report["carryover"], 1)
+        self.assertEqual(report["novel_carryover"], 1)
         self.assertIn("ground", report["repertoire_growth"])
+        self.assertEqual(
+            report["outcomes"][0]["base_text"], "この設計は前提を分けて考える。"
+        )
+        self.assertTrue(report["outcomes"][0]["novel_operation"])
 
     def test_does_not_count_unrelated_text_after_the_window(self) -> None:
         runtime = self._runtime()

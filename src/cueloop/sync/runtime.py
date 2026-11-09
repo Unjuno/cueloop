@@ -741,6 +741,8 @@ class SyncRuntime:
                 "at_ms": now_ms,
                 "intervention_id": outcome.delivery.intervention.intervention_id,
                 "operation": outcome.delivery.intervention.operation,
+                "requested_operation": outcome.delivery.intervention.requested_operation,
+                "base_text": outcome.delivery.intervention.base_text,
                 "continuation": outcome.continuation,
                 "target_operation_seen": outcome.target_operation_seen,
                 "prediction_followed": outcome.prediction_followed,
@@ -764,7 +766,13 @@ class SyncRuntime:
         if self.log_path is None:
             return
         self.log_path.parent.mkdir(parents=True, exist_ok=True)
-        record = {"kind": kind, **payload}
+        record = {
+            "kind": kind,
+            "condition": self.condition,
+            "decision_model": self.decision_model.label,
+            "predictor": self.predictor.label,
+            **payload,
+        }
         with self.log_path.open("a", encoding="utf-8") as handle:
             handle.write(json.dumps(record, ensure_ascii=False) + "\n")
 
@@ -808,6 +816,16 @@ class SyncRuntime:
         after_operations = set(tag_operations(self._full_text()))
         repertoire_growth = sorted(after_operations - before_operations)
         carryover = sum(1 for outcome in finalized if outcome.carryover_seen)
+        novel_operation = novel_uptake = novel_carryover = 0
+        for outcome in finalized:
+            intervention = outcome.delivery.intervention
+            if intervention.operation in tag_operations(intervention.base_text):
+                continue
+            novel_operation += 1
+            if outcome.target_operation_seen:
+                novel_uptake += 1
+            if outcome.carryover_seen:
+                novel_carryover += 1
         return {
             "predictor": self.predictor.label,
             "decision_model": self.decision_model.label,
@@ -830,6 +848,15 @@ class SyncRuntime:
             "median_boundary_to_delivery_ms": median_delay,
             "carryover": carryover,
             "carryover_rate": carryover / len(finalized) if finalized else 0.0,
+            "novel_operation": novel_operation,
+            "novel_uptake": novel_uptake,
+            "novel_uptake_rate": (
+                novel_uptake / novel_operation if novel_operation else 0.0
+            ),
+            "novel_carryover": novel_carryover,
+            "novel_carryover_rate": (
+                novel_carryover / novel_operation if novel_operation else 0.0
+            ),
             "repertoire_before": sorted(before_operations),
             "repertoire_after": sorted(after_operations),
             "repertoire_growth": repertoire_growth,
@@ -837,8 +864,14 @@ class SyncRuntime:
                 {
                     "intervention_id": outcome.delivery.intervention.intervention_id,
                     "operation": outcome.delivery.intervention.operation,
+                    "requested_operation": outcome.delivery.intervention.requested_operation,
                     "cue": outcome.delivery.intervention.cue,
                     "assignment": outcome.delivery.intervention.assignment,
+                    "base_text": outcome.delivery.intervention.base_text,
+                    "novel_operation": (
+                        outcome.delivery.intervention.operation
+                        not in tag_operations(outcome.delivery.intervention.base_text)
+                    ),
                     "continuation": outcome.continuation,
                     "target_operation_seen": outcome.target_operation_seen,
                     "prediction_followed": outcome.prediction_followed,
