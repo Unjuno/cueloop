@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import math
+import random
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -393,6 +394,111 @@ def train_linear_policy(
     model.metadata["threshold"] = threshold
     model.metadata["feature_names"] = list(FEATURE_NAMES)
     return model
+
+
+def _roc_auc(scores: Sequence[float], labels: Sequence[bool]) -> float | None:
+    positives = [score for score, label in zip(scores, labels) if label]
+    negatives = [score for score, label in zip(scores, labels) if not label]
+    if not positives or not negatives:
+        return None
+    credit = 0.0
+    for positive in positives:
+        for negative in negatives:
+            if positive > negative:
+                credit += 1.0
+            elif positive == negative:
+                credit += 0.5
+    return credit / (len(positives) * len(negatives))
+
+
+def evaluate_policy(
+    model: LinearPolicyModel,
+    samples: Sequence[TrainingSample],
+    *,
+    threshold: float | None = None,
+) -> dict[str, object]:
+    """Score a fitted policy on labeled samples.
+
+    The metrics describe the logged actions only. Because untried operations
+    have no outcome, this is not an off-policy estimate of the live policy.
+    """
+    if not samples:
+        raise ValueError("at least one sample is required for evaluation")
+    cutoff = model.threshold if threshold is None else threshold
+    scores = [model.score(sample.observation, sample.operation) for sample in samples]
+    labels = [sample.reward >= 0.5 for sample in samples]
+    true_positive = true_negative = false_positive = false_negative = 0
+    for score, label in zip(scores, labels):
+        predicted = score >= cutoff
+        if predicted and label:
+            true_positive += 1
+        elif predicted and not label:
+            false_positive += 1
+        elif not predicted and label:
+            false_negative += 1
+        else:
+            true_negative += 1
+    precision = (
+        true_positive / (true_positive + false_positive)
+        if true_positive + false_positive
+        else 0.0
+    )
+    recall = (
+        true_positive / (true_positive + false_negative)
+        if true_positive + false_negative
+        else 0.0
+    )
+    accuracy = (true_positive + true_negative) / len(samples)
+    f1 = 2 * precision * recall / (precision + recall) if precision + recall else 0.0
+    brier = sum(
+        (score - (1.0 if label else 0.0)) ** 2 for score, label in zip(scores, labels)
+    ) / len(samples)
+    return {
+        "samples": len(samples),
+        "positives": sum(1 for label in labels if label),
+        "threshold": cutoff,
+        "accuracy": accuracy,
+        "precision": precision,
+        "recall": recall,
+        "f1": f1,
+        "roc_auc": _roc_auc(scores, labels),
+        "brier": brier,
+        "mean_score_positive": (
+            sum(score for score, label in zip(scores, labels) if label)
+            / max(1, sum(1 for label in labels if label))
+        ),
+        "mean_score_negative": (
+            sum(score for score, label in zip(scores, labels) if not label)
+            / max(1, len(labels) - sum(1 for label in labels if label))
+        ),
+    }
+
+
+def split_samples(
+    samples: Sequence[TrainingSample], *, eval_fraction: float, seed: int = 0
+) -> tuple[list[TrainingSample], list[TrainingSample]]:
+    """Deterministically split samples into stratified train and eval sets."""
+    if not 0.0 <= eval_fraction < 1.0:
+        raise ValueError("eval_fraction must be in [0, 1)")
+    if eval_fraction == 0.0 or len(samples) < 4:
+        return list(samples), []
+    rng = random.Random(seed)
+    groups = (
+        [sample for sample in samples if sample.reward >= 0.5],
+        [sample for sample in samples if sample.reward < 0.5],
+    )
+    train: list[TrainingSample] = []
+    test: list[TrainingSample] = []
+    for group in groups:
+        rng.shuffle(group)
+        take = min(round(len(group) * eval_fraction), max(0, len(group) - 1))
+        test.extend(group[:take])
+        train.extend(group[take:])
+    rng.shuffle(train)
+    rng.shuffle(test)
+    if len(train) < 2 or not test:
+        return list(samples), []
+    return train, test
 
 
 def samples_from_records(

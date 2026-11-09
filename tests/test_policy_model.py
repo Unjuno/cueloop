@@ -11,8 +11,10 @@ from cueloop.sync.policy_model import (
     LinearPolicyModel,
     PolicyObservation,
     TrainingSample,
+    evaluate_policy,
     feature_vector,
     samples_from_records,
+    split_samples,
     train_linear_policy,
 )
 
@@ -159,6 +161,54 @@ class PolicyTrainingTests(unittest.TestCase):
         self.assertEqual(len(samples), 1)
         self.assertEqual(samples[0].operation, "ground")
         self.assertEqual(samples[0].reward, 1.0)
+
+
+class PolicyEvaluationTests(unittest.TestCase):
+    def _samples(self) -> list[TrainingSample]:
+        observation = PolicyObservation.from_state(_state())
+        samples: list[TrainingSample] = []
+        for index in range(8):
+            samples.append(
+                TrainingSample(
+                    observation=observation,
+                    operation="ground" if index % 2 == 0 else "dependency",
+                    reward=1.0 if index % 2 == 0 else 0.0,
+                )
+            )
+        return samples
+
+    def test_evaluate_policy_reports_confusion_metrics(self) -> None:
+        weights = [0.0] * len(FEATURE_NAMES)
+        weights[FEATURE_NAMES.index("operation:ground")] = 6.0
+        weights[FEATURE_NAMES.index("operation:dependency")] = -6.0
+        model = LinearPolicyModel(weights=weights, threshold=0.5)
+        metrics = evaluate_policy(model, self._samples())
+        self.assertEqual(metrics["samples"], 8)
+        self.assertEqual(metrics["positives"], 4)
+        self.assertEqual(metrics["accuracy"], 1.0)
+        self.assertEqual(metrics["precision"], 1.0)
+        self.assertEqual(metrics["recall"], 1.0)
+        self.assertIsNotNone(metrics["roc_auc"])
+        self.assertLess(metrics["brier"], 0.1)
+
+    def test_split_samples_is_stratified_and_deterministic(self) -> None:
+        samples = self._samples()
+        train, test = split_samples(samples, eval_fraction=0.25, seed=3)
+        self.assertEqual(len(train) + len(test), len(samples))
+        self.assertTrue(test)
+        self.assertEqual(train, split_samples(samples, eval_fraction=0.25, seed=3)[0])
+        self.assertEqual(
+            sum(1 for sample in test if sample.reward >= 0.5),
+            sum(1 for sample in samples if sample.reward >= 0.5)
+            * len(test)
+            // len(samples),
+        )
+
+    def test_split_samples_disabled_keeps_everything(self) -> None:
+        samples = self._samples()
+        train, test = split_samples(samples, eval_fraction=0.0)
+        self.assertEqual(len(train), len(samples))
+        self.assertEqual(test, [])
 
 
 if __name__ == "__main__":
