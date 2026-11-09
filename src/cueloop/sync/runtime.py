@@ -144,6 +144,11 @@ class SyncRuntime:
         replan_on_divergence: bool = True,
         min_replan_interval_ms: int = 1_000,
         condition: str = "unspecified",
+        assignment: str = "unspecified",
+        seed: int | None = None,
+        session_id: str = "",
+        pair_key: str = "",
+        silent: bool = False,
         max_context_turns: int = 6,
         max_context_characters: int = 1_200,
     ) -> None:
@@ -168,6 +173,11 @@ class SyncRuntime:
         self.replan_on_divergence = replan_on_divergence
         self.min_replan_interval_ms = min_replan_interval_ms
         self.condition = condition
+        self.assignment = assignment
+        self.seed = seed
+        self.session_id = session_id
+        self.pair_key = pair_key
+        self.silent = silent
         self.max_context_turns = max_context_turns
         self.max_context_characters = max_context_characters
         self.synchronizer = Synchronizer(pause_ms=pause_ms)
@@ -538,26 +548,28 @@ class SyncRuntime:
     def _deliver(self, now_ms: int) -> Delivery:
         assert self._pending is not None
         intervention = self._pending
-        status = "DELIVERED"
-        speak_started = time.perf_counter()
-        try:
-            self.speaker.speak(intervention.cue)
-        except Exception as exc:  # noqa: BLE001
-            status = "SUPPRESSED"
-            self._log(
-                "delivery_error",
-                {
-                    "at_ms": now_ms,
-                    "intervention_id": intervention.intervention_id,
-                    "error": str(exc),
-                },
-            )
-        measured_ms = round((time.perf_counter() - speak_started) * 1_000)
-        speak_ms = int(getattr(self.speaker, "last_duration_ms", 0)) or measured_ms
-        if speak_ms >= 20:
-            self._suppress_text_until_ms = max(
-                self._suppress_text_until_ms, now_ms + speak_ms + 250
-            )
+        status = "SILENT" if self.silent else "DELIVERED"
+        speak_ms = 0
+        if not self.silent:
+            speak_started = time.perf_counter()
+            try:
+                self.speaker.speak(intervention.cue)
+            except Exception as exc:  # noqa: BLE001
+                status = "SUPPRESSED"
+                self._log(
+                    "delivery_error",
+                    {
+                        "at_ms": now_ms,
+                        "intervention_id": intervention.intervention_id,
+                        "error": str(exc),
+                    },
+                )
+            measured_ms = round((time.perf_counter() - speak_started) * 1_000)
+            speak_ms = int(getattr(self.speaker, "last_duration_ms", 0)) or measured_ms
+            if speak_ms >= 20:
+                self._suppress_text_until_ms = max(
+                    self._suppress_text_until_ms, now_ms + speak_ms + 250
+                )
         delivery = Delivery(
             intervention=intervention,
             status=status,
@@ -586,7 +598,7 @@ class SyncRuntime:
                 else None,
             },
         )
-        if status == "DELIVERED":
+        if status in {"DELIVERED", "SILENT"}:
             self.outcomes.append(
                 Outcome(
                     delivery=delivery,
@@ -657,7 +669,7 @@ class SyncRuntime:
             (
                 delivery
                 for delivery in self.deliveries
-                if delivery.status == "DELIVERED"
+                if delivery.status in {"DELIVERED", "SILENT"}
             ),
             key=lambda delivery: delivery.delivered_at_ms,
         )
@@ -799,16 +811,21 @@ class SyncRuntime:
             bucket["rate"] = (
                 int(bucket["uptake"]) / delivered_count if delivered_count else 0.0
             )
+        timed = [
+            delivery
+            for delivery in self.deliveries
+            if delivery.status in {"DELIVERED", "SILENT"}
+        ]
         boundary_delays = sorted(
             delivery.delivered_at_ms - delivery.intervention.detected_at_ms
-            for delivery in delivered
+            for delivery in timed
         )
         median_delay = (
             boundary_delays[len(boundary_delays) // 2] if boundary_delays else None
         )
         first_delivery = None
-        if delivered:
-            first_delivery = min(delivered, key=lambda item: item.delivered_at_ms)
+        if timed:
+            first_delivery = min(timed, key=lambda item: item.delivered_at_ms)
         before_text = (
             self._text_at(first_delivery.delivered_at_ms) if first_delivery else ""
         )
@@ -830,6 +847,11 @@ class SyncRuntime:
             "predictor": self.predictor.label,
             "decision_model": self.decision_model.label,
             "condition": self.condition,
+            "assignment": self.assignment,
+            "seed": self.seed,
+            "session_id": self.session_id,
+            "pair_key": self.pair_key,
+            "silent": self.silent,
             "utterances": self.utterance_count,
             "predictions": self.prediction_count,
             "interventions": len(self.interventions),
@@ -842,6 +864,9 @@ class SyncRuntime:
             ),
             "suppressed": sum(
                 1 for delivery in self.deliveries if delivery.status == "SUPPRESSED"
+            ),
+            "held": sum(
+                1 for delivery in self.deliveries if delivery.status == "SILENT"
             ),
             "per_operation": per_operation,
             "boundary_to_delivery_ms": boundary_delays,

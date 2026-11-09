@@ -7,6 +7,21 @@ from collections.abc import Sequence
 from .models import Outcome
 from .vocabulary import tag_operations
 
+FAMILIES: tuple[tuple[str, str], ...] = (
+    ("prediction-gap", "rule"),
+    ("linear-policy", "linear"),
+    ("local-llm", "llm"),
+)
+
+
+def policy_family(label: object) -> str:
+    """Map a decision-model label to its comparison family."""
+    text = str(label)
+    for prefix, family in FAMILIES:
+        if text.startswith(prefix):
+            return family
+    return text or "unknown"
+
 
 def summarize(outcomes: Sequence[Outcome]) -> dict[str, object]:
     """Summarize cue uptake and prediction agreement.

@@ -46,12 +46,25 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--events", type=Path, default=ROOT / "experiments" / "sync-smoke.jsonl"
     )
+    parser.add_argument(
+        "--realtime",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help=(
+            "Pace replay by event timestamps. Off by default so paired replay "
+            "timing is deterministic (default: off)."
+        ),
+    )
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument(
         "--assignment",
-        choices=["random", "canonical", "alternate", "fixed"],
+        choices=["random", "random-operation", "canonical", "alternate", "fixed"],
         default="random",
-        help="Cue assignment; random is the experimental default.",
+        help=(
+            "Cue assignment. 'random' randomizes wording only and must not be "
+            "used for operation-level causal comparisons; "
+            "'random-operation' is the exploration arm that draws the operation."
+        ),
     )
     parser.add_argument("--cue", help="Cue used with --assignment fixed.")
     parser.add_argument(
@@ -84,6 +97,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="Speak cues; defaults to on for live CUE and off for replay/SILENCE.",
     )
     parser.add_argument("--session", help="Optional session label.")
+    parser.add_argument(
+        "--pair-key",
+        help="Key shared by the CUE and SILENCE runs of one pair (default: derived).",
+    )
     parser.add_argument("--dry-run", action="store_true")
     return parser
 
@@ -126,6 +143,8 @@ def main(argv: list[str] | None = None) -> int:
     reports_dir.mkdir(parents=True, exist_ok=True)
     log_path = logs_dir / f"{stem}.jsonl"
     report_path = reports_dir / f"{stem}.json"
+    fixture = args.events.stem if args.mode == "replay" else "live"
+    pair_key = args.pair_key or f"{args.decision}-seed{args.seed}-{fixture}"
 
     command = _entrypoint() + [
         "--decision",
@@ -138,6 +157,10 @@ def main(argv: list[str] | None = None) -> int:
         args.condition,
         "--outcome-window-ms",
         str(args.outcome_window_ms),
+        "--session-id",
+        stem,
+        "--pair-key",
+        pair_key,
         "--log",
         str(log_path),
         "--report",
@@ -149,6 +172,8 @@ def main(argv: list[str] | None = None) -> int:
         command += ["--policy-model", str(args.policy_model)]
     elif args.decision == "local":
         command += ["--decision-fallback", "rule"]
+    if args.condition == "SILENCE":
+        command += ["--silent"]
     if tts:
         command += ["--tts-command-json", json.dumps(_say_command(args.tts_voice))]
     if args.mode == "live":
@@ -161,7 +186,9 @@ def main(argv: list[str] | None = None) -> int:
         ]
         command += ["--event-command-json", json.dumps(event_command)]
     else:
-        command += ["--events", str(args.events), "--realtime"]
+        command += ["--events", str(args.events)]
+        if args.realtime:
+            command += ["--realtime"]
 
     manifest = {
         "started_at": datetime.now(UTC).isoformat(),
@@ -170,6 +197,8 @@ def main(argv: list[str] | None = None) -> int:
         "mode": args.mode,
         "seed": args.seed,
         "assignment": args.assignment,
+        "pair_key": pair_key,
+        "realtime": args.realtime,
         "tts": tts,
         "log": str(log_path),
         "report": str(report_path),

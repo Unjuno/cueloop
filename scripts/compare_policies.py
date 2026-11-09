@@ -10,19 +10,10 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
-FAMILIES = (
-    ("prediction-gap", "rule"),
-    ("linear-policy", "linear"),
-    ("local-llm", "llm"),
-)
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
 
-
-def policy_family(label: object) -> str:
-    text = str(label)
-    for prefix, family in FAMILIES:
-        if text.startswith(prefix):
-            return family
-    return text or "unknown"
+from cueloop.sync.evaluate import policy_family
 
 
 def _reports(paths: list[Path]):
@@ -57,6 +48,7 @@ def aggregate(reports: list[dict[str, object]]) -> dict[str, object]:
                 "condition": condition,
                 "sessions": 0,
                 "delivered": 0,
+                "outcomes": 0,
                 "uptake": 0,
                 "novel_operation": 0,
                 "novel_uptake": 0,
@@ -82,7 +74,9 @@ def aggregate(reports: list[dict[str, object]]) -> dict[str, object]:
             group["boundary_to_delivery_ms"].extend(
                 int(item) for item in delays if isinstance(item, (int, float))
             )
-        for outcome in _outcomes(report):
+        sessions_outcomes = _outcomes(report)
+        group["outcomes"] = int(group["outcomes"]) + len(sessions_outcomes)
+        for outcome in sessions_outcomes:
             target = outcome.get("target_operation_seen") is True
             carried = outcome.get("carryover_seen") is True
             novel = outcome.get("novel_operation") is True
@@ -96,6 +90,7 @@ def aggregate(reports: list[dict[str, object]]) -> dict[str, object]:
     rendered: dict[str, dict[str, object]] = {}
     for (family, condition), group in sorted(groups.items()):
         delivered = int(group["delivered"])
+        outcomes = int(group["outcomes"]) or delivered
         novel_operation = int(group["novel_operation"])
         delays = list(group["boundary_to_delivery_ms"])
         rendered[f"{family}|{condition}"] = {
@@ -103,15 +98,16 @@ def aggregate(reports: list[dict[str, object]]) -> dict[str, object]:
             "condition": condition,
             "sessions": group["sessions"],
             "delivered": delivered,
+            "outcomes": outcomes,
             "uptake": group["uptake"],
-            "uptake_rate": group["uptake"] / delivered if delivered else 0.0,
+            "uptake_rate": group["uptake"] / outcomes if outcomes else 0.0,
             "novel_operation": novel_operation,
             "novel_uptake": group["novel_uptake"],
             "novel_uptake_rate": (
                 group["novel_uptake"] / novel_operation if novel_operation else 0.0
             ),
             "carryover": group["carryover"],
-            "carryover_rate": group["carryover"] / delivered if delivered else 0.0,
+            "carryover_rate": group["carryover"] / outcomes if outcomes else 0.0,
             "novel_carryover": group["novel_carryover"],
             "novel_carryover_rate": (
                 group["novel_carryover"] / novel_operation if novel_operation else 0.0

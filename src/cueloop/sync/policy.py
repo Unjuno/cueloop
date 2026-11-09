@@ -15,7 +15,7 @@ import threading
 import time
 from collections.abc import Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Protocol
 
 from .models import Intervention, SyncState
@@ -594,6 +594,77 @@ class LinearDecisionModel:
             assignment=self.assigner.label,
             base_text=state.text,
             prediction=prediction,
+        )
+
+
+class RandomOperationDecisionModel:
+    """Exploration arm: keep the timing policy, randomize the operation.
+
+    The wrapped model still decides *when* a cue is warranted. When it fires,
+    one operation is drawn uniformly from the same missing-operation set the
+    policy considers, and the cue for that operation is assigned normally. The
+    point is honest logging: ``requested_operation`` is what the policy wanted,
+    ``operation`` is what the participant actually heard. Without this arm,
+    untried operations have no outcome and the comparison stays correlational.
+    """
+
+    def __init__(
+        self,
+        inner: DecisionModel,
+        assigner: CueAssigner,
+        *,
+        seed: int = 0,
+    ) -> None:
+        if seed < 0:
+            raise ValueError("seed must be non-negative")
+        self.inner = inner
+        self.assigner = assigner
+        self.seed = seed
+        self._random = random.Random(seed)
+        self._lock = threading.Lock()
+        self.label = f"{inner.label}+random-operation(seed={seed})"
+
+    def warmup(self) -> None:
+        warmup = getattr(self.inner, "warmup", None)
+        if warmup is not None:
+            warmup()
+
+    def reset(self) -> None:
+        reset = getattr(self.inner, "reset", None)
+        if reset is not None:
+            reset()
+
+    def close(self) -> None:
+        close = getattr(self.inner, "close", None)
+        if close is not None:
+            close()
+
+    def decide(self, state: SyncState) -> Intervention | None:
+        base = self.inner.decide(state)
+        if base is None:
+            return None
+        candidates = PolicyObservation.from_state(state).missing_operations()
+        if not candidates:
+            return None
+        with self._lock:
+            operation = self._random.choice(list(candidates))
+        cue = self.assigner.assign(operation)
+        actual = operation_for_cue(cue) or "unmapped"
+        digest = hashlib.sha256(
+            f"{state.utterance_id}:{state.now_ms}:{actual}:{cue}:{state.text}".encode()
+        ).hexdigest()[:12]
+        return replace(
+            base,
+            intervention_id=f"cue-{digest}",
+            operation=actual,
+            cue=cue,
+            assignment=(
+                f"random-operation(seed={self.seed};wording={self.assigner.label})"
+            ),
+            reason=(
+                f"randomized operation {actual} "
+                f"(policy requested {base.requested_operation})"
+            ),
         )
 
 

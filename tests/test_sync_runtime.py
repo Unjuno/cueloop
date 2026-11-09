@@ -445,3 +445,53 @@ class SyncCliTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SilentConditionTests(unittest.TestCase):
+    def test_silent_logs_decisions_without_delivering(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            log_path = Path(directory) / "silent.jsonl"
+            speaker = CallableSpeaker(lambda text: None)
+            runtime = SyncRuntime(
+                predictor=ScriptedPredictor(
+                    {"この設計": ("だから結論は決まる。", 0.9)}
+                ),
+                decision_model=RuleDecisionModel(CanonicalAssigner()),
+                speaker=speaker,
+                log_path=log_path,
+                condition="SILENCE",
+                assignment="canonical",
+                seed=0,
+                session_id="silent-session",
+                pair_key="rule-seed0-fixture",
+                silent=True,
+            )
+            runtime.feed(event("speech_started", 0))
+            produced = runtime.feed(
+                event("transcript_partial", 800, "この設計は前提を分けて考える。")
+            )
+            runtime.feed(event("session_ended", 900))
+            self.assertEqual([item.status for item in produced], ["SILENT"])
+            self.assertEqual(speaker.spoken, [])
+            report = runtime.report()
+            self.assertEqual(report["delivered"], 0)
+            self.assertEqual(report["held"], 1)
+            self.assertIs(report["silent"], True)
+            self.assertEqual(report["assignment"], "canonical")
+            self.assertEqual(report["seed"], 0)
+            self.assertEqual(report["pair_key"], "rule-seed0-fixture")
+            self.assertEqual(report["session_id"], "silent-session")
+            self.assertEqual(len(report["outcomes"]), 1)
+            self.assertEqual(report["median_boundary_to_delivery_ms"], 0)
+            payloads = [
+                json.loads(line)
+                for line in log_path.read_text(encoding="utf-8").splitlines()
+            ]
+            kinds = [payload["kind"] for payload in payloads]
+            self.assertIn("intervention", kinds)
+            self.assertIn("delivery", kinds)
+            delivery = next(
+                payload for payload in payloads if payload["kind"] == "delivery"
+            )
+            self.assertEqual(delivery["status"], "SILENT")
+            self.assertEqual(delivery["condition"], "SILENCE")

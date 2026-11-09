@@ -16,6 +16,7 @@ from .policy import (
     AsyncDecisionModel,
     LinearDecisionModel,
     LocalLLMDecisionModel,
+    RandomOperationDecisionModel,
     RuleDecisionModel,
     build_assigner,
 )
@@ -98,13 +99,21 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-tokens", type=int, default=64)
     parser.add_argument(
         "--assignment",
-        choices=["canonical", "alternate", "random", "fixed"],
+        choices=["canonical", "alternate", "random", "random-operation", "fixed"],
         default="canonical",
-        help="Cue assignment strategy (default: canonical).",
+        help=(
+            "Cue assignment strategy (default: canonical). 'random' randomizes "
+            "wording only and must not be used for operation-level causal "
+            "comparisons; 'random-operation' draws the operation from "
+            "the policy's candidate set (wording uses canonical)."
+        ),
     )
     parser.add_argument("--cue", help="Cue used by --assignment fixed.")
     parser.add_argument(
-        "--seed", type=int, default=0, help="Seed for randomized assignment."
+        "--seed",
+        type=int,
+        default=0,
+        help="Seed for randomized wording and random-operation exploration.",
     )
     parser.add_argument("--max-cue-characters", type=int, default=8)
     parser.add_argument("--min-confidence", type=float, default=0.55)
@@ -152,6 +161,24 @@ def build_parser() -> argparse.ArgumentParser:
         "--condition-label",
         default="unspecified",
         help="Experimental condition written to every log entry.",
+    )
+    parser.add_argument(
+        "--silent",
+        action="store_true",
+        help=(
+            "Record the decision and delivery timing but never speak; the cue is "
+            "logged with status SILENT and no uptake outcome is created."
+        ),
+    )
+    parser.add_argument(
+        "--pair-key",
+        default="",
+        help="Key shared by paired CUE and SILENCE runs for paired analysis.",
+    )
+    parser.add_argument(
+        "--session-id",
+        default="",
+        help="Session identifier written to the report and used by analysis.",
     )
     parser.add_argument("--min-text-characters", type=int, default=4)
     parser.add_argument(
@@ -286,8 +313,11 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
         predictor = _build_predictor(args)
+        wording_assignment = (
+            "canonical" if args.assignment == "random-operation" else args.assignment
+        )
         assigner = build_assigner(
-            args.assignment,
+            wording_assignment,
             seed=args.seed,
             cue=args.cue,
             max_characters=args.max_cue_characters,
@@ -320,6 +350,10 @@ def main(argv: list[str] | None = None) -> int:
                 delivery_window_ms=args.delivery_window_ms,
                 insertion_delay_ms=args.insertion_delay_ms,
             )
+        if args.assignment == "random-operation":
+            decision_model = RandomOperationDecisionModel(
+                decision_model, assigner, seed=args.seed
+            )
         if args.decision == "local" and args.async_decision:
             fallback = (
                 RuleDecisionModel(
@@ -332,6 +366,10 @@ def main(argv: list[str] | None = None) -> int:
                 if args.decision_fallback == "rule"
                 else None
             )
+            if fallback is not None and args.assignment == "random-operation":
+                fallback = RandomOperationDecisionModel(
+                    fallback, assigner, seed=args.seed
+                )
             decision_model = AsyncDecisionModel(
                 decision_model,
                 fallback=fallback,
@@ -354,6 +392,11 @@ def main(argv: list[str] | None = None) -> int:
             replan_on_divergence=args.replan_on_divergence,
             min_replan_interval_ms=args.min_replan_interval_ms,
             condition=args.condition_label,
+            assignment=args.assignment,
+            seed=args.seed,
+            session_id=args.session_id,
+            pair_key=args.pair_key,
+            silent=args.silent,
         )
         last_at_ms = 0
         replay_started = time.monotonic()

@@ -131,7 +131,13 @@ class Delivery:
     text_at_delivery: str
 
     def __post_init__(self) -> None:
-        if self.status not in {"DELIVERED", "CANCELLED", "EXPIRED", "SUPPRESSED"}:
+        if self.status not in {
+            "DELIVERED",
+            "CANCELLED",
+            "EXPIRED",
+            "SUPPRESSED",
+            "SILENT",
+        }:
             raise ValueError(f"unknown delivery status: {self.status}")
 
 

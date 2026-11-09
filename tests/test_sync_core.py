@@ -14,7 +14,9 @@ from cueloop.sync.policy import (
     FixedAssigner,
     LocalLLMDecisionModel,
     RandomAssigner,
+    RandomOperationDecisionModel,
     RuleDecisionModel,
+    build_assigner,
 )
 from cueloop.sync.predictors import (
     AsyncPredictor,
@@ -26,7 +28,7 @@ from cueloop.sync.predictors import (
     resolve_model,
 )
 from cueloop.sync.synchronizer import Synchronizer, longest_common_prefix
-from cueloop.sync.vocabulary import tag_operations
+from cueloop.sync.vocabulary import OPERATIONS, operation_for_cue, tag_operations
 
 
 def _prediction(span, operations=(), confidence=0.9, base_length=0):
@@ -536,3 +538,74 @@ class DecisionModelTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class RandomOperationTests(unittest.TestCase):
+    """The exploration arm must randomize *what* without changing *when*."""
+
+    def _wrapped(self, seed: int = 3) -> RandomOperationDecisionModel:
+        return RandomOperationDecisionModel(
+            RuleDecisionModel(CanonicalAssigner()),
+            CanonicalAssigner(),
+            seed=seed,
+        )
+
+    def test_draws_multiple_operations_and_replays_with_seed(self) -> None:
+        model = self._wrapped()
+        first = [model.decide(_state()) for _ in range(100)]
+        replay = self._wrapped()
+        second = [replay.decide(_state()) for _ in range(100)]
+        first_ids = [item.intervention_id for item in first if item is not None]
+        second_ids = [item.intervention_id for item in second if item is not None]
+        self.assertEqual(len(first_ids), 100)
+        self.assertGreater(len(set(first_ids)), 1)
+        self.assertEqual(first_ids, second_ids)
+
+    def test_keeps_policy_request_and_changes_operation(self) -> None:
+        base = RuleDecisionModel(CanonicalAssigner())
+        expected = base.decide(_state())
+        assert expected is not None
+        draws = [self._wrapped(seed=seed).decide(_state()) for seed in range(12)]
+        for draw in draws:
+            assert draw is not None
+            self.assertEqual(draw.requested_operation, expected.requested_operation)
+            self.assertIn("random-operation(seed=", draw.assignment)
+            self.assertEqual(draw.operation, operation_for_cue(draw.cue) or "unmapped")
+        self.assertGreater(len({draw.operation for draw in draws}), 1)
+
+    def test_stays_silent_when_the_policy_is_silent(self) -> None:
+        model = RandomOperationDecisionModel(
+            RuleDecisionModel(CanonicalAssigner(), min_confidence=0.99),
+            CanonicalAssigner(),
+            seed=0,
+        )
+        self.assertIsNone(
+            model.decide(_state(prediction=_prediction("次は", confidence=0.4)))
+        )
+
+    def test_stays_silent_without_candidates(self) -> None:
+        covered = _state(
+            prediction=_prediction("すべて確認する。", operations=tuple(OPERATIONS)),
+            clause_operations=frozenset(OPERATIONS),
+        )
+        base = RuleDecisionModel(CanonicalAssigner())
+        sample = base.decide(_state())
+        assert sample is not None
+
+        class AlwaysCue:
+            label = "always"
+
+            def decide(self, state: SyncState) -> Intervention:
+                del state
+                return sample
+
+        model = RandomOperationDecisionModel(AlwaysCue(), CanonicalAssigner(), seed=0)
+        self.assertIsNone(model.decide(covered))
+
+    def test_backward_compatible_assigners_still_build(self) -> None:
+        self.assertEqual(build_assigner("canonical").label, "canonical")
+        self.assertEqual(build_assigner("alternate").label, "alternate")
+        self.assertEqual(build_assigner("random", seed=5).label, "randomized(5)")
+        self.assertEqual(build_assigner("fixed", cue="なぜ？").label, "fixed(なぜ？)")
+        with self.assertRaises(ValueError):
+            build_assigner("unknown")
