@@ -99,6 +99,47 @@ P(uptake | CUE) - P(uptake | SILENCE)
 Repeat the same contrasts for carryover. Use the delayed reconstruction as the
 final test of persistence.
 
+## Recording comparison sessions
+
+Use the same predictor, boundary detector, timing, and assignment policy for
+each decision backend. `run_experiment.py` records the session, writes the
+report, and appends a manifest entry:
+
+```bash
+scripts/run_experiment.py --mode live --condition CUE \
+  --decision rule --duration 60 --seed 1 --session rule-01
+scripts/run_experiment.py --mode live --condition CUE \
+  --decision linear --duration 60 --seed 1 --session linear-01
+scripts/run_experiment.py --mode live --condition CUE \
+  --decision local --duration 60 --seed 1 --session llm-01
+```
+
+`--assignment random` is the default. It randomizes the cue wording for the
+operation selected by the policy; it does not randomize the operation itself.
+For an operation-level causal comparison, add an exploration condition or
+randomize the operation. `--condition SILENCE` keeps the same decision timing
+but does not speak the cue. Replay (`--mode replay`) is available for smoke
+tests and defaults to muted TTS.
+
+Every JSONL record carries `condition`, `decision_model`, and `predictor`, so
+reports can be grouped without relying on filenames. The runner writes
+`logs/experiment/manifest.jsonl`, `logs/experiment/logs/*.jsonl`, and
+`logs/experiment/reports/*.json`.
+
+## Comparing backends
+
+```bash
+scripts/compare_policies.py logs/experiment/reports \
+  --json artifacts/policy-comparison.json \
+  --markdown artifacts/policy-comparison.md
+```
+
+The aggregate groups reports into `rule`, `linear`, and `llm` families and
+reports delivered count, uptake, novel uptake, carryover, novel carryover,
+repertoire growth, and median boundary-to-delivery delay. Treat the report as
+descriptive until the exploration and delayed-reconstruction analyses are
+complete.
+
 ## Training the fast intervention policy
 
 Every intervention log now contains the observation features used by the
@@ -106,9 +147,17 @@ decision model, and every session emits a `carryover` record. The linear policy
 is trained from these tuples:
 
 ```bash
-scripts/train_policy.py logs/*.jsonl --label carryover --output artifacts/sync-policy.json
+scripts/train_policy.py logs/*.jsonl --label carryover \
+  --output artifacts/sync-policy.json --report artifacts/sync-policy-eval.json
+scripts/evaluate_policy.py logs/*.jsonl --model artifacts/sync-policy.json
 cueloop-sync ... --decision linear --policy-model artifacts/sync-policy.json
 ```
+
+Training holds out a stratified fraction of the samples and reports accuracy,
+precision, recall, F1, ROC-AUC, and Brier score for both splits. Because the
+held-out set is small with a single session, treat the metrics as a regression
+check, not as generalisation evidence; `evaluate_policy.py` re-scores the saved
+model on new logs.
 
 The model predicts carryover for a candidate operation and stays silent below
 its threshold. It is deliberately a reward model over the actions that were

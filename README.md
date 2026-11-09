@@ -220,14 +220,60 @@ writing or reasoning improvement. Carryover is a stronger signal but still not
 proof: a delayed unassisted reconstruction scored by a blinded rubric remains
 the outcome that can support the claim.
 
-## Experiment
+## Policy comparison experiment
 
-Use `SILENCE`, `NEUTRAL`, and `CUE` conditions with the same predictor,
-boundary detector, assignment policy, and timing. Only the spoken content
-differs. Immediate uptake in the continuation window is the mechanism check.
-Carryover into later uncued speech is the primary persistence outcome; a
-delayed, unassisted reconstruction scored by a blinded rubric is the final test
-of durable change. See `docs/experiment-protocol.md` and `docs/sync-core.md`.
+Use the same predictor, boundary detector, assignment policy, and timing for
+each backend. Only the decision backend changes. The experiment runner records
+a live session with randomized cue wording and writes a manifest:
+
+```bash
+scripts/run_experiment.py --mode live --condition CUE \
+  --decision rule --duration 60 --seed 1 --session rule-01
+scripts/run_experiment.py --mode live --condition CUE \
+  --decision linear --duration 60 --seed 1 --session linear-01
+scripts/run_experiment.py --mode live --condition CUE \
+  --decision local --duration 60 --seed 1 --session llm-01
+```
+
+`--condition SILENCE` records the same timing decisions without speaking the
+cue. `linear` uses `--policy-model` (default `artifacts/sync-policy.json`).
+Replay is available for smoke tests with `--mode replay`; it defaults to TTS
+off.
+
+Aggregate the report files by policy family:
+
+```bash
+scripts/compare_policies.py logs/experiment/reports \
+  --json artifacts/policy-comparison.json \
+  --markdown artifacts/policy-comparison.md
+```
+
+The table reports uptake, novel uptake, carryover, novel carryover, repertoire
+growth, and boundary-to-delivery delay for `rule`, `linear`, and `llm`. The
+linear model is trained from the recorded interventions:
+
+```bash
+scripts/train_policy.py logs/*.jsonl \
+  --label carryover --output artifacts/sync-policy.json \
+  --report artifacts/sync-policy-eval.json
+scripts/evaluate_policy.py logs/*.jsonl \
+  --model artifacts/sync-policy.json \
+  --report artifacts/sync-policy-holdout.json
+```
+
+`train_policy.py` holds out a stratified fraction (`--eval-fraction`, default
+0.25) and writes accuracy, precision, recall, F1, ROC-AUC, and Brier score for
+both the training split and the held-out split. `evaluate_policy.py` scores a
+saved model against any later logs, which is how the policy is checked on a new
+session before it is used live. All metrics describe logged actions only, so
+they are not an off-policy estimate of the deployed policy.
+
+Random assignment here means randomized cue wording within the selected
+operation, so it controls wording without removing the policy's operation
+choice. For causal operation comparisons, add explicit exploration or
+randomize the operation itself. Immediate uptake is the mechanism check;
+carryover and delayed reconstruction are the persistence outcomes. See
+`docs/experiment-protocol.md` and `docs/sync-core.md`.
 
 ## Failure behavior
 
@@ -245,7 +291,10 @@ of durable change. See `docs/experiment-protocol.md` and `docs/sync-core.md`.
 ```text
 src/cueloop/sync/       event loop, predictors, policy, runtime, CLI
 scripts/demo.sh         replay and live microphone demo
-scripts/train_policy.py offline linear policy trainer
+scripts/run_experiment.py live/replay policy-comparison sessions
+scripts/train_policy.py offline linear policy trainer + holdout metrics
+scripts/evaluate_policy.py score a saved policy on recorded logs
+scripts/compare_policies.py aggregate rule/linear/LLM reports
 tools/macos_speech_events.swift  macOS ASR adapter
 tests/                  deterministic unit and replay tests
 experiments/            replay fixtures
