@@ -5,7 +5,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
+from collections import Counter
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -13,6 +15,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from cueloop.sync.policy_model import (
     evaluate_policy,
+    namespace_intervention_ids,
     samples_from_records,
     split_samples,
     train_linear_policy,
@@ -27,7 +30,7 @@ def _records(paths: list[Path]):
                     continue
                 payload = json.loads(line)
                 if isinstance(payload, dict):
-                    yield payload
+                    yield from namespace_intervention_ids([payload], path.name)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -71,8 +74,45 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+_KNOWN_ASSIGNMENT = re.compile(
+    r"^(canonical|alternate|local-llm|unspecified"
+    r"|randomized\(\d+\)"
+    r"|fixed\(.*\)"
+    r"|random-operation\(seed=\d+;wording=[A-Za-z0-9_.-]+\))$"
+)
+
+
+def _assignment_counts(paths: list[Path]) -> Counter[str]:
+    counts: Counter[str] = Counter()
+    for path in paths:
+        with path.open("r", encoding="utf-8") as handle:
+            for line in handle:
+                if not line.strip():
+                    continue
+                try:
+                    payload = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if isinstance(payload, dict) and payload.get("kind") == "intervention":
+                    counts[str(payload.get("assignment", "unspecified"))] += 1
+    return counts
+
+
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    assignments = _assignment_counts(args.logs)
+    # Unknown assignment strings train like any other: the reward attaches to
+    # the delivered operation. They are reported, never silently discarded.
+    unknown_assignments = sorted(
+        name for name in assignments if not _KNOWN_ASSIGNMENT.match(name)
+    )
+    for name in unknown_assignments:
+        print(
+            f"warning: unknown assignment {name!r} appears "
+            f"{assignments[name]} times; training on delivered operations anyway",
+            file=sys.stderr,
+        )
+
     samples = samples_from_records(_records(args.logs), label=args.label)
     if len(samples) < args.min_samples:
         print(
@@ -101,12 +141,16 @@ def main(argv: list[str] | None = None) -> int:
         # all samples and label the metrics as in-sample rather than pretending
         # the split was valid.
         print(f"warning: {exc}; evaluating in-sample", file=sys.stderr)
-        model = train_linear_policy(
-            samples,
-            epochs=args.epochs,
-            learning_rate=args.learning_rate,
-            l2=args.l2,
-        )
+        try:
+            model = train_linear_policy(
+                samples,
+                epochs=args.epochs,
+                learning_rate=args.learning_rate,
+                l2=args.l2,
+            )
+        except ValueError as fallback_exc:
+            print(f"error: {fallback_exc}", file=sys.stderr)
+            return 2
         eval_samples = list(samples)
         evaluated_on = "in-sample"
 
@@ -115,6 +159,7 @@ def main(argv: list[str] | None = None) -> int:
     model.metadata["label"] = args.label
     model.metadata["logs"] = [str(path) for path in args.logs]
     model.metadata["dataset_samples"] = len(samples)
+    model.metadata["assignments"] = dict(sorted(assignments.items()))
     model.metadata["evaluated_on"] = evaluated_on
     model.metadata["train_metrics"] = train_metrics
     if eval_metrics is not None:
@@ -127,6 +172,8 @@ def main(argv: list[str] | None = None) -> int:
         "positives": sum(1 for sample in samples if sample.reward >= 0.5),
         "threshold": model.threshold,
         "label": args.label,
+        "assignments": dict(sorted(assignments.items())),
+        "unknown_assignments": unknown_assignments,
         "evaluated_on": evaluated_on,
         "train_metrics": train_metrics,
         "eval_metrics": eval_metrics,

@@ -14,6 +14,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from cueloop.sync.policy_model import (
     LinearPolicyModel,
     evaluate_policy,
+    namespace_intervention_ids,
     samples_from_records,
 )
 
@@ -26,7 +27,7 @@ def _records(paths: list[Path]):
                     continue
                 payload = json.loads(line)
                 if isinstance(payload, dict):
-                    yield payload
+                    yield from namespace_intervention_ids([payload], path.name)
 
 
 def build_parser() -> argparse.ArgumentParser:

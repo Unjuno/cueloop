@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import json
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -13,6 +16,7 @@ from cueloop.sync.policy_model import (
     TrainingSample,
     evaluate_policy,
     feature_vector,
+    namespace_intervention_ids,
     samples_from_records,
     split_samples,
     train_linear_policy,
@@ -140,6 +144,20 @@ class PolicyTrainingTests(unittest.TestCase):
             model.score(observation, "dependency"),
         )
 
+    def test_exploration_records_train_on_the_delivered_operation(self) -> None:
+        intervention = _intervention("a", "boundary")
+        intervention["requested_operation"] = "ground"
+        intervention["assignment"] = "random-operation(seed=0;wording=canonical)"
+        records = [
+            intervention,
+            {"kind": "delivery", "intervention_id": "a", "status": "DELIVERED"},
+            {"kind": "carryover", "intervention_id": "a", "carryover_seen": True},
+        ]
+        samples = samples_from_records(records)
+        self.assertEqual(len(samples), 1)
+        self.assertEqual(samples[0].operation, "boundary")
+        self.assertEqual(samples[0].reward, 1.0)
+
     def test_samples_join_delivery_and_carryover(self) -> None:
         records = [
             _intervention("a", "ground"),
@@ -213,3 +231,141 @@ class PolicyEvaluationTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class NamespacedLogsTests(unittest.TestCase):
+    def test_paired_cue_and_silence_logs_do_not_clobber_each_other(self) -> None:
+        shared = "cue-abc123"
+        records = [
+            {
+                "kind": "intervention",
+                "intervention_id": shared,
+                "operation": "ground",
+                "requested_operation": "invert",
+                "assignment": "random-operation(seed=0;wording=canonical)",
+                "at_ms": 900,
+                "boundary_at_ms": 900,
+                "at_boundary": True,
+                "diverged": False,
+                "prediction_confidence": 0.8,
+                "confidence": 0.8,
+                "text_length": 10,
+                "context_turns": 0,
+                "chars_per_second": 12.0,
+                "elapsed_ms": 900,
+                "prediction_length": 5,
+                "prediction_match": 0,
+                "prediction_operations": [],
+                "clause_operations": ["ground"],
+                "recent_operations": [],
+                "prediction_span": "次は",
+                "text": "本文",
+            },
+            {"kind": "delivery", "intervention_id": shared, "status": "DELIVERED"},
+            {"kind": "carryover", "intervention_id": shared, "carryover_seen": True},
+        ]
+        silence = [
+            dict(records[0]),
+            {"kind": "delivery", "intervention_id": shared, "status": "SILENT"},
+            {"kind": "carryover", "intervention_id": shared, "carryover_seen": False},
+        ]
+        merged = list(namespace_intervention_ids(records, "cue.jsonl")) + list(
+            namespace_intervention_ids(silence, "silence.jsonl")
+        )
+        samples = samples_from_records(iter(merged))
+        self.assertEqual(len(samples), 1)
+        self.assertEqual(samples[0].reward, 1.0)
+
+
+class TrainPolicyExplorationTests(unittest.TestCase):
+    def test_exploration_logs_train_and_unknown_assignment_is_reported(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+
+        def intervention(
+            intervention_id: str, assignment: str, at_ms: int = 900
+        ) -> dict:
+            return {
+                "kind": "intervention",
+                "condition": "CUE",
+                "decision_model": "prediction-gap(assigner=canonical)+random-operation(seed=0)",
+                "predictor": "ngram(3)",
+                "at_ms": at_ms,
+                "intervention_id": intervention_id,
+                "operation": "ground",
+                "requested_operation": "invert",
+                "assignment": assignment,
+                "boundary_at_ms": at_ms,
+                "at_boundary": True,
+                "diverged": False,
+                "prediction_confidence": 0.8,
+                "confidence": 0.8,
+                "text_length": 10,
+                "context_turns": 0,
+                "chars_per_second": 12.0,
+                "elapsed_ms": at_ms,
+                "prediction_length": 5,
+                "prediction_match": 0,
+                "prediction_operations": [],
+                "clause_operations": ["ground"],
+                "recent_operations": [],
+                "prediction_span": "次は",
+                "text": "本文",
+            }
+
+        records = []
+        for index, carryover in enumerate([True, False, True, False]):
+            intervention_id = f"cue-explore-{index}"
+            assignment = (
+                "random-operation(seed=0;wording=canonical)"
+                if index % 2 == 0
+                else "mystery-assignment(v9)"
+            )
+            records.append(intervention(intervention_id, assignment, 900 + index))
+            records.append(
+                {
+                    "kind": "delivery",
+                    "intervention_id": intervention_id,
+                    "status": "DELIVERED",
+                }
+            )
+            records.append(
+                {
+                    "kind": "carryover",
+                    "intervention_id": intervention_id,
+                    "carryover_seen": carryover,
+                }
+            )
+        with tempfile.TemporaryDirectory() as directory:
+            log = Path(directory) / "explore.jsonl"
+            log.write_text(
+                "\n".join(json.dumps(record) for record in records) + "\n",
+                encoding="utf-8",
+            )
+            output = Path(directory) / "policy.json"
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/train_policy.py",
+                    str(log),
+                    "--output",
+                    str(output),
+                    "--min-samples",
+                    "4",
+                    "--epochs",
+                    "20",
+                    "--eval-fraction",
+                    "0",
+                ],
+                cwd=root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            self.assertIn("mystery-assignment(v9)", completed.stderr)
+            summary = json.loads(completed.stdout.strip().splitlines()[-1])
+            self.assertEqual(summary["samples"], 4)
+            self.assertIn("mystery-assignment(v9)", summary["unknown_assignments"])
+            self.assertEqual(
+                summary["assignments"]["random-operation(seed=0;wording=canonical)"], 2
+            )

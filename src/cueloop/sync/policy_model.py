@@ -501,6 +501,25 @@ def split_samples(
     return train, test
 
 
+def namespace_intervention_ids(
+    records: Iterable[Mapping[str, object]], prefix: str
+) -> Iterable[Mapping[str, object]]:
+    """Prefix ``intervention_id`` so log files cannot collide.
+
+    Exploration arms digest ``intervention_id`` from utterance, time, text and
+    drawn operation only, so a CUE session and its paired SILENCE session draw
+    the identical id. Merging such logs without namespacing lets the SILENCE
+    delivery overwrite the CUE one and silently drops the sample, so every
+    sample is keyed by the file it came from.
+    """
+    for record in records:
+        intervention_id = record.get("intervention_id")
+        if isinstance(intervention_id, str) and intervention_id:
+            yield {**record, "intervention_id": f"{prefix}:{intervention_id}"}
+        else:
+            yield record
+
+
 def samples_from_records(
     records: Iterable[Mapping[str, object]], *, label: str = "carryover"
 ) -> list[TrainingSample]:
