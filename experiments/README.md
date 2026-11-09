@@ -12,6 +12,15 @@
 - `policy-smoke.jsonl`: schema and smoke fixture for the linear policy trainer.
   It is synthetic and exists only to exercise intervention/delivery/outcome/
   carryover joins. Do not use its learned weights as experimental evidence.
+- `analysis-smoke/`: nine synthetic report JSON files that exercise the paired
+  analyzer end to end. Six paired `rule` sessions show a non-zero CUE - SILENCE
+  difference, one `linear` pair shows `"insufficient"` (a single pair cannot
+  support an interval), and one `llm` cue has no partner and is reported as
+  `"not_comparable"`. These are hand-written fixtures, not recordings. They
+  exist to prove the analyzer distinguishes those three cases.
+
+Everything under `experiments/` is synthetic. None of it is evidence about
+human speech, and no result computed from these files may be presented as one.
 
 ## Regenerating the comparison report
 
@@ -33,3 +42,36 @@ scripts/compare_policies.py logs/experiment-carryover/reports \
 
 All of this is a pipeline check. The numbers come from a synthetic fixture and
 are not evidence about human speech.
+
+## Running the exploration arm with a SILENCE control
+
+`--assignment random` randomizes wording only. The exploration arm draws the
+operation, so the delivered operation can differ from what the policy wanted:
+
+```bash
+scripts/run_experiment.py --mode replay --assignment random-operation \
+  --condition CUE --decision rule --seed 1 \
+  --events experiments/sync-carryover-smoke.jsonl --outcome-window-ms 1000 \
+  --output-dir logs/experiment-explore-01 --session rule-cue-1
+scripts/run_experiment.py --mode replay --assignment random-operation \
+  --condition SILENCE --decision rule --seed 1 \
+  --events experiments/sync-carryover-smoke.jsonl --outcome-window-ms 1000 \
+  --output-dir logs/experiment-explore-01 --session rule-silence-1
+scripts/analyze_experiment.py logs/experiment-explore-01/reports \
+  --json artifacts/experiment-analysis.json \
+  --markdown artifacts/experiment-analysis.md
+```
+
+Both runs share `pair_key=rule-seed1-sync-carryover-smoke`. Replay is a fixed
+transcript, so cueing cannot change the next words and every paired delta is
+zero. Zero deltas here mean the pairing and delivery plumbing work; they say
+nothing about effect size. Only live sessions can estimate an effect.
+
+To check the analyzer's non-zero and insufficient paths without a microphone,
+run it on the synthetic reports:
+
+```bash
+scripts/analyze_experiment.py experiments/analysis-smoke \
+  --json artifacts/analysis-smoke.json \
+  --markdown artifacts/analysis-smoke.md
+```

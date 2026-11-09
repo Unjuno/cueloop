@@ -114,12 +114,25 @@ scripts/run_experiment.py --mode live --condition CUE \
   --decision local --duration 60 --seed 1 --session llm-01
 ```
 
-`--assignment random` is the default. It randomizes the cue wording for the
-operation selected by the policy; it does not randomize the operation itself.
-For an operation-level causal comparison, add an exploration condition or
-randomize the operation. `--condition SILENCE` keeps the same decision timing
-but does not speak the cue. Replay (`--mode replay`) is available for smoke
-tests and defaults to muted TTS.
+`--assignment random` randomizes the cue wording for the operation selected by
+the policy; it does not randomize the operation itself. That limits the
+comparison to correlation between the policy's choices and outcomes.
+`--assignment random-operation` is the exploration arm: the wrapped policy keeps
+its timing decision, but the delivered operation is drawn uniformly from the
+same missing-operation set. `requested_operation` records the policy's choice
+and `operation` records what the participant heard, so the two can be analysed
+separately. The draw is reproducible from `--seed`.
+
+`--condition SILENCE` keeps the same fixture, seed, and decision timing but
+holds the cue. The delivery is logged with status `SILENT`, the report shows
+`delivered=0` and `held=1`, and an outcome is still recorded so the no-cue
+continuation is measured the same way as the cued one. CUE and SILENCE runs of
+one comparison share `--pair-key` (default
+`<decision>-seed<seed>-<fixture>`).
+
+Replay (`--mode replay`) is available for smoke tests and defaults to muted TTS
+and unpaced timing, so paired replays are deterministic; pass `--realtime` only
+when pacing itself is under test. Live runs are always paced by the microphone.
 
 Every JSONL record carries `condition`, `decision_model`, and `predictor`, so
 reports can be grouped without relying on filenames. The runner writes
@@ -137,8 +150,36 @@ scripts/compare_policies.py logs/experiment/reports \
 The aggregate groups reports into `rule`, `linear`, and `llm` families and
 reports delivered count, uptake, novel uptake, carryover, novel carryover,
 repertoire growth, and median boundary-to-delivery delay. Treat the report as
-descriptive until the exploration and delayed-reconstruction analyses are
-complete.
+descriptive until the paired analysis and the delayed-reconstruction analysis
+are complete.
+
+## Paired CUE/SILENCE analysis
+
+```bash
+scripts/analyze_experiment.py logs/experiment-explore-01/reports \
+  --json artifacts/experiment-analysis.json \
+  --markdown artifacts/experiment-analysis.md
+```
+
+Sessions are the unit of analysis and are clustered by `pair_key`. For each
+metric the script computes the per-pair difference (CUE - SILENCE), then takes
+the mean and a percentile bootstrap interval over pairs. Resamples (default
+2000), confidence (default 0.95), and seed are written to the JSON, and the
+output contains no wall-clock timestamps, so rerunning on the same reports is
+byte-identical.
+
+Read the output as follows:
+
+- `status: "ok"` with `n_pairs >= 2` gives a point estimate and an interval.
+- `ci_low`/`ci_high` of `"insufficient"` means fewer than two complete pairs;
+  the point estimate is shown but no interval is claimed.
+- `status: "not_comparable"` means the policy has no CUE/SILENCE pair with the
+  same `pair_key`; this is not evidence of a zero effect.
+
+Replay reports have zero deltas by construction: the transcript is a fixed
+file, so a spoken cue cannot change what is said next. Zero deltas there show
+that the pipeline and the pairing work, not that cues have no effect. Only live
+sessions can estimate an effect.
 
 ## Training the fast intervention policy
 
@@ -159,12 +200,25 @@ held-out set is small with a single session, treat the metrics as a regression
 check, not as generalisation evidence; `evaluate_policy.py` re-scores the saved
 model on new logs.
 
+Exploration and paired runs are safe to concatenate before training: a CUE
+session and its SILENCE twin draw the identical `intervention_id`, so both
+`train_policy.py` and `evaluate_policy.py` namespace ids per log file before
+joining deliveries and outcomes. Assignment strings are summarized and unknown
+ones are reported on stderr and in the training summary under
+`assignments` / `unknown_assignments`; nothing is silently discarded. The
+reward always attaches to the operation actually delivered, never to
+`requested_operation`. Assignment is deliberately not a model feature; if it
+ever becomes one, bump `MODEL_VERSION` and re-validate like any other schema
+change.
+
 The model predicts carryover for a candidate operation and stays silent below
 its threshold. It is deliberately a reward model over the actions that were
 actually logged. That creates selection bias: untried operations have no
-outcome. For causal claims, randomize cue assignment (`--assignment random`) or
-run an explicit exploration condition, and evaluate the policy off-policy
-before trusting it live. The local LLM can remain the semantic prior or the
+outcome. Exploration logs train on the operation that was actually delivered,
+so they widen coverage but still cannot identify the counterfactual for
+operations that were never drawn. For causal claims, run the exploration arm
+(`--assignment random-operation`), keep the SILENCE control, and do not present
+the fitted model's score as an off-policy performance estimate. The local LLM can remain the semantic prior or the
 exploration policy; the linear model is the fast exploitation path.
 
 Use clause-level paired differences and a seeded bootstrap interval. Report

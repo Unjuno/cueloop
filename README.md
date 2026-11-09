@@ -238,7 +238,52 @@ scripts/run_experiment.py --mode live --condition CUE \
 `--condition SILENCE` records the same timing decisions without speaking the
 cue. `linear` uses `--policy-model` (default `artifacts/sync-policy.json`).
 Replay is available for smoke tests with `--mode replay`; it defaults to TTS
-off.
+off and to unpaced timing, so paired replay runs are deterministic. Pass
+`--realtime` to pace a replay by its event timestamps.
+
+### Exploration arm: randomize the operation
+
+`--assignment random` randomizes wording only; the policy still chooses the
+operation, so it must not be used for operation-level causal comparisons. To
+compare operations directly, use the exploration arm:
+
+```bash
+scripts/run_experiment.py --mode replay --assignment random-operation \
+  --condition CUE --decision rule --seed 1 \
+  --events experiments/sync-carryover-smoke.jsonl --outcome-window-ms 1000 \
+  --output-dir logs/experiment-explore-01 --session rule-cue-1
+```
+
+The wrapped policy still decides *when* to fire. When it fires, one operation is
+drawn uniformly from the same missing-operation set it considered, so
+`requested_operation` (what the policy wanted) and `operation` (what was heard)
+differ. The draw is reproducible from `--seed`, and the assignment string
+records both the seed and the wording strategy.
+
+### SILENCE control and paired analysis
+
+Run the same fixture, seed, and timing with `--condition SILENCE`. The cue is
+held rather than spoken: the report shows `delivered=0` and `held=1`, and the
+decision is still logged, so the timing and the operation draw stay paired.
+Paired runs share `--pair-key` (derived as
+`<decision>-seed<seed>-<fixture>`), which is what the analysis uses:
+
+```bash
+scripts/analyze_experiment.py logs/experiment-explore-01/reports \
+  --json artifacts/experiment-analysis.json \
+  --markdown artifacts/experiment-analysis.md
+```
+
+Sessions are clustered by pair. The tool reports per-condition aggregates and
+the paired difference (CUE - SILENCE) with a seeded percentile bootstrap
+(`--resamples`, default 2000; `--seed`; `--confidence`, default 0.95). An
+interval is reported only when at least two complete pairs exist; otherwise
+`ci_low` and `ci_high` are `"insufficient"`. A policy with no CUE/SILENCE pair
+is reported as `"not_comparable"` rather than as a zero effect.
+
+Replay deltas are zero by construction because the transcript is fixed: cueing
+cannot change a static fixture. Zero deltas from replay show that the pipeline
+works, not that the cue had no effect.
 
 Aggregate the report files by policy family:
 
@@ -268,12 +313,9 @@ saved model against any later logs, which is how the policy is checked on a new
 session before it is used live. All metrics describe logged actions only, so
 they are not an off-policy estimate of the deployed policy.
 
-Random assignment here means randomized cue wording within the selected
-operation, so it controls wording without removing the policy's operation
-choice. For causal operation comparisons, add explicit exploration or
-randomize the operation itself. Immediate uptake is the mechanism check;
-carryover and delayed reconstruction are the persistence outcomes. See
-`docs/experiment-protocol.md` and `docs/sync-core.md`.
+Immediate uptake is the mechanism check; carryover and delayed reconstruction
+are the persistence outcomes. See `docs/experiment-protocol.md` and
+`docs/sync-core.md`.
 
 ## Failure behavior
 
@@ -295,6 +337,7 @@ scripts/run_experiment.py live/replay policy-comparison sessions
 scripts/train_policy.py offline linear policy trainer + holdout metrics
 scripts/evaluate_policy.py score a saved policy on recorded logs
 scripts/compare_policies.py aggregate rule/linear/LLM reports
+scripts/analyze_experiment.py paired CUE/SILENCE analysis with bootstrap CI
 tools/macos_speech_events.swift  macOS ASR adapter
 tests/                  deterministic unit and replay tests
 experiments/            replay fixtures
