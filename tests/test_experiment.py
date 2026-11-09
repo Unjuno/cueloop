@@ -214,3 +214,162 @@ class ExperimentToolTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def _session_report(
+    condition: str,
+    pair_key: str,
+    session_id: str,
+    *,
+    target: bool,
+) -> dict[str, object]:
+    return {
+        "decision_model": "prediction-gap(assigner=canonical)",
+        "predictor": "ngram(3)",
+        "condition": condition,
+        "assignment": "random-operation",
+        "seed": 0,
+        "pair_key": pair_key,
+        "session_id": session_id,
+        "delivered": 1 if condition == "CUE" else 0,
+        "boundary_to_delivery_ms": [100],
+        "repertoire_growth": ["ground"] if target else [],
+        "outcomes": [
+            {
+                "operation": "ground",
+                "requested_operation": "ground",
+                "novel_operation": True,
+                "target_operation_seen": target,
+                "carryover_seen": target,
+            }
+        ],
+    }
+
+
+class ExperimentAnalysisTests(unittest.TestCase):
+    def _run(self, reports: Path, output: Path, markdown: Path) -> None:
+        completed = subprocess.run(
+            [
+                sys.executable,
+                "scripts/analyze_experiment.py",
+                str(reports),
+                "--json",
+                str(output),
+                "--markdown",
+                str(markdown),
+            ],
+            cwd=Path(__file__).resolve().parents[1],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+
+    def _write_pairs(self, reports: Path, count: int) -> None:
+        for index in range(count):
+            for condition, target in (("CUE", True), ("SILENCE", False)):
+                payload = _session_report(
+                    condition,
+                    f"rule-seed{index}-fixture",
+                    f"{condition}-{index}",
+                    target=target,
+                )
+                (reports / f"{condition}-{index}.json").write_text(
+                    json.dumps(payload), encoding="utf-8"
+                )
+
+    def test_analysis_is_deterministic_and_paired(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            reports = root / "reports"
+            reports.mkdir()
+            self._write_pairs(reports, 3)
+            self._run(reports, root / "first.json", root / "first.md")
+            self._run(reports, root / "second.json", root / "second.md")
+            self.assertEqual(
+                (root / "first.json").read_text(encoding="utf-8"),
+                (root / "second.json").read_text(encoding="utf-8"),
+            )
+            payload = json.loads((root / "first.json").read_text(encoding="utf-8"))
+            comparison = payload["comparisons"]["rule"]
+            self.assertEqual(comparison["status"], "ok")
+            self.assertEqual(comparison["n_pairs"], 3)
+            uptake = comparison["metrics"]["uptake_rate"]
+            self.assertEqual(uptake["point"], 1.0)
+            self.assertEqual(uptake["n_pairs"], 3)
+            self.assertIsInstance(uptake["ci_low"], float)
+            self.assertIsInstance(uptake["ci_high"], float)
+            self.assertEqual(payload["seed"], 0)
+            self.assertEqual(payload["resamples"], 2000)
+            table = (root / "first.md").read_text(encoding="utf-8")
+            self.assertIn("Paired differences", table)
+            self.assertIn("| rule | uptake_rate | 3 |", table)
+
+    def test_single_pair_reports_insufficient_interval(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            reports = root / "reports"
+            reports.mkdir()
+            self._write_pairs(reports, 1)
+            self._run(reports, root / "analysis.json", root / "analysis.md")
+            payload = json.loads((root / "analysis.json").read_text(encoding="utf-8"))
+            uptake = payload["comparisons"]["rule"]["metrics"]["uptake_rate"]
+            self.assertEqual(uptake["point"], 1.0)
+            self.assertEqual(uptake["ci_low"], "insufficient")
+            self.assertEqual(uptake["ci_high"], "insufficient")
+            self.assertIn(
+                "insufficient", (root / "analysis.md").read_text(encoding="utf-8")
+            )
+
+    def test_unpaired_reports_are_not_comparable(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            reports = root / "reports"
+            reports.mkdir()
+            payload = _session_report("CUE", "rule-seed0-fixture", "cue-0", target=True)
+            (reports / "cue.json").write_text(json.dumps(payload), encoding="utf-8")
+            self._run(reports, root / "analysis.json", root / "analysis.md")
+            result = json.loads((root / "analysis.json").read_text(encoding="utf-8"))
+            comparison = result["comparisons"]["rule"]
+            self.assertEqual(comparison["status"], "not_comparable")
+            self.assertEqual(comparison["n_pairs"], 0)
+            self.assertIn(
+                "not comparable",
+                (root / "analysis.md").read_text(encoding="utf-8"),
+            )
+
+
+class ExperimentRunnerFlagTests(unittest.TestCase):
+    def _manifest(self, *extra: str) -> dict[str, object]:
+        completed = subprocess.run(
+            [
+                sys.executable,
+                "scripts/run_experiment.py",
+                "--mode",
+                "replay",
+                "--dry-run",
+                *extra,
+            ],
+            cwd=Path(__file__).resolve().parents[1],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        return json.loads(completed.stdout.split("log=", 1)[0].strip())
+
+    def test_random_operation_manifest_records_assignment_and_seed(self) -> None:
+        manifest = self._manifest("--assignment", "random-operation", "--seed", "7")
+        self.assertEqual(manifest["assignment"], "random-operation")
+        self.assertEqual(manifest["seed"], 7)
+        self.assertIn("random-operation", manifest["command"])
+        self.assertIn("--pair-key", manifest["command"])
+        self.assertIn("rule-seed7-", str(manifest["pair_key"]))
+
+    def test_silence_run_shares_the_pair_key_and_holds_the_cue(self) -> None:
+        cue = self._manifest("--seed", "7")
+        silence = self._manifest("--seed", "7", "--condition", "SILENCE")
+        self.assertEqual(cue["pair_key"], silence["pair_key"])
+        self.assertIn("--silent", silence["command"])
+        self.assertNotIn("--silent", cue["command"])
+        self.assertFalse(silence["tts"])

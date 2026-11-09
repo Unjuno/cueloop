@@ -1,0 +1,27 @@
+{
+  "predictor": "ngram(3)",
+  "decision_model": "prediction-gap(assigner=canonical)+random-operation(seed=2)",
+  "condition": "CUE",
+  "assignment": "random-operation",
+  "seed": 0,
+  "session_id": "rule-cue-2",
+  "pair_key": "rule-seed2-fixture",
+  "silent": false,
+  "delivered": 1,
+  "held": 0,
+  "interventions": 1,
+  "boundary_to_delivery_ms": [
+    100
+  ],
+  "median_boundary_to_delivery_ms": 100,
+  "repertoire_growth": [],
+  "outcomes": [
+    {
+      "operation": "ground",
+      "requested_operation": "ground",
+      "novel_operation": true,
+      "target_operation_seen": true,
+      "carryover_seen": false
+    }
+  ]
+}

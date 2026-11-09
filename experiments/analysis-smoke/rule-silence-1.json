@@ -1,0 +1,29 @@
+{
+  "predictor": "ngram(3)",
+  "decision_model": "prediction-gap(assigner=canonical)+random-operation(seed=1)",
+  "condition": "SILENCE",
+  "assignment": "random-operation",
+  "seed": 0,
+  "session_id": "rule-silence-1",
+  "pair_key": "rule-seed1-fixture",
+  "silent": true,
+  "delivered": 0,
+  "held": 1,
+  "interventions": 1,
+  "boundary_to_delivery_ms": [
+    100
+  ],
+  "median_boundary_to_delivery_ms": 100,
+  "repertoire_growth": [
+    "ground"
+  ],
+  "outcomes": [
+    {
+      "operation": "ground",
+      "requested_operation": "ground",
+      "novel_operation": true,
+      "target_operation_seen": false,
+      "carryover_seen": true
+    }
+  ]
+}
