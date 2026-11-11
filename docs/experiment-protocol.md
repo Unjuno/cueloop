@@ -155,11 +155,19 @@ scripts/compare_policies.py logs/experiment/reports \
   --markdown artifacts/policy-comparison.md
 ```
 
-The aggregate groups reports into `rule`, `linear`, and `llm` families and
-reports delivered count, uptake, novel uptake, carryover, novel carryover,
-repertoire growth, and median boundary-to-delivery delay. Treat the report as
-descriptive until the paired analysis and the delayed-reconstruction analysis
-are complete.
+The aggregate groups reports into `rule`, `linear`, `llm`, and `steering`
+families and reports delivered count, uptake, novel uptake, carryover, novel
+carryover, repertoire growth, and median boundary-to-delivery delay. Treat the
+report as descriptive until the paired analysis and the delayed-reconstruction
+analysis are complete.
+
+`--decision steer` is the experimental trajectory-steering backend: instead of
+filling the next missing vocabulary item it asks the local LLM to identify the
+one move that would redirect the speaker's reasoning path (repeating a move,
+an anchor, a premature jump) and cue exactly that. Its decisions carry the
+`steering` family label so paired analyses can weigh it against the other
+backends; like every other number here, it claims association, not human
+benefit, until live sessions say so.
 
 ## Paired CUE/SILENCE analysis
 

@@ -185,6 +185,12 @@ The adapter emits the same event contract used by replay:
   (default) the decision is pre-computed before the boundary. If it is not
   ready, `--decision-fallback rule` (default) keeps the cue on time;
   `--decision-fallback none` waits for the local model.
+- `--decision steer` (experimental): trajectory steering. Same JSON contract
+  and fail-closed rules as `local`, but the prompt asks for the one move that
+  best redirects the speaker's reasoning path — break a repeated move, test the
+  inverted assumption, demand the unearned jump's ground — instead of the next
+  unplayed checklist item. It exists to be compared against `rule`/`local`
+  under the same paired protocol, not to be trusted on its own.
 
 The reliable low-latency live configuration is n-gram prediction plus a fast
 decision backend. A local 1.5B decision model measured on an M-series laptop
