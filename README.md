@@ -162,8 +162,13 @@ The adapter emits the same event contract used by replay:
   runs in the background with an n-gram fallback (`--async-prediction`), so a
   slow or malformed model never blocks the boundary. Small models sometimes
   fail the JSON contract; the log shows the fallback source.
-- `--decision rule` (default): insert when the predicted next span omits a
-  priority operation.
+- `--decision rule` (default): insert when the predicted next span omits an
+  operation, preferring moves adjacent to what the speaker just said (a
+  hand-authored adjacency prior in `CONTEXT_LINKS`). When the clause, recent
+  history, and prediction carry no operation signal at all — silence is the
+  right answer — the rule stays silent. `--no-context-fit` restores the legacy
+  static priority order. The exploration arm (`--assignment random-operation`)
+  still draws uniformly from the missing set after the rule fires.
 - `--decision linear`: score the missing operations with a small linear model
   trained offline from `intervention`, `outcome`, and `carryover` records.
   `--policy-model` defaults to `artifacts/sync-policy.json`. Train it with

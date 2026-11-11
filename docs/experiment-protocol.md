@@ -50,6 +50,14 @@ The system must remain silent when the predictor or decision model fails. A
 failed decision is not a `SILENCE` condition; log it separately and exclude it
 from the condition comparison.
 
+The rule policy is context-aware by default: candidate operations are ranked by
+a hand-authored adjacency prior (`CONTEXT_LINKS`) over the operations the
+speaker just produced, weighted for the spoken clause over the prediction.
+When nothing has been tagged anywhere, it stays silent rather than guess.
+`--no-context-fit` restores the original static PRIORITY ordering. The
+exploration arm draws uniformly from the full missing set regardless, so the
+causal arm's draws are unaffected by this ranking.
+
 ## Why the timing is boundary-relative
 
 The intervention is anticipatory. The cue must be heard at the moment the
