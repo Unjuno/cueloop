@@ -27,6 +27,7 @@ def build_runtime(
     model = RuleDecisionModel(
         CanonicalAssigner(),
         insertion_delay_ms=insertion_delay_ms,
+        context_fit=False,
     )
     runtime = SyncRuntime(
         predictor=ScriptedPredictor({"この設計": ("だから結論は決まる。", 0.9)}),
@@ -80,7 +81,7 @@ class RuntimeDeliveryTests(unittest.TestCase):
         speaker = SlowSpeaker(lambda text: None)
         runtime = SyncRuntime(
             predictor=ScriptedPredictor({"この設計": ("だから結論は決まる。", 0.9)}),
-            decision_model=RuleDecisionModel(CanonicalAssigner()),
+            decision_model=RuleDecisionModel(CanonicalAssigner(), context_fit=False),
             speaker=speaker,
             cooldown_ms=2_500,
         )
@@ -181,7 +182,7 @@ class EarlyInsertionTests(unittest.TestCase):
     def _runtime(self, early_lead_ms: int) -> SyncRuntime:
         return SyncRuntime(
             predictor=ScriptedPredictor({"この設計": ("だから結論は決まる。", 0.9)}),
-            decision_model=RuleDecisionModel(CanonicalAssigner()),
+            decision_model=RuleDecisionModel(CanonicalAssigner(), context_fit=False),
             speaker=CallableSpeaker(lambda text: None),
             pause_ms=350,
             early_lead_ms=early_lead_ms,
@@ -212,7 +213,7 @@ class CarryoverTests(unittest.TestCase):
     def _runtime(self) -> SyncRuntime:
         return SyncRuntime(
             predictor=ScriptedPredictor({"この設計": ("だから結論は決まる。", 0.9)}),
-            decision_model=RuleDecisionModel(CanonicalAssigner()),
+            decision_model=RuleDecisionModel(CanonicalAssigner(), context_fit=False),
             speaker=CallableSpeaker(lambda text: None),
             cooldown_ms=2_500,
             outcome_window_ms=1_000,
@@ -278,7 +279,7 @@ class _SlowDecisionModel:
 
     def __init__(self, delay: float) -> None:
         self.delay = delay
-        self.inner = RuleDecisionModel(CanonicalAssigner())
+        self.inner = RuleDecisionModel(CanonicalAssigner(), context_fit=False)
 
     def decide(self, state):
         time.sleep(self.delay)
@@ -291,7 +292,7 @@ class AsyncDecisionRuntimeTests(unittest.TestCase):
             predictor=ScriptedPredictor({"この設計": ("だから結論は決まる。", 0.9)}),
             decision_model=AsyncDecisionModel(
                 _SlowDecisionModel(delay),
-                fallback=RuleDecisionModel(CanonicalAssigner()),
+                fallback=RuleDecisionModel(CanonicalAssigner(), context_fit=False),
             ),
             speaker=CallableSpeaker(lambda text: None),
             cooldown_ms=2_500,
@@ -456,7 +457,7 @@ class SilentConditionTests(unittest.TestCase):
                 predictor=ScriptedPredictor(
                     {"この設計": ("だから結論は決まる。", 0.9)}
                 ),
-                decision_model=RuleDecisionModel(CanonicalAssigner()),
+                decision_model=RuleDecisionModel(CanonicalAssigner(), context_fit=False),
                 speaker=speaker,
                 log_path=log_path,
                 condition="SILENCE",

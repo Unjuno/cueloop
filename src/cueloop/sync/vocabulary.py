@@ -66,6 +66,22 @@ CUE_BY_OPERATION: dict[str, tuple[str, ...]] = {
     "comparison": ("何と比べる？", "違いは？", "基準は？"),
 }
 
+# Adjacency prior: operations that most naturally extend the reasoning move
+# the speaker just made. Used to prefer a *context-fitting* missing operation
+# over a purely global one. Each tuple is biased toward moves that elaborate,
+# qualify, or test the current move before jumping to an unrelated one.
+CONTEXT_LINKS: dict[str, tuple[str, ...]] = {
+    "dependency": ("concretize", "conclusion", "ground"),
+    "concretize": ("dependency", "conclusion", "comparison"),
+    "ground": ("mechanism", "conclusion", "concretize"),
+    "mechanism": ("ground", "invert", "conclusion"),
+    "conclusion": ("invert", "comparison", "mechanism"),
+    "invert": ("concretize", "comparison", "conclusion"),
+    "comparison": ("invert", "conclusion", "ground"),
+    "boundary": ("concretize", "dependency", "conclusion"),
+}
+
+
 OPERATION_BY_CUE: dict[str, str] = {
     cue: operation for operation, cues in CUE_BY_OPERATION.items() for cue in cues
 }

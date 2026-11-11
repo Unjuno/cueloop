@@ -171,6 +171,15 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
+        "--no-context-fit",
+        action="store_true",
+        help=(
+            "Restore the legacy static operation priority. By default the rule "
+            "policy prefers moves adjacent to what the speaker just said and "
+            "stays silent when the transcript carries no operation signal."
+        ),
+    )
+    parser.add_argument(
         "--pair-key",
         default="",
         help="Key shared by paired CUE and SILENCE runs for paired analysis.",
@@ -349,6 +358,7 @@ def main(argv: list[str] | None = None) -> int:
                 max_characters=args.max_cue_characters,
                 delivery_window_ms=args.delivery_window_ms,
                 insertion_delay_ms=args.insertion_delay_ms,
+                context_fit=not args.no_context_fit,
             )
         if args.assignment == "random-operation":
             decision_model = RandomOperationDecisionModel(
@@ -362,6 +372,7 @@ def main(argv: list[str] | None = None) -> int:
                     max_characters=args.max_cue_characters,
                     delivery_window_ms=args.delivery_window_ms,
                     insertion_delay_ms=args.insertion_delay_ms,
+                    context_fit=not args.no_context_fit,
                 )
                 if args.decision_fallback == "rule"
                 else None

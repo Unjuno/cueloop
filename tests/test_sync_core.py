@@ -263,7 +263,7 @@ class _SlowDecisionModel:
 
     def __init__(self, delay: float = 0.05) -> None:
         self.delay = delay
-        self.inner = RuleDecisionModel(CanonicalAssigner())
+        self.inner = RuleDecisionModel(CanonicalAssigner(), context_fit=False)
 
     def decide(self, state):
         time.sleep(self.delay)
@@ -274,7 +274,7 @@ class AsyncDecisionModelTests(unittest.TestCase):
     def test_uses_fallback_until_background_decision_is_ready(self) -> None:
         model = AsyncDecisionModel(
             _SlowDecisionModel(),
-            fallback=RuleDecisionModel(CanonicalAssigner()),
+            fallback=RuleDecisionModel(CanonicalAssigner(), context_fit=False),
         )
         try:
             model.submit(_state(now_ms=400))
@@ -455,7 +455,7 @@ class LocalLLMPredictorTests(unittest.TestCase):
 
 class DecisionModelTests(unittest.TestCase):
     def test_cues_missing_operation_before_next_clause(self) -> None:
-        model = RuleDecisionModel(CanonicalAssigner())
+        model = RuleDecisionModel(CanonicalAssigner(), context_fit=False)
         intervention = model.decide(_state())
         self.assertIsNotNone(intervention)
         assert intervention is not None
@@ -469,7 +469,7 @@ class DecisionModelTests(unittest.TestCase):
         self.assertIsNone(model.decide(state))
 
     def test_silent_when_all_operations_are_covered(self) -> None:
-        model = RuleDecisionModel(CanonicalAssigner())
+        model = RuleDecisionModel(CanonicalAssigner(), context_fit=False)
         state = _state(
             prediction=_prediction(
                 "根拠と範囲と依存を確認する。",
@@ -482,7 +482,7 @@ class DecisionModelTests(unittest.TestCase):
         self.assertIsNone(model.decide(state))
 
     def test_skips_recently_delivered_operation(self) -> None:
-        model = RuleDecisionModel(CanonicalAssigner())
+        model = RuleDecisionModel(CanonicalAssigner(), context_fit=False)
         state = _state(recent_operations=frozenset({"ground"}))
         intervention = model.decide(state)
         self.assertIsNotNone(intervention)
@@ -490,12 +490,12 @@ class DecisionModelTests(unittest.TestCase):
         self.assertEqual(intervention.operation, "boundary")
 
     def test_silent_when_not_at_boundary(self) -> None:
-        model = RuleDecisionModel(CanonicalAssigner())
+        model = RuleDecisionModel(CanonicalAssigner(), context_fit=False)
         self.assertIsNone(model.decide(_state(at_boundary=False)))
 
     def test_contentless_prediction_is_silent(self) -> None:
         self.assertIsNone(
-            RuleDecisionModel(CanonicalAssigner()).decide(
+            RuleDecisionModel(CanonicalAssigner(), context_fit=False).decide(
                 _state(prediction=_prediction("。", base_length=15))
             )
         )
@@ -528,7 +528,7 @@ class DecisionModelTests(unittest.TestCase):
         self.assertTrue(isinstance(random.Random(3).choice([1]), int))
 
     def test_unmapped_cue_is_logged_as_unmapped(self) -> None:
-        model = RuleDecisionModel(FixedAssigner("そうですね"))
+        model = RuleDecisionModel(FixedAssigner("そうですね"), context_fit=False)
         intervention = model.decide(_state())
         self.assertIsNotNone(intervention)
         assert intervention is not None
@@ -545,7 +545,7 @@ class RandomOperationTests(unittest.TestCase):
 
     def _wrapped(self, seed: int = 3) -> RandomOperationDecisionModel:
         return RandomOperationDecisionModel(
-            RuleDecisionModel(CanonicalAssigner()),
+            RuleDecisionModel(CanonicalAssigner(), context_fit=False),
             CanonicalAssigner(),
             seed=seed,
         )
@@ -562,7 +562,7 @@ class RandomOperationTests(unittest.TestCase):
         self.assertEqual(first_ids, second_ids)
 
     def test_keeps_policy_request_and_changes_operation(self) -> None:
-        base = RuleDecisionModel(CanonicalAssigner())
+        base = RuleDecisionModel(CanonicalAssigner(), context_fit=False)
         expected = base.decide(_state())
         assert expected is not None
         draws = [self._wrapped(seed=seed).decide(_state()) for seed in range(12)]
@@ -588,7 +588,7 @@ class RandomOperationTests(unittest.TestCase):
             prediction=_prediction("すべて確認する。", operations=tuple(OPERATIONS)),
             clause_operations=frozenset(OPERATIONS),
         )
-        base = RuleDecisionModel(CanonicalAssigner())
+        base = RuleDecisionModel(CanonicalAssigner(), context_fit=False)
         sample = base.decide(_state())
         assert sample is not None
 
@@ -609,3 +609,62 @@ class RandomOperationTests(unittest.TestCase):
         self.assertEqual(build_assigner("fixed", cue="なぜ？").label, "fixed(なぜ？)")
         with self.assertRaises(ValueError):
             build_assigner("unknown")
+
+
+class ContextFitTests(unittest.TestCase):
+    """The rule policy should cue the move the clause needs, not a global one."""
+
+    def test_ranks_candidates_toward_the_clause_move(self) -> None:
+        state = _state(
+            prediction=_prediction(
+                "だから結論は決まる。",
+                operations=("conclusion",),
+            ),
+            clause_operations=frozenset({"dependency"}),
+        )
+        model = RuleDecisionModel(CanonicalAssigner())
+        intervention = model.decide(state)
+        assert intervention is not None
+        # clause dependency(1.5 anchor) beats prediction conclusion(1.0): concretize
+        self.assertEqual(intervention.requested_operation, "concretize")
+        self.assertIn("context-fit", intervention.reason)
+
+    def test_context_fit_prefers_prediction_adjacency_when_clause_silent(self) -> None:
+        state = _state(
+            prediction=_prediction(
+                "だから結論は決まる。",
+                operations=("conclusion",),
+            ),
+        )
+        model = RuleDecisionModel(CanonicalAssigner())
+        intervention = model.decide(state)
+        assert intervention is not None
+        # conclusion's adjacency prior starts with invert
+        self.assertEqual(intervention.requested_operation, "invert")
+
+    def test_context_fit_can_be_disabled(self) -> None:
+        model = RuleDecisionModel(CanonicalAssigner(), context_fit=False)
+        intervention = model.decide(_state())
+        assert intervention is not None
+        self.assertEqual(intervention.requested_operation, "ground")
+
+    def test_no_tagged_signal_silences_the_rule_policy(self) -> None:
+        state = _state(
+            prediction=_prediction("さらに", operations=()),
+            clause_operations=frozenset(),
+            recent_operations=frozenset(),
+        )
+        model = RuleDecisionModel(CanonicalAssigner())
+        self.assertIsNone(model.decide(state))
+
+    def test_ranking_falls_back_to_priority_without_signal(self) -> None:
+        from cueloop.sync.policy_model import PolicyObservation
+        from cueloop.sync.vocabulary import PRIORITY
+
+        state = _state(
+            prediction=_prediction("次は", operations=()),
+            clause_operations=frozenset(),
+            recent_operations=frozenset(),
+        )
+        observation = PolicyObservation.from_state(state)
+        self.assertEqual(observation.ranked_missing_operations(), PRIORITY)

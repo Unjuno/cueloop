@@ -472,6 +472,7 @@ class RuleDecisionModel:
         priority: Sequence[str] = PRIORITY,
         delivery_window_ms: int = 1_200,
         insertion_delay_ms: int = 0,
+        context_fit: bool = True,
     ) -> None:
         if not 0.0 <= min_confidence <= 1.0:
             raise ValueError("min_confidence must be between 0 and 1")
@@ -485,6 +486,7 @@ class RuleDecisionModel:
         self.priority = tuple(priority)
         self.delivery_window_ms = delivery_window_ms
         self.insertion_delay_ms = insertion_delay_ms
+        self.context_fit = context_fit
         self.label = f"prediction-gap(assigner={assigner.label})"
 
     def decide(self, state: SyncState) -> Intervention | None:
@@ -503,6 +505,19 @@ class RuleDecisionModel:
         ]
         if not missing:
             return None
+        context_fit = False
+        if self.context_fit:
+            # No tagged signal anywhere: an operation choice would be noise.
+            if (
+                not state.clause_operations
+                and not state.recent_operations
+                and not prediction.operations
+            ):
+                return None
+            ranked = PolicyObservation.from_state(state).ranked_missing_operations()
+            if ranked:
+                missing = list(ranked)
+            context_fit = True
         requested_operation = missing[0]
         cue = self.assigner.assign(requested_operation)
         operation = operation_for_cue(cue) or "unmapped"
@@ -518,7 +533,8 @@ class RuleDecisionModel:
             cue=cue,
             reason=(
                 f"next span omits {requested_operation}; insert the cue before "
-                "the next clause is produced"
+                f"the next clause is produced"
+                + (" (context-fit)" if context_fit else "")
             ),
             confidence=prediction.confidence,
             scheduled_at_ms=scheduled_at,

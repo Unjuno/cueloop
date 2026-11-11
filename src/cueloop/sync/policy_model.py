@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from .models import SyncState
-from .vocabulary import OPERATIONS, PRIORITY
+from .vocabulary import CONTEXT_LINKS, OPERATIONS, PRIORITY
 
 MODEL_VERSION = 1
 FEATURE_NAMES: tuple[str, ...] = (
@@ -132,6 +132,55 @@ class PolicyObservation:
     def missing_operations(self) -> tuple[str, ...]:
         covered = self.covered()
         return tuple(operation for operation in PRIORITY if operation not in covered)
+
+    def ranked_missing_operations(self) -> tuple[str, ...]:
+        """Missing operations ordered by context fit.
+
+        The static PRIORITY list is context-blind: it always prefers `ground`,
+        which misfires on clauses that need a different move. When the clause
+        (or the prediction, or recent history) carries at least one tagged
+        operation, candidates are re-ordered behind the moves that extend it.
+        Anchors are unordered tag sets, so scoring is position-independent:
+        each anchor contributes a weight equal to its link strength. With no
+        tagged signal anywhere this falls back to PRIORITY, identical to
+        `missing_operations`.
+        """
+        missing = self.missing_operations()
+
+        def anchors() -> tuple[tuple[str, float], ...]:
+            # the spoken clause is the strongest signal; the prediction is a guess
+            values: list[tuple[str, float]] = []
+            for source, weight in (
+                (self.clause_operations, 1.5),
+                (self.recent_operations, 1.0),
+                (self.prediction_operations, 1.0),
+            ):
+                try:
+                    values.extend((str(item), weight) for item in source)  # type: ignore[arg-type]
+                except TypeError:
+                    continue
+            deduped: list[tuple[str, float]] = []
+            for item, weight in values:
+                if item not in {name for name, _ in deduped}:
+                    deduped.append((item, weight))
+            return tuple(deduped)
+
+        anchors_tuple = anchors()
+        if not anchors_tuple:
+            return missing
+
+        def score(operation: str) -> tuple[float, ...]:
+            total = 0.0
+            for anchor, anchor_weight in anchors_tuple:
+                links = CONTEXT_LINKS.get(anchor, ())
+                if operation in links:
+                    # earlier link in the prior = stronger adjacency
+                    total += ((len(links) - links.index(operation)) / len(links)) * anchor_weight
+            return (-total,)
+
+        return tuple(
+            sorted(missing, key=lambda op: (score(op), PRIORITY.index(op)))
+        )
 
 
 def feature_vector(observation: PolicyObservation, operation: str) -> list[float]:
