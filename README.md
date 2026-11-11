@@ -285,6 +285,26 @@ Replay deltas are zero by construction because the transcript is fixed: cueing
 cannot change a static fixture. Zero deltas from replay show that the pipeline
 works, not that the cue had no effect.
 
+### Synthetic calibration (not human evidence)
+
+To show the analysis can recover a *known* effect, generate paired reports
+from a generative speaker model with a programmed cue effect:
+
+```bash
+scripts/synthesize_experiment.py --output-dir logs/synthetic-effect030 \
+  --sessions 24 --clauses 8 --seed 0 --uptake-effect 0.30
+scripts/analyze_experiment.py logs/synthetic-effect030 \
+  --json artifacts/synthetic-effect030.json
+```
+
+The CUE and SILENCE sessions of a pair share the missing-operation path and
+per-boundary uniforms (common random numbers); only the programmed effect
+differs. With `--uptake-effect 0.30` and 24 pairs, the analyzer reports
+`+0.229` to `+0.328` for uptake across rule/linear/llm with CIs excluding 0;
+with `--uptake-effect 0.0` it reports exactly `+0.000`. Delays are paired by
+construction. These are calibration results of the pipeline, not evidence
+about human speech. All parameters are recorded in the output manifest.
+
 Aggregate the report files by policy family:
 
 ```bash

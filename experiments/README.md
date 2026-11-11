@@ -67,6 +67,12 @@ transcript, so cueing cannot change the next words and every paired delta is
 zero. Zero deltas here mean the pairing and delivery plumbing work; they say
 nothing about effect size. Only live sessions can estimate an effect.
 
+To check the analyzer's detection power without a microphone, generate paired
+reports from `scripts/synthesize_experiment.py`, which programs a known cue
+effect into a generative speaker and writes `synthetic: true` reports plus a
+manifest of its parameters (see `docs/experiment-protocol.md`). Synthetic
+numbers calibrate the pipeline; they are not evidence about human speech.
+
 To check the analyzer's non-zero and insufficient paths without a microphone,
 run it on the synthetic reports:
 

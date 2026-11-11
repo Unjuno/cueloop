@@ -181,6 +181,47 @@ file, so a spoken cue cannot change what is said next. Zero deltas there show
 that the pipeline and the pairing work, not that cues have no effect. Only live
 sessions can estimate an effect.
 
+## Synthetic calibration of the analysis
+
+`scripts/synthesize_experiment.py` writes paired reports from a generative
+speaker with a programmed cue effect. The cue effect acts on the delivered
+operation; requested and delivered operations diverge in the exploration arm,
+so CUE and SILENCE share the boundary skeleton and the per-boundary uniforms
+(common random numbers), and only the effect term differs. Speaker state
+(missing-operation sets) evolves from the outcomes, so downstream clauses
+diverge causally — that is the effect being measured.
+
+Commands and coverage:
+
+```bash
+for effect in 0 0.10 0.20 0.30; do
+  scripts/synthesize_experiment.py --output-dir logs/synthetic-effect${effect} \
+    --sessions 24 --clauses 8 --seed 0 --uptake-effect "$effect" --carryover-effect "$effect"
+done
+```
+
+Measured on the generated reports (24 pairs per backend, seed 0):
+
+| programmed effect | backend | uptake delta (95% CI) |
+| --- | --- | --- |
+| 0.00 | rule, linear, llm | +0.000 (all exact) |
+| 0.10 | rule / linear / llm | +0.130 [+0.083, +0.182] / +0.125 [+0.083, +0.167] / +0.078 [+0.047, +0.109] |
+| 0.20 | rule / linear / llm | +0.240 [+0.182, +0.302] / +0.229 [+0.172, +0.292] / +0.161 [+0.115, +0.208] |
+| 0.30 | rule / linear / llm | +0.328 [+0.266, +0.391] / +0.323 [+0.260, +0.385] / +0.229 [+0.182, +0.271] |
+
+A second seed (1) at effect 0.20 reproduces the pattern (rule +0.156,
+linear +0.167, llm +0.156), and `--assignment requested` at effect 0.30 with
+16 pairs yields +0.289 to +0.312 with CIs excluding 0. Delay deltas are
+`+0.000` everywhere by construction. The null arm (`--uptake-effect 0.0`) is
+the pipeline's calibration reference: the analyzer reports exactly zero, not
+approximately zero.
+
+**These are synthetic numbers.** The cue effect is a programming choice, not
+a measurement of people. Use this arm to test the analyzer (detection power,
+pairing correctness, CI sanity), never to estimate how cues affect a human
+speaker. Every synthetic report and manifest carries `synthetic: true` and a
+note saying so.
+
 ## Training the fast intervention policy
 
 Every intervention log now contains the observation features used by the
