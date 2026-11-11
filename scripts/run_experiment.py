@@ -91,6 +91,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--tts-voice", default="Kyoko")
     parser.add_argument(
+        "--adapter-args-json",
+        default="[]",
+        help="Extra args appended to the speech adapter command (JSON list).",
+    )
+    parser.add_argument(
         "--tts",
         action=argparse.BooleanOptionalAction,
         default=None,
@@ -177,12 +182,17 @@ def main(argv: list[str] | None = None) -> int:
     if tts:
         command += ["--tts-command-json", json.dumps(_say_command(args.tts_voice))]
     if args.mode == "live":
+        extra_args = json.loads(args.adapter_args_json)
+        if not isinstance(extra_args, list):
+            print("error: --adapter-args-json must be a JSON list", file=sys.stderr)
+            return 2
         event_command = [
             str(args.adapter),
             "--duration",
             str(args.duration),
             "--locale",
             "ja-JP",
+            *[str(item) for item in extra_args],
         ]
         command += ["--event-command-json", json.dumps(event_command)]
     else:

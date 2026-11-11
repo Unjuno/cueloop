@@ -312,6 +312,18 @@ Pre-register the target sample and stopping rule. Exclude a session only for a
 documented technical failure (ASR unavailable, TTS failure, audio loss).
 Report all exclusions and their reasons. A null result is a valid result.
 
+## Validity check: acoustic loopback
+
+When a programmed voice is played through the speakers and heard by the same
+microphone, the cue audio enters the transcript stream. The runtime's
+post-playback suppression window masks the cue's words, but the *talker* is
+inanimate: it cannot elect the delivered operation or react to it, so uptake deltas are structurally zero and intervention counts drift between arms. A
+live run with a `say` voice therefore validates the acoustic path (adapter,
+ASR, timing, outcome joins), not any treatment effect. Only a speaker who can
+react — a human — yields a meaningful CUE/SILENCE contrast. `--adapter-args-json`
+passes extra flags to the adapter (e.g. a lower `--speech-db` for weak-signal
+acoustic tests); it changes detection sensitivity, not the causal structure.
+
 ## Threats to validity
 
 - The operation tagger is a proxy; manual adjudication is required for any

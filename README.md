@@ -135,6 +135,14 @@ The same applies to any command that contains option-like tokens; plain
 `--tts-command say` works, but `say -v Kyoko` must use the JSON form.
 
 macOS asks for Speech Recognition and microphone permission on first use.
+When the speaker is a `say` voice tuned to air-conduction audio, the mic hears
+the cue too; the runtime suppresses the cue's text for a short window after
+playback, but an *inanimate* talker cannot react to cues, so yield is
+structurally zero and intervention counts may differ from the SILENCE arm.
+`--adapter-args-json '["--speech-db","-50"]'` lowers the adapter's speech
+detection threshold for such weak-signal loops; it is not needed when speaking
+directly into the microphone.
+
 The adapter emits the same event contract used by replay:
 
 ```json

@@ -81,3 +81,13 @@ scripts/analyze_experiment.py experiments/analysis-smoke \
   --json artifacts/analysis-smoke.json \
   --markdown artifacts/analysis-smoke.md
 ```
+
+
+## Live acoustic smoke logs
+
+`logs/live-explore-01/` holds eight live sessions recorded with a `say` voice
+playing a Japanese passage while the adapter transcribed it (seeds 0-1,
+rule/linear, CUE/SILENCE). These validate the acoustic pipeline and the
+paired analysis plumbing. The talker is inanimate, so all outcome deltas are
+zero and arms are not perfectly paired; do not cite these numbers as evidence
+about anything.
