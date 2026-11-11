@@ -18,6 +18,7 @@ from .policy import (
     LocalLLMDecisionModel,
     RandomOperationDecisionModel,
     RuleDecisionModel,
+    SteeringDecisionModel,
     build_assigner,
 )
 from .policy_model import LinearPolicyModel
@@ -45,9 +46,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--decision",
-        choices=["rule", "linear", "local"],
+        choices=["rule", "linear", "local", "steer"],
         default="rule",
-        help="Timing/cue decision backend (default: rule).",
+        help=("Timing/cue decision backend (default: rule). "
+            "'steer' asks a local LLM to change the reasoning trajectory; "
+            "'local' asks it to fill missing operations."),
     )
     parser.add_argument(
         "--predictor",
@@ -339,8 +342,10 @@ def main(argv: list[str] | None = None) -> int:
                 delivery_window_ms=args.delivery_window_ms,
                 insertion_delay_ms=args.insertion_delay_ms,
             )
-        elif args.decision == "local":
-            decision_model = LocalLLMDecisionModel(
+        elif args.decision in {"local", "steer"}:
+            steer = args.decision == "steer"
+            model_class = SteeringDecisionModel if steer else LocalLLMDecisionModel
+            decision_model = model_class(
                 base_url=args.base_url,
                 model=args.model,
                 assigner=assigner,
@@ -387,7 +392,7 @@ def main(argv: list[str] | None = None) -> int:
             )
         if args.predictor == "local" and hasattr(predictor, "warmup"):
             predictor.warmup()
-        if args.decision == "local" and hasattr(decision_model, "warmup"):
+        if args.decision in {"local", "steer"} and hasattr(decision_model, "warmup"):
             decision_model.warmup()
         speaker = _build_speaker(args)
         runtime = SyncRuntime(

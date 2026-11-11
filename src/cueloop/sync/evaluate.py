@@ -8,6 +8,7 @@ from .models import Outcome
 from .vocabulary import tag_operations
 
 FAMILIES: tuple[tuple[str, str], ...] = (
+    ("steering", "steering"),
     ("prediction-gap", "rule"),
     ("linear-policy", "linear"),
     ("local-llm", "llm"),

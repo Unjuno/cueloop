@@ -312,21 +312,24 @@ class LocalLLMDecisionModel:
         except (RuntimeError, TypeError, ValueError):
             pass
 
-    def decide(self, state: SyncState) -> Intervention | None:
-        if not state.at_boundary or state.prediction is None or state.diverged:
-            return None
-        if not _span_has_content(state.prediction.span):
-            return None
+    def _missing(self, state: SyncState) -> tuple[frozenset[str], list[str]]:
         prediction = state.prediction
+        assert prediction is not None
         covered_set = (
             set(prediction.operations)
             | set(state.clause_operations)
             | set(state.recent_operations)
         )
-        covered = ", ".join(sorted(covered_set)) or "なし"
         missing = [operation for operation in PRIORITY if operation not in covered_set]
+        return frozenset(covered_set), missing
+
+    def _build_messages(self, state: SyncState) -> tuple[str, str] | None:
+        prediction = state.prediction
+        assert prediction is not None
+        covered_set, missing = self._missing(state)
         if not missing:
             return None
+        covered = ", ".join(sorted(covered_set)) or "なし"
         recent = ", ".join(sorted(state.recent_operations)) or "なし"
         context = " / ".join(state.context[-4:]) or "なし"
         system = (
@@ -354,6 +357,17 @@ class LocalLLMDecisionModel:
             '"confidence":0.7,"reason":"..."}\n'
             'または {"action":"SILENCE","confidence":0.7,"reason":"..."}'
         )
+        return system, user
+
+    def decide(self, state: SyncState) -> Intervention | None:
+        if not state.at_boundary or state.prediction is None or state.diverged:
+            return None
+        if not _span_has_content(state.prediction.span):
+            return None
+        messages = self._build_messages(state)
+        if messages is None:
+            return None
+        system, user = messages
         try:
             content = chat_completion(
                 self.base_url,
@@ -544,6 +558,59 @@ class RuleDecisionModel:
             base_text=state.text,
             prediction=prediction,
         )
+
+
+class SteeringDecisionModel(LocalLLMDecisionModel):
+    """Trajectory-steering backend: change the speaker's next move, not just fill gaps.
+
+    Same fail-closed JSON contract as the local LLM backend, but the prompt
+    asks for the one move that best advances or redirects the reasoning
+    trajectory — repeating a move, anchoring on one frame, jumping to a rival
+    before it is earned — rather than the next unplayed item on a checklist.
+    Silence is the default when the current trajectory is already productive.
+    This backend exists to be compared, not trusted: whether steering a
+    speaker's reasoning helps is a live-session question nobody has answered.
+    """
+
+    def __init__(self, **kwargs: object) -> None:
+        super().__init__(**kwargs)  # type: ignore[arg-type]
+        self.label = f"steering({self.model})"
+
+    def _build_messages(self, state: SyncState) -> tuple[str, str] | None:
+        prediction = state.prediction
+        assert prediction is not None
+        covered_set, missing = self._missing(state)
+        if not missing:
+            return None
+        covered = ", ".join(sorted(covered_set)) or "なし"
+        recent = ", ".join(sorted(state.recent_operations)) or "なし"
+        context = " / ".join(state.context[-4:]) or "なし"
+        system = (
+            "あなたは話し手の発話中に短い日本語の cue を差し込む推論ファシリテーターです。"
+            "目的は「抜けを埋める」ではなく「この話し手の推論軌道を、より有用な方向へ1手だけ押し進める」"
+            "ことです。同じ操作を繰り返している、1つの枠に固執している、根拠なく飛躍している、"
+            "逆を検討していない、といった軌道の癖を見抜いて、その1手で軌道が変わる促しを入れます。"
+            "現時点の軌道で十分有用な場合や、割り込むと思考を妨げる場合は SILENCE を選びます。"
+            "必ずJSONオブジェクトだけを返し、説明を含めないこと。"
+        )
+        user = (
+            f"【直前までの文脈】\n{context}\n\n"
+            f"【現在の発話】\n{state.text}\n\n"
+            f"【次に来ると予測される節】\n{prediction.span}\n"
+            f"【予測される操作】\n{', '.join(prediction.operations) or 'なし'}\n"
+            f"【既に現れた操作】\n{covered}\n"
+            f"【直近の操作】\n{recent}\n"
+            f"【未登場の操作】\n{', '.join(missing)}\n\n"
+            "【指示】この話し手の推論軌道を1手だけ伸ばすか、逆に振る cue を、"
+            f"【未登場の操作】の中から選んでください。{self.max_characters}文字以内の日本語の cue を返し、"
+            "どの癖に対してどんな狙いの一手なのかを reason に一言で書いてください。"
+            "confidence は 0.0〜1.0 の実数です。軌道に問題がないなら SILENCE にしてください。\n\n"
+            "【出力形式】\n"
+            '{"action":"CUE","operation":"invert","cue":"逆は？",'
+            '"confidence":0.7,"reason":"結論を出す前に反対側を試すべき"}\n'
+            'または {"action":"SILENCE","confidence":0.7,"reason":"..."}'
+        )
+        return system, user
 
 
 class LinearDecisionModel:

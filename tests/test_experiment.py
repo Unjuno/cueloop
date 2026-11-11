@@ -373,3 +373,27 @@ class ExperimentRunnerFlagTests(unittest.TestCase):
         self.assertIn("--silent", silence["command"])
         self.assertNotIn("--silent", cue["command"])
         self.assertFalse(silence["tts"])
+
+
+class SteeringRunnerTests(unittest.TestCase):
+    def test_steer_is_accepted_and_recorded_in_manifest(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        completed = subprocess.run(
+            [
+                sys.executable,
+                "scripts/run_experiment.py",
+                "--mode",
+                "replay",
+                "--dry-run",
+                "--decision",
+                "steer",
+            ],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        manifest = json.loads(completed.stdout.split("log=", 1)[0].strip())
+        self.assertEqual(manifest["decision"], "steer")
+        self.assertIn("steer", manifest["command"])

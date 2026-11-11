@@ -39,7 +39,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--condition", choices=["CUE", "SILENCE"], default="CUE")
     parser.add_argument(
-        "--decision", choices=["rule", "linear", "local"], default="rule"
+        "--decision", choices=["rule", "linear", "local", "steer"], default="rule"
     )
     parser.add_argument("--mode", choices=["live", "replay"], default="live")
     parser.add_argument("--duration", type=int, default=60)

@@ -369,3 +369,34 @@ class TrainPolicyExplorationTests(unittest.TestCase):
             self.assertEqual(
                 summary["assignments"]["random-operation(seed=0;wording=canonical)"], 2
             )
+
+
+class SteeringBackendTests(unittest.TestCase):
+    def test_policy_family_maps_steering_label(self) -> None:
+        from cueloop.sync.evaluate import policy_family
+
+        self.assertEqual(policy_family("steering(qwen2.5:1.5b-instruct)"), "steering")
+
+    def test_steering_parse_returns_intervention_with_steering_label(self) -> None:
+        from cueloop.sync.policy import SteeringDecisionModel
+
+        model = SteeringDecisionModel(model="test-model")
+        intervention = model._parse(
+            '{"action": "CUE", "operation": "invert", "cue": "逆は？", "confidence": 0.9, "reason": "結論の前に逆を試す"}',
+            _state(),
+        )
+        assert intervention is not None
+        self.assertEqual(intervention.requested_operation, "invert")
+        self.assertEqual(intervention.operation, "invert")
+        self.assertTrue(model.label.startswith("steering("))
+
+    def test_steering_silence_is_returned_as_no_intervention(self) -> None:
+        from cueloop.sync.policy import SteeringDecisionModel
+
+        model = SteeringDecisionModel(model="test-model")
+        self.assertIsNone(
+            model._parse(
+                '{"action": "SILENCE", "confidence": 0.7, "reason": "軌道は有用"}',
+                _state(),
+            )
+        )
