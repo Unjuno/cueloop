@@ -501,9 +501,7 @@ class DecisionModelTests(unittest.TestCase):
             CanonicalAssigner(), context_fit=True, fatigue_penalty=0
         )
         state = _state(
-            prediction=_prediction(
-                "だから結論は決まる。", operations=("conclusion",)
-            ),
+            prediction=_prediction("だから結論は決まる。", operations=("conclusion",)),
             clause_operations=frozenset({"dependency"}),
         )
         first = model.decide(state)
