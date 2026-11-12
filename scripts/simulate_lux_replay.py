@@ -1,32 +1,44 @@
 #!/usr/bin/env python3
-"""Replay real Lux Japanese speech through the real CUELOOP runtime.
+"""Replay real Japanese speech through the real CUELOOP runtime.
 
 `scripts/simulate_sessions.py` proves the analyzer recovers a *known* effect
 on a stereotyped speaker; this script does the same thing on real recorded
-human speech — 324 clean recited sentences from the Lux Japanese Speech
-Corpus (Lami Inc., CC-BY-4.0) — without needing a live microphone, a human
-study, or any sensory hardware.
+human speech. Two corpora are wired up:
+
+- **Lux Japanese Speech Corpus** (Lami Inc., CC-BY-4.0) — 324 clean read
+  sentences (`data/real-speech/lux/metadata.csv`). Read prose, no reasoning.
+- **ReazonSpeech** (Reazon Holdings, CDLA-Sharing-1.0; YouTube-derived
+  spontaneous/lecture-style Japanese) — sample selected at
+  `data/real-speech/reazon/metadata-sample-200.csv`. Closer to the discourse
+  register CUELOOP was designed for; still not live software reasoning.
 
 How: whisper-base-mlx is run on each WAV (already cached the first time) to
 get per-word timestamps. Each word boundary becomes a `transcript_partial`
 event, bookended by `speech_started`/`speech_ended`, and the whole session is
 fed through `SyncRuntime` in an unpaced replay. Each file is one "session";
 the same file is replayed under both `CUE` and `SILENCE` to form a paired
-comparison, and each replay writes an analyzer-ready report and JSONL log.
+comparison, and each replay writes an analyzer-ready report.
 
-Lux is read speech, not spontaneous reasoning, so a cue is unlikely to be
-*effective* in any human-meaningful sense. The value of this script is that
-the full pipeline — ASR events, predictor, decision, assignment, delivery,
-outcome, carryover, report, analysis — runs end-to-end on real human audio
-instead of ad-hoc scripted sentences. That is the next closest thing to
-"we ran it on real human speech" available without a live session.
+Note on live vs replayed speech: real speakers react to cues; canned audio
+cannot. Uptake in this arm is structurally 0 — what this arm verifies is
+that the pipeline composes end-to-end on real Japanese audio, whether the
+content contains CUELOOP's operation vocabulary or not. For the
+vocabulary-containing domain (Reazon sample: 30/200 lines tag at least one
+operation), predictions have a real signal to act on.
+
+License boundary: the Lux corpus is CC-BY-4.0; the ReazonSpeech mirror
+(`osanpo/reazonspeech`) is CDLA-Sharing-1.0 (permissive sharing with
+attribution); its metadata index (`efwkjn/reazonspeech_metadata`) is likewise
+derived from YouTube audio. **Do not commit audio files** — `data/` is
+git-ignored. Regenerate everything locally with the commands in
+`docs/real-speech.md`.
 
 Usage:
-  scripts/simulate_lux_replay.py --output-dir logs/lux-replay --xct files
-
-License boundary: the Lux corpus itself is CC-BY-4.0, so its contents are
-redistributable with attribution. Don't commit its WAV files (230 MB); a
-git-ignored cache is kept under `data/real-speech/lux-events/`.
+  scripts/simulate_lux_replay.py --output-dir logs/replay
+  scripts/simulate_lux_replay.py --corpus data/real-speech/reazon/metadata-sample-200.csv \
+      --whisper-cache data/real-speech/reazon/reazon-whisper-results.json \
+      --source-name reazon \
+      --output-dir artifacts/reazon-rule-200 --predictor ngram --decision rule
 """
 
 from __future__ import annotations
@@ -50,12 +62,14 @@ from cueloop.sync.policy import (
 from cueloop.sync.predictors import LocalLLMPredictor, NgramPredictor
 from cueloop.sync.runtime import NullSpeaker, SyncRuntime
 
-METADATA_PATH = ROOT / "data" / "real-speech" / "lux" / "metadata.csv"
-WHISPER_CACHE = ROOT / "data" / "real-speech" / "lux" / "lux-whisper-results.json"
+LUX_METADATA = ROOT / "data" / "real-speech" / "lux" / "metadata.csv"
 
 
 def load_or_transcribe(
-    whisper_hf_repo: str = "/tmp/whisper-base", limit: int = 0
+    metadata_path: Path,
+    whisper_cache: Path,
+    whisper_hf_repo: str = "/tmp/whisper-base",
+    limit: int = 0,
 ) -> dict[str, dict[str, object]]:
     """Load per-file transcripts with word timestamps; cache to disk.
 
@@ -63,25 +77,35 @@ def load_or_transcribe(
     Cache written as a whole file; if a limit run is needed, the first
     ``limit`` entries are still read from the cache if present.
     """
-    metadata = list(csv.DictReader(METADATA_PATH.open(encoding="utf-8")))
+    metadata = list(csv.DictReader(metadata_path.open(encoding="utf-8")))
     rows: list = metadata[:limit] if limit else metadata
 
-    if WHISPER_CACHE.exists():
-        cache: dict[str, dict[str, object]] = json.loads(
-            WHISPER_CACHE.read_text(encoding="utf-8")
-        )
+    whisper_cache.parent.mkdir(parents=True, exist_ok=True)
+    cache: dict[str, dict[str, object]] = {}
+    if whisper_cache.exists():
+        cache = json.loads(whisper_cache.read_text(encoding="utf-8"))
+
+    missing = [
+        row
+        for row in rows
+        if row["file_name"] not in cache
+        and (metadata_path.parent / row["cleaned_path"]).exists()
+    ]
+    if not missing:
+        subset = {
+            row["file_name"]: cache[row["file_name"]]
+            for row in rows
+            if row["file_name"] in cache
+        }
         if limit:
-            return dict(list(cache.items())[:limit])
-        return cache
+            return dict(list(subset.items())[:limit])
+        return subset
 
     import mlx_whisper  # noqa: WPS433
 
-    cache = {}
-    for row in rows:
-        wav = METADATA_PATH.parent / row["cleaned_path"]
-        if not wav.exists():
-            print(f"skipping missing file: {row['cleaned_path']}", flush=True)
-            continue
+    for row in missing:
+        wav = metadata_path.parent / row["cleaned_path"]
+        print(f"transcribing {row['file_name']}", flush=True)
         result = mlx_whisper.transcribe(
             str(wav),
             path_or_hf_repo=whisper_hf_repo,
@@ -90,10 +114,15 @@ def load_or_transcribe(
             verbose=False,
         )
         cache[row["file_name"]] = result
-        print(f"transcribed {row['file_name']}", flush=True)
-    WHISPER_CACHE.parent.mkdir(parents=True, exist_ok=True)
-    WHISPER_CACHE.write_text(json.dumps(cache, ensure_ascii=False), encoding="utf-8")
-    return cache
+        whisper_cache.write_text(json.dumps(cache, ensure_ascii=False), encoding="utf-8")
+    subset = {
+        row["file_name"]: cache[row["file_name"]]
+        for row in rows
+        if row["file_name"] in cache
+    }
+    if limit:
+        return dict(list(subset.items())[:limit])
+    return subset
 
 
 def events_for(file_name: str, segments: list[dict[str, object]]) -> list[SyncEvent]:
@@ -235,6 +264,18 @@ def run_session(
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--corpus", type=Path, default=LUX_METADATA)
+    parser.add_argument(
+        "--whisper-cache",
+        type=Path,
+        default=None,
+        help="default: alongside the corpus (lux-whisper-results.json for Lux)",
+    )
+    parser.add_argument(
+        "--source-name",
+        default="lux",
+        help="label embedded in the report note (e.g. 'lux', 'reazon')",
+    )
     parser.add_argument("--pause-ms", type=int, default=350)
     parser.add_argument("--cooldown-ms", type=int, default=1_500)
     parser.add_argument("--min-text-characters", type=int, default=4)
@@ -254,7 +295,15 @@ def main() -> int:
     parser.add_argument("--local-base-url", default="http://127.0.0.1:11434")
     args = parser.parse_args()
 
-    cache = load_or_transcribe(args.whisper_model, limit=args.limit)
+    whisper_cache = args.whisper_cache
+    if whisper_cache is None:
+        if args.corpus == LUX_METADATA:
+            whisper_cache = LUX_METADATA.with_name("lux-whisper-results.json")
+        else:
+            whisper_cache = args.corpus.with_name(
+                args.corpus.stem + "-whisper-results.json"
+            )
+    cache = load_or_transcribe(args.corpus, whisper_cache, args.whisper_model, limit=args.limit)
 
     if args.output_dir.exists() and any(args.output_dir.iterdir()):
         print(
@@ -283,7 +332,7 @@ def main() -> int:
             report["lux_file"] = file_name
             report["synthetic"] = True
             report["note"] = (
-                "Real Japanese speech (Lux, CC-BY-4.0) replayed offline; "
+                f"Recorded Japanese speech ({args.source_name}) replayed offline; "
                 "no human uptake is possible — this tests measurement, not effect."
             )
             slug = file_name.removesuffix(".wav").replace("/", "-")

@@ -1,6 +1,9 @@
-"""Lux replay simulator: real-speech events through the runtime."""
+"""Lux/Reazon replay simulator: real-speech events through the runtime."""
 
+import csv
+import json
 import unittest
+from pathlib import Path
 
 from cueloop.sync.models import EventType
 from scripts.simulate_lux_replay import events_for, run_session
@@ -29,6 +32,52 @@ class EventsForTests(unittest.TestCase):
     def test_events_for_returns_empty_for_no_words(self) -> None:
         self.assertEqual(events_for("dummy.wav", []), [])
         self.assertEqual(events_for("dummy.wav", [{"words": []}]), [])
+
+
+class CacheSubsetTests(unittest.TestCase):
+    def test_cache_with_extra_entries_returns_exactly_the_corpus(self) -> None:
+        import tempfile
+
+        from scripts import simulate_lux_replay as sim
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            (tmp / "000").mkdir()
+            (tmp / "000/a.flac").write_bytes(b"x")
+            (tmp / "000/b.flac").write_bytes(b"x")
+            metadata = tmp / "metadata.csv"
+            with metadata.open("w", newline="", encoding="utf-8") as handle:
+                writer = csv.writer(handle)
+                writer.writerow(["file_name", "id", "raw_path", "cleaned_path", "transcript"])
+                writer.writerow(["000/a.flac", "a", "000/a.flac", "000/a.flac", "テスト例文"])
+                writer.writerow(["000/b.flac", "b", "000/b.flac", "000/b.flac", "もう一つの例文"])
+            cache = tmp / "cache.json"
+            cache.write_text(
+                json.dumps(
+                    {
+                        "000/a.flac": {
+                            "segments": [{"words": [{"word": "テスト", "start": 0.0, "end": 0.5}]}]
+                        },
+                        "000/b.flac": {
+                            "segments": [
+                                {"words": [{"word": "もう一つ", "start": 0.0, "end": 0.5}]}
+                            ]
+                        },
+                        "000/c.flac": {
+                            "segments": [{"words": [{"word": "余分", "start": 0.0, "end": 0.5}]}]
+                        },
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            result = sim.load_or_transcribe(
+                metadata,
+                cache,
+                whisper_hf_repo="/tmp/whisper-base",
+                limit=0,
+            )
+            self.assertEqual(sorted(result), ["000/a.flac", "000/b.flac"])
 
 
 class RunSessionTests(unittest.TestCase):
