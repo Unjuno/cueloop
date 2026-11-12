@@ -41,8 +41,13 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from cueloop.sync.models import EventType, SyncEvent
-from cueloop.sync.policy import CanonicalAssigner, RuleDecisionModel
-from cueloop.sync.predictors import NgramPredictor
+from cueloop.sync.policy import (
+    CanonicalAssigner,
+    LocalLLMDecisionModel,
+    RuleDecisionModel,
+    SteeringDecisionModel,
+)
+from cueloop.sync.predictors import LocalLLMPredictor, NgramPredictor
 from cueloop.sync.runtime import NullSpeaker, SyncRuntime
 
 METADATA_PATH = ROOT / "data" / "real-speech" / "lux" / "metadata.csv"
@@ -130,14 +135,66 @@ def run_session(
     pause_ms: int,
     cooldown_ms: int,
     min_text_characters: int,
+    predictor_name: str = "cycle",
+    decision_name: str = "rule",
+    local_model: str = "qwen2.5:7b-instruct",
+    local_base_url: str = "http://127.0.0.1:11434",
 ) -> dict[str, object]:
     silent = condition == "SILENCE"
-    runtime = SyncRuntime(
-        predictor=NgramPredictor.default(),
-        decision_model=RuleDecisionModel(
+    if predictor_name == "ngram":
+        predictor = NgramPredictor.default()
+    elif predictor_name == "local":
+        predictor = LocalLLMPredictor(
+            base_url=local_base_url,
+            model=local_model,
+            timeout=15.0,
+            max_tokens=64,
+        )
+    elif predictor_name == "cycle":
+        from cueloop.sync.predictors import ScriptedPredictor
+        # A minimal synthetic cycle predictor, useful as a stable test target.
+        # It rotates one operation-spanning span per call; CUELOOP's rule
+        # policy will therefore fire a deterministic sequence of cues.
+        predictor = ScriptedPredictor(
+            {
+                "結論は": ("だから結論は決まる。", 0.9),
+                "前提と": ("依存関係を分けて考える必要がある。", 0.9),
+                "この設計": ("前提と依存関係を分けて考える必要がある。", 0.9),
+            },
+            fallback=("だから結論は決まる。", 0.9),
+        )
+    else:
+        msg = f"unknown predictor: {predictor_name}"
+        raise ValueError(msg)
+    if decision_name == "rule":
+        decision_model = RuleDecisionModel(
             CanonicalAssigner(),
             context_fit=True,
-        ),
+        )
+    elif decision_name == "local":
+        decision_model = LocalLLMDecisionModel(
+            base_url=local_base_url,
+            model=local_model,
+            assigner=CanonicalAssigner(),
+            timeout=30.0,
+            max_tokens=192,
+            cue_style="bare",
+        )
+    elif decision_name == "steer":
+        decision_model = SteeringDecisionModel(
+            base_url=local_base_url,
+            model=local_model,
+            assigner=CanonicalAssigner(),
+            timeout=30.0,
+            max_tokens=192,
+            cue_style="bare",
+        )
+    else:
+        msg = f"unknown decision model: {decision_name}"
+        raise ValueError(msg)
+    runtime = SyncRuntime(
+        predictor=predictor,
+        decision_model=decision_model,
         speaker=NullSpeaker(),
         pause_ms=pause_ms,
         cooldown_ms=cooldown_ms,
@@ -149,6 +206,7 @@ def run_session(
         session_id=f"{condition.lower()}-{file_name.removesuffix('.wav').replace('/', '-')}",
         pair_key=file_name.removesuffix(".wav").replace("/", "-"),
         silent=silent,
+        log_path=None,
     )
     events = events_for(file_name, segments)
     if not events:
@@ -181,6 +239,18 @@ def main() -> int:
     parser.add_argument("--min-text-characters", type=int, default=4)
     parser.add_argument("--whisper-model", default="/tmp/whisper-base")
     parser.add_argument("--limit", type=int, default=0, help="only N files (0 = all)")
+    parser.add_argument(
+        "--predictor",
+        choices=["local", "ngram"],
+        default="ngram",
+    )
+    parser.add_argument(
+        "--decision",
+        choices=["local", "rule", "steer"],
+        default="rule",
+    )
+    parser.add_argument("--local-model", default="qwen2.5:7b-instruct")
+    parser.add_argument("--local-base-url", default="http://127.0.0.1:11434")
     args = parser.parse_args()
 
     cache = load_or_transcribe(args.whisper_model, limit=args.limit)
@@ -204,6 +274,10 @@ def main() -> int:
                 pause_ms=args.pause_ms,
                 cooldown_ms=args.cooldown_ms,
                 min_text_characters=args.min_text_characters,
+                predictor_name=args.predictor,
+                decision_name=args.decision,
+                local_model=args.local_model,
+                local_base_url=args.local_base_url,
             )
             report["lux_file"] = file_name
             report["synthetic"] = True
