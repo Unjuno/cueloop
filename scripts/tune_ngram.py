@@ -47,21 +47,29 @@ def _normalise(text: str) -> str:
     return text
 
 
-def _split(lines: list[str], *, eval_mod: int, eval_index_target: int) -> tuple[list[str], list[str]]:
+def _split(
+    lines: list[str], *, eval_mod: int, eval_index_target: int
+) -> tuple[list[str], list[str]]:
     train = [line for i, line in enumerate(lines) if i % eval_mod != eval_index_target]
-    eval_set = [line for i, line in enumerate(lines) if i % eval_mod == eval_index_target]
+    eval_set = [
+        line for i, line in enumerate(lines) if i % eval_mod == eval_index_target
+    ]
     return train, eval_set
 
 
 def _predict_overlap(predicted: str, truth: str) -> int:
     # Longest common prefix in code-points.
     length = 0
-    while length < min(len(predicted), len(truth)) and predicted[length] == truth[length]:
+    while (
+        length < min(len(predicted), len(truth)) and predicted[length] == truth[length]
+    ):
         length += 1
     return length
 
 
-def _evaluate(predictor, eval_lines: list[str], *, prefix_chars: int) -> dict[str, object]:
+def _evaluate(
+    predictor, eval_lines: list[str], *, prefix_chars: int
+) -> dict[str, object]:
     total = 0
     full_hits = 0
     prefix_hits = 0
@@ -101,7 +109,9 @@ def _evaluate(predictor, eval_lines: list[str], *, prefix_chars: int) -> dict[st
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--corpus", type=Path, required=True, help="metadata.csv of the Lux corpus")
+    parser.add_argument(
+        "--corpus", type=Path, required=True, help="metadata.csv of the Lux corpus"
+    )
     parser.add_argument("--prefix-chars", type=int, default=12)
     parser.add_argument("--order", type=int, default=3, help="n-gram order (default 3)")
     parser.add_argument("--eval-mod", type=int, default=10)
@@ -125,7 +135,9 @@ def main(argv: list[str] | None = None) -> int:
     default_corpus = predictors_module.DEFAULT_CORPUS
 
     # Candidate 1: default (embedded corpus)
-    default = NgramPredictor.default(order=args.order, span_characters=args.span_characters)
+    default = NgramPredictor.default(
+        order=args.order, span_characters=args.span_characters
+    )
     default_metrics = _evaluate(default, eval_set, prefix_chars=args.prefix_chars)
 
     # Candidate 2: train on Lux train split only
