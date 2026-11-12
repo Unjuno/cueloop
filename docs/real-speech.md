@@ -141,9 +141,8 @@ operations in the next sentence. This is intrinsic to the corpus (it is not
 a reasoning dataset) rather than something that can be fixed by tuning the
 predictor.
 
-See `docs/benchmark.md` for the synthetic evaluation, `docs/experiment-protocol.md`
-for the human study design, and `docs/real-speech.md` (this file) for the
-Limited Corpus evaluation.
+See `docs/benchmark.md` for the synthetic evaluation and
+`docs/experiment-protocol.md` for the human study design.
 
 ## Rule arm on full Lux replay (328 files)
 
@@ -173,57 +172,53 @@ embedded corpus is dominated by example-language (`例えば`, `具体的`).
 
 ## Local-LLM end-to-end on the Lux corpus
 
-`scripts/simulate_lux_replay.py --predictor local --decision local` was run
-on the 38 files that finished first (the rest are queued as a background job).
-The output is re
-produced in `artifacts/lux-llm-328/`:
+A complete local-LLM run was executed over all 328 local Lux files under both
+conditions (command below; reports at `artifacts/lux-llm-328-full/`):
 
 ```text
-files with predictions:    26 / 38 (every prediction produced an intervention)
-delivered:                  0 / 38 (all 71 interventions cancelled — speaker kept talking)
-held on SILENCE:            71 (next-best, latency-matched arm receives 0)
-perceived novel wording:    71 interventions matched the symbolic parser
-
-A 50-file rerun (`--limit 50`) produced:
-
-```text
-files                 50
-predictions          60
-interventions        60
-delivered            0
-cancelled            60 (all)
-SILENCE interventions 60 (all)
+file                              328 CUE + 328 SILENCE
+predictions                      480 (identical in both arms)
+interventions                    457 CUE / 466 SILENCE
+delivered                        0  (both arms; all interventions cancelled/held)
+files with >= 1 prediction       201 / 328
+predictions not intervened        23 (decision model vetoed its own prediction)
+uptake / carryover               0.00 / 0.00 (identical; read speech)
+paired delta                     +0.000 on every metric
+n_pairs                          328
+median boundary->delivery delay   insufficient (no deliveries)
+repertoire_growth                0.06 (identical both arms; reflects operation
+                                 tags present in the transcript, not an effect
+                                 — nothing was delivered)
 ```
 
-Every local-LLM prediction fires the symbolic parser (every predicted span
-tags at least one operation token, or the context-fit constraint is
-satisfied), and every intervention is cancelled because the actually spoken
-text diverges from the prediction before the speaker pauses long enough for
-a cue to land. This is the honest state: **the pipeline knows when to speak,
-but not what to say**, because the corpus is literary Japanese and the local
-model cannot match the author's choices. To improve:
+CUE and SILENCE predictions are identical because the predictor and the seed
+are deterministic; interventions differ by 9 because the local-LLM decision
+is not bit-deterministic across processes (Ollama batching/scheduling).
 
-- (a) train a Japanese software-reasoning speech corpus targeted at the
-  vocabulary CUELOOP uses — not available publicly;
-- (b) evaluate on real software-reasoning recordings — not available publicly;
-- (c) accept that the reliable arm is the `rule` backend with the bare cue,
-  not the local LLM.
-```
+Idempotent `--limit` runs: the earlier `--limit 50` run produced
+`files=50, predictions=60, interventions=60, delivered=0, cancelled=60`,
+fully consistent with the complete 328-file run.
 
-**The key mismatch is also visible in the emotions files most frequently
-engaging the predictor**: `EMOTION100_011` (a participant speech containing
-例えば) yields 7 predictions; `EMOTION100_072` (理由 gives 13); the written
-recitation corpus (e.g. `RECITATION324_002` etc.) produces rarely any
-predictions (1 or 0). The predictor is engaging on the *trigger words*
-its own regex detects, not on the actual reasoning/shape of the sentence.
+Every intervention is cancelled (CUE) or held (SILENCE) because the actually
+spoken text diverges from the prediction before the speaker pauses long
+enough for a cue to land. This is the honest state: **the pipeline decides
+when to speak, but never manages to say it during read speech** — the corpus
+contains single-shot literary sentences, not an unfolding reasoning stream.
+What the run *does* verify is that the whole path — per-word ASR events →
+prediction → prediction-gap decision → SILENCE hold / CUE cancel — composes
+on real Japanese audio in both arms.
 
-The local LLM cannot detect the announcement and the reason for a mutation;
-it merely fires on the presence of vocabulary (前提/結論/依存 etc.) absent
-of any genuine reason to intervene. This means the live Japanese behaviour
-of CUELOOP's local-LLM path will be triggered predominantly by `trigger_words`
-rarely by reasoned operation shifts.
+The most frequent predictor engagements are on `EMOTION100_072` (13
+predictions) and `EMOTION100_011` (7) — driven by surface trigger vocabulary
+(`例えば`, `理由`), not by announced reasoning operations.
 
-## How to reproduce these numbers
+To improve:
+
+- (a) a Japanese software-reasoning speech corpus in CUELOOP's operation
+  vocabulary — not available publicly;
+- (b) real software-reasoning recordings — not available publicly;
+- (c) accept that the reliable arm on this corpus is the `rule` backend with
+  the bare cue (276 delivered, all `具体は？`-heavy), not the local LLM.
 
 ## How to reproduce these numbers
 
@@ -254,6 +249,19 @@ PY
 .venv/bin/python scripts/tune_ngram.py --corpus data/real-speech/lux/metadata.csv \
   --order 3 --prefix-chars 8 --span-characters 8 \
   --eval-mod 10 --eval-remainder 0
+
+# full Lux replay, rule backend (~2 minutes)
+PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 scripts/simulate_lux_replay.py \
+  --output-dir artifacts/lux-rule-328 --predictor ngram --decision rule
+.venv/bin/python scripts/analyze_experiment.py artifacts/lux-rule-328/cue artifacts/lux-rule-328/silence \
+  --markdown artifacts/lux-rule-328-analysis.md
+
+# full Lux replay, local-LLM backend (~30 minutes; needs Ollama + a model)
+PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 scripts/simulate_lux_replay.py \
+  --output-dir artifacts/lux-llm-328-full --predictor local --decision local \
+  --local-model gemma3:4b-it-qat
+.venv/bin/python scripts/analyze_experiment.py artifacts/lux-llm-328-full/cue artifacts/lux-llm-328-full/silence \
+  --markdown artifacts/lux-llm-328-full-analysis.md
 ```
 
 Whisper characterization needs `mlx-whisper` installed; the pip experience on
