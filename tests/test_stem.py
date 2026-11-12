@@ -117,9 +117,7 @@ class RuleStemModeTests(unittest.TestCase):
         intervention = model.decide(_state())
         self.assertIsNotNone(intervention)
         assert intervention is not None
-        self.assertEqual(
-            intervention.cue, "根拠は、実験で弱いと示されているからです。"
-        )
+        self.assertEqual(intervention.cue, "根拠は、実験で弱いと示されているからです。")
         # The whole point: the operation tag survives a non-vocabulary sentence.
         self.assertEqual(intervention.operation, "ground")
         self.assertEqual(intervention.requested_operation, "ground")
@@ -136,9 +134,7 @@ class RuleStemModeTests(unittest.TestCase):
         intervention = model.decide(_state())
         self.assertIsNotNone(intervention)
         assert intervention is not None
-        self.assertEqual(
-            intervention.cue, "根拠は、だから結論は決まるからです。"
-        )
+        self.assertEqual(intervention.cue, "根拠は、だから結論は決まるからです。")
 
     def test_bare_mode_is_unchanged(self) -> None:
         model = RuleDecisionModel(CanonicalAssigner(), context_fit=False)
@@ -311,9 +307,7 @@ class LocalDecisionStemModeTests(unittest.TestCase):
         intervention = model.decide(_state())
         self.assertIsNotNone(intervention)
         assert intervention is not None
-        self.assertEqual(
-            intervention.cue, "根拠は、実験で弱いと示されているからです。"
-        )
+        self.assertEqual(intervention.cue, "根拠は、実験で弱いと示されているからです。")
         self.assertEqual(intervention.operation, "ground")
         self.assertEqual(intervention.cue_style, "stem")
 

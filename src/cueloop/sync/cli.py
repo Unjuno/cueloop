@@ -49,9 +49,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--decision",
         choices=["rule", "linear", "local", "steer"],
         default="rule",
-        help=("Timing/cue decision backend (default: rule). "
+        help=(
+            "Timing/cue decision backend (default: rule). "
             "'steer' asks a local LLM to change the reasoning trajectory; "
-            "'local' asks it to fill missing operations."),
+            "'local' asks it to fill missing operations."
+        ),
     )
     parser.add_argument(
         "--predictor",
@@ -146,8 +148,7 @@ def build_parser() -> argparse.ArgumentParser:
             "bare cue (default: 1.5)."
         ),
     )
-    parser.add_argument(
-        "--max-cue-characters", type=int, default=8)
+    parser.add_argument("--max-cue-characters", type=int, default=8)
     parser.add_argument("--min-confidence", type=float, default=0.55)
     parser.add_argument(
         "--pause-ms", type=int, default=350, help="Pause that marks a clause boundary."
@@ -377,8 +378,7 @@ def main(argv: list[str] | None = None) -> int:
                 )
             except (RuntimeError, OSError) as exc:
                 print(
-                    f"warning: stem LLM unavailable ({exc}); "
-                    "using span-template stems",
+                    f"warning: stem LLM unavailable ({exc}); using span-template stems",
                     file=sys.stderr,
                 )
         if args.decision == "linear":
@@ -429,13 +429,10 @@ def main(argv: list[str] | None = None) -> int:
                 stem_generator=stem_generator,
                 stem_max_characters=args.max_stem_characters,
             )
-        needs_async = (
-            (args.decision == "local" and args.async_decision)
-            or (
-                args.cue_style == "stem"
-                and args.decision in {"rule", "linear"}
-                and args.async_decision
-            )
+        needs_async = (args.decision == "local" and args.async_decision) or (
+            args.cue_style == "stem"
+            and args.decision in {"rule", "linear"}
+            and args.async_decision
         )
         if needs_async:
             # The fallback must be instant. A bare cue delivered on time beats

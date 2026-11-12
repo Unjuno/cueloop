@@ -47,16 +47,22 @@ STEM_TEMPLATES: dict[str, tuple[str, ...]] = {
 DEFAULT_STEM_MAX_CHARACTERS = 48
 _SPAN_HEAD = 24
 
-_WRAP_PAIRS = ("「」", "『』", "“”", "\"\"", "''")
+_WRAP_PAIRS = ("「」", "『』", "“”", '""', "''")
 
 
-def finalize_stem(text: str, *, max_characters: int = DEFAULT_STEM_MAX_CHARACTERS) -> str | None:
+def finalize_stem(
+    text: str, *, max_characters: int = DEFAULT_STEM_MAX_CHARACTERS
+) -> str | None:
     """Normalize an LLM-written stem, or return None when unusable."""
     if not isinstance(text, str):
         return None
     sentence = re.sub(r"\s+", " ", text).strip()
     for pair in _WRAP_PAIRS:
-        if len(sentence) >= 2 and sentence.startswith(pair[0]) and sentence.endswith(pair[1]):
+        if (
+            len(sentence) >= 2
+            and sentence.startswith(pair[0])
+            and sentence.endswith(pair[1])
+        ):
             sentence = sentence[1:-1].strip()
     if not sentence:
         return None
@@ -152,7 +158,9 @@ class StemCueGenerator:
             raise ValueError("max_characters must be at least 8")
         self.base_url = base_url.rstrip("/")
         self.model = model or resolve_model(
-            self.base_url, timeout=max(timeout, 5.0), preferred=PREFERRED_DECISION_MODELS
+            self.base_url,
+            timeout=max(timeout, 5.0),
+            preferred=PREFERRED_DECISION_MODELS,
         )
         self.timeout = timeout
         self.max_tokens = max_tokens
@@ -221,7 +229,9 @@ class StemCueGenerator:
             sentence = None
         else:
             sentence = finalize_stem(content, max_characters=self.max_characters)
-            self.last_error = None if sentence else "stem response was not a usable sentence"
+            self.last_error = (
+                None if sentence else "stem response was not a usable sentence"
+            )
         if sentence is not None:
             return sentence
         return render_stem_template(operation, span, max_characters=self.max_characters)

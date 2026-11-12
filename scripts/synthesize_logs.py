@@ -52,7 +52,9 @@ def _sigmoid(value: float) -> float:
     return scale / (1.0 + scale)
 
 
-def _carryover_logit(confidence: float, prediction_length: int, operation: str) -> float:
+def _carryover_logit(
+    confidence: float, prediction_length: int, operation: str
+) -> float:
     return (
         -1.1
         + 1.3 * (confidence - 0.75) / 0.2
@@ -90,7 +92,9 @@ def _session(
 
         prediction_confidence = round(rng.uniform(0.55, 0.97), 3)
         prediction_length = rng.randint(4, 48)
-        prediction_operations = rng.sample(list(OPERATIONS), k=rng.choice([0, 0, 1, 1, 2]))
+        prediction_operations = rng.sample(
+            list(OPERATIONS), k=rng.choice([0, 0, 1, 1, 2])
+        )
         clause_operations = rng.sample(list(OPERATIONS), k=rng.choice([0, 1, 1, 2]))
         recent_operations = rng.sample(list(OPERATIONS), k=rng.choice([0, 0, 1]))
         text_length = rng.randint(20, 140)
@@ -102,9 +106,7 @@ def _session(
         span_head = rng.choice(["だから", "つまり", "根拠は", "まず", "前提として"])
         prediction_span = span_head + "あ" * (prediction_length - len(span_head))
 
-        logit = _carryover_logit(
-            prediction_confidence, prediction_length, delivered
-        )
+        logit = _carryover_logit(prediction_confidence, prediction_length, delivered)
         p_carryover = _sigmoid(logit)
         p_uptake = _sigmoid(logit - 0.5)
         carryover_seen = rng.random() < p_carryover
@@ -228,7 +230,9 @@ def main(argv: list[str] | None = None) -> int:
             )
             path = output / f"{assignment}-{index:04d}.jsonl"
             path.write_text(
-                "".join(json.dumps(record, ensure_ascii=False) + "\n" for record in records),
+                "".join(
+                    json.dumps(record, ensure_ascii=False) + "\n" for record in records
+                ),
                 encoding="utf-8",
             )
             total += len(records)

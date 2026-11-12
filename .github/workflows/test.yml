@@ -22,7 +22,9 @@ jobs:
       - name: Install package
         run: python -m pip install -e . pytest ruff
       - name: Lint
-        run: ruff check src tests scripts/*.py
+        run: |
+          ruff check src tests scripts/*.py
+          ruff format --check src tests scripts/*.py
       - name: Run the test suite
         run: python -m pytest -q
       - name: Replay the deterministic sync fixture

@@ -457,7 +457,9 @@ class SilentConditionTests(unittest.TestCase):
                 predictor=ScriptedPredictor(
                     {"この設計": ("だから結論は決まる。", 0.9)}
                 ),
-                decision_model=RuleDecisionModel(CanonicalAssigner(), context_fit=False),
+                decision_model=RuleDecisionModel(
+                    CanonicalAssigner(), context_fit=False
+                ),
                 speaker=speaker,
                 log_path=log_path,
                 condition="SILENCE",

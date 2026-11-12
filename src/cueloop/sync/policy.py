@@ -390,7 +390,7 @@ class LocalLLMDecisionModel:
             "予測が確実でない、または割り込む価値が低い場合は SILENCE にしてください。\n\n"
             "【出力形式】\n"
             '{"action":"CUE","operation":"ground",'
-            f'{cue_example}'
+            f"{cue_example}"
             '"confidence":0.7,"reason":"..."}\n'
             'または {"action":"SILENCE","confidence":0.7,"reason":"..."}'
         )
@@ -471,9 +471,7 @@ class LocalLLMDecisionModel:
                 return None
             cue = sentence
             actual_operation = (
-                requested_operation
-                if requested_operation in OPERATIONS
-                else "unmapped"
+                requested_operation if requested_operation in OPERATIONS else "unmapped"
             )
         elif self.assigner is not None:
             cue = self.assigner.assign(requested_operation)
@@ -719,7 +717,7 @@ class SteeringDecisionModel(LocalLLMDecisionModel):
             "confidence は 0.0〜1.0 の実数です。軌道に問題がないなら SILENCE にしてください。\n\n"
             "【出力形式】\n"
             '{"action":"CUE","operation":"invert",'
-            f'{cue_example}'
+            f"{cue_example}"
             '"confidence":0.7,"reason":"結論を出す前に反対側を試すべき"}\n'
             'または {"action":"SILENCE","confidence":0.7,"reason":"..."}'
         )
@@ -956,9 +954,7 @@ def _resolve_stem_cue(
         )
         if sentence:
             return sentence
-    template = render_stem_template(
-        operation, span, max_characters=max_characters
-    )
+    template = render_stem_template(operation, span, max_characters=max_characters)
     if template:
         return template
     return assigner.assign(operation)

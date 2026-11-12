@@ -2,6 +2,8 @@
 
 ![tests](https://github.com/Unjuno/cueloop/actions/workflows/test.yml/badge.svg)
 
+🌐 [日本語版はこちら (README.ja.md)](README.ja.md)
+
 CUELOOP synchronizes an inserted cue with a person's speech while they are
 still talking. It predicts the next short span, tracks how the live transcript
 aligns with that prediction, and inserts a cue before the next clause is
@@ -456,6 +458,7 @@ tools/macos_speech_events.swift  macOS ASR adapter
 tests/                  deterministic unit and replay tests
 experiments/            replay fixtures
 docs/                   design and experiment protocol
+CONTRIBUTING.md         development and research ground rules
 ```
 
 The earlier turn-based stack has been removed. The sync core is the primary

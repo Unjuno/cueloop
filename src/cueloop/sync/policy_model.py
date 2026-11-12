@@ -175,12 +175,12 @@ class PolicyObservation:
                 links = CONTEXT_LINKS.get(anchor, ())
                 if operation in links:
                     # earlier link in the prior = stronger adjacency
-                    total += ((len(links) - links.index(operation)) / len(links)) * anchor_weight
+                    total += (
+                        (len(links) - links.index(operation)) / len(links)
+                    ) * anchor_weight
             return (-total,)
 
-        return tuple(
-            sorted(missing, key=lambda op: (score(op), PRIORITY.index(op)))
-        )
+        return tuple(sorted(missing, key=lambda op: (score(op), PRIORITY.index(op))))
 
 
 def feature_vector(observation: PolicyObservation, operation: str) -> list[float]:
