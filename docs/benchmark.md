@@ -105,7 +105,8 @@ by `whisper-base-mlx`. Each file is one session, paired with itself under
 CUE and SILENCE. Two corpora are covered — the Lux read corpus (this
 section) and the ReazonSpeech YouTube-discourse sample (~200 files, 30
 operation-tagged) in `docs/real-speech.md`, where the rule backend delivered
-455 cues and the local-LLM backend delivered zero. The Lux replay:
+455 cues and the local-LLM backend delivered 2 (qwen2.5:1.5b-instruct; zero
+appetite with gemma3:4b-it-qat on the 30 tagged files). The Lux replay:
 
 Speaker output is held; outcome scoring, boundary detection, and analyzer
 pairing all run end-to-end.

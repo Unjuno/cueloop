@@ -15,6 +15,12 @@
   Fixes a whisper-cache subset bug (warm cache used to return the whole
   file regardless of the requested corpus) and a relative-path corpus
   resolution bug that created duplicate caches; both covered by tests.
+- Real-speech replay completed end-to-end on the ReazonSpeech 200-file
+  sample for the local-LLM decision path too: qwen2.5:1.5b-instruct scores
+  986 predictions / 434 interventions / **2 delivered** (boundary `範囲は？`
+  and ground `根拠は？`) — the first local-LLM cue ever delivered on real
+  Japanese audio (0.5% delivery rate; zero uptake). gemma3:4b-it-qat on the
+  30 operation-tagged files: 254 predictions, 0 delivered (all cancelled).
 
 ## 0.3.0 (2026-11-12)
 

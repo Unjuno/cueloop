@@ -271,12 +271,45 @@ paired uptake delta     +0.000 (both arms identical: the continuation text
                             fired 8/455 times in both)
 ```
 
-### Local-LLM backend, 30 operation-tagged files
+### Local-LLM backend, 200-file full sample (qwen2.5:1.5b-instruct)
 
-Running `local-LLM` over all 200 files was not feasible on this machine
-(~1 min of LLM time per 15 s utterance per arm), so the local-LLM arm was
-run on exactly the 30 files whose transcripts tag at least one CUELOOP
-operation — the domain where the cue has a real target.
+A full-sample local-LLM run was executed with the fast local model
+(`qwen2.5:1.5b-instruct`, ~25 min per arm on this machine):
+
+```text
+files                    200 CUE + 200 SILENCE
+predictions              986 CUE / 973 SILENCE (sampled with the model's
+                          default temperature; not bit-deterministic)
+files with ≥ 1 prediction 142 / 200 (both arms)
+interventions            434 CUE / 425 SILENCE
+delivered                2 CUE / 0 SILENCE  <-- first non-zero LLM deliveries
+cancelled                432 CUE / 424 SILENCE
+delivery rate            0.46%
+analyzer n_pairs         200, every metric +0.000
+median delay ms          1570 (2 deliveries)
+uptake / carryover       0.00 / 0.00 in both arms (the 2 delivered cues —
+                          boundary `範囲は？` on `ミリカ!`, ground `根拠は？`
+                          on `おととい、` — were not picked up; read speech,
+                          expected)
+```
+
+The 2 delivered cues are the first ever produced by the local-LLM path on
+real Japanese audio — they prove the cancellation is not a structural
+impossibility, just rarity. The local-LLM arm still fires essentially never
+enough to affect anything: ~0.5% delivery rate vs 455 delivered (100% of
+interventions) under the rule backend on the same files.
+
+A `gemma3:4b-it-qat` run over the same sample started but was stopped at
+52/200 CUE files for compute (partial CUE-only run: 255 predictions, 249
+interventions, 0 delivered — consistent with the 30-tagged-file gemma3:4b
+run). `qwen2.5:1.5b-instruct` is not recommended as a predictor for this
+domain; it was used here because each session costs ~4s of client time.
+
+### Local-LLM backend, 30 operation-tagged files (gemma3:4b-it-qat)
+
+The 30 files whose transcripts tag at least one CUELOOP operation — the
+domain where a cue has a real target — were run with gemma3:4b-it-qat
+(~1 min of LLM time per 15 s utterance per arm):
 
 ```text
 files                    30 (CUE and SILENCE paired)
@@ -317,12 +350,19 @@ PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 \
 .venv/bin/python scripts/analyze_experiment.py artifacts/reazon-rule-200/cue \
   artifacts/reazon-rule-200/silence --markdown artifacts/reazon-rule-200-analysis.md
 
-# 30 operation-tagged files, local-LLM backend (~60 min; needs Ollama)
+# 30 operation-tagged files, local-LLM backend (~60 min; needs Ollama + gemma3)
 PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 \
   scripts/simulate_lux_replay.py --corpus data/real-speech/reazon/metadata-sample-tagged.csv \
   --whisper-cache data/real-speech/reazon/metadata-sample-200-whisper-results.json \
   --source-name reazon-tagged --output-dir artifacts/reazon-llm-tagged \
   --predictor local --decision local --local-model gemma3:4b-it-qat
+
+# full 200-file sample, fast local model (~30 min; needs Ollama + qwen2.5:1.5b)
+PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 \
+  scripts/simulate_lux_replay.py --corpus data/real-speech/reazon/metadata-sample-200.csv \
+  --whisper-cache data/real-speech/reazon/metadata-sample-200-whisper-results.json \
+  --source-name reazon-llm15b --output-dir artifacts/reazon-llm15b-200 \
+  --predictor local --decision local --local-model qwen2.5:1.5b-instruct
 
 # corpus acquisition (audio is not in git):
 #   tar of chunk 000 from huggingface.co/datasets/osanpo/reazonspeech (CDLA-Sharing-1.0)
