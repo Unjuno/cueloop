@@ -1,6 +1,7 @@
 # CUELOOP
 
 ![tests](https://github.com/Unjuno/cueloop/actions/workflows/test.yml/badge.svg)
+![license](https://img.shields.io/badge/license-MIT-blue.svg)
 
 > 英語版は [README.md](README.md) を参照してください。この文書はその日本語版です。
 
@@ -24,7 +25,7 @@ CUELOOP は、話し手が話している**最中に**、話し手が次に言�
 | 既定の音声 | 日本語・macOS `say -v Kyoko` |
 | 合成データによる較正 | 分析系が既知の効果を回収（docs/benchmark.md） |
 | 人間のセッション | **まだなし** — H1/H2 の結果は存在しない |
-| ライセンス | 未設定（All rights reserved）— 読むことは自由、再利用は不可 |
+| ライセンス | MIT |
 
 即時の uptake はメカニズムの確認にすぎず、持続的改善の証拠ではありません。
 人間のデータに基づく主張はまだ何もありません。

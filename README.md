@@ -1,6 +1,7 @@
 # CUELOOP
 
 ![tests](https://github.com/Unjuno/cueloop/actions/workflows/test.yml/badge.svg)
+![license](https://img.shields.io/badge/license-MIT-blue.svg)
 
 🌐 [日本語版はこちら (README.ja.md)](README.ja.md)
 
@@ -27,7 +28,7 @@ writing or reasoning improvement require a delayed, unassisted task.
 | Default voice | Japanese, macOS `say -v Kyoko` |
 | Synthetic calibration | analyzer recovers programmed effects (docs/benchmark.md) |
 | Human sessions | **none yet** — no H1/H2 result exists |
-| License | not set (all rights reserved) — public for reading, not for reuse |
+| License | MIT |
 
 Immediate uptake is only a mechanism check; it is not evidence of durable
 improvement. No claim here is supported by human data yet.

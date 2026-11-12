@@ -16,8 +16,8 @@ different from the bar for changing the plumbing.
   "evidence for the cue effect" in docs or release notes.
 - **No human data leaves this repo.** Session logs contain transcripts. They
   belong in `data/` (git-ignored). Never commit logs, audio, or `artifacts/`.
-- **License caveat:** no license grant exists yet; this is not a green light
-  to redistribute derived work.
+- **License:** MIT. See `LICENSE`. Attribution is appreciated; require it in
+  your fork only if you must.
 
 ## Setup and checks
 
