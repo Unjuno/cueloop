@@ -48,3 +48,9 @@ jobs:
             -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __info_plist \
             -Xlinker tools/macos_speech_events.Info.plist
           .build/macos-speech-events --help
+      - name: Compile macOS file recognizer
+        run: |
+          swiftc tools/file_asr.swift -o .build/lux-file-asr \
+            -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __info_plist \
+            -Xlinker tools/file_asr.Info.plist
+          .build/lux-file-asr 2>&1 | head -1 || true
