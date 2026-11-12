@@ -51,12 +51,17 @@ def main() -> int:
 
     rows = list(csv.DictReader(args.corpus.open(encoding="utf-8")))
     if args.recitation_only:
-        rows = [r for r in rows if r["cleaned_path"].startswith("data/cleaned/ita_recitation/")]
+        rows = [
+            r
+            for r in rows
+            if r["cleaned_path"].startswith("data/cleaned/ita_recitation/")
+        ]
     lines = [r["transcript"] for r in rows]
     # deterministic selection
     stride = max(1, len(lines) // 200)
     selected = [
-        (i, line) for i, line in enumerate(lines)
+        (i, line)
+        for i, line in enumerate(lines)
         if line.strip() and len(line) > args.prefix_chars + 6
     ][args.deselect :][::stride][: args.samples]
     print(f"selected {len(selected)} lines from {len(lines)} total")
@@ -75,9 +80,11 @@ def main() -> int:
     failures = 0
     for index, line in selected:
         prefix_text = line[: args.prefix_chars]
-        truth = line[args.prefix_chars:]
+        truth = line[args.prefix_chars :]
         prediction = predictor.predict(
-            text=prefix_text, context=(), now_ms=0,
+            text=prefix_text,
+            context=(),
+            now_ms=0,
         )
         if prediction is None:
             failures += 1
@@ -92,15 +99,21 @@ def main() -> int:
         elif truth.startswith(span[: max(1, len(span) // 2)]):
             prefix += 1
 
-    print(json.dumps({
-        "model": args.model,
-        "corpus": str(args.corpus),
-        "lines_scored": valid,
-        "exact_prefix_rate": exact / valid if valid else None,
-        "half_prefix_rate": (exact + prefix) / valid if valid else None,
-        "failures": failures,
-        "matched_exact": exact,
-    }, ensure_ascii=False, indent=2))
+    print(
+        json.dumps(
+            {
+                "model": args.model,
+                "corpus": str(args.corpus),
+                "lines_scored": valid,
+                "exact_prefix_rate": exact / valid if valid else None,
+                "half_prefix_rate": (exact + prefix) / valid if valid else None,
+                "failures": failures,
+                "matched_exact": exact,
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
     return 0
 
 

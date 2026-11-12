@@ -35,7 +35,8 @@ def main() -> int:
 
     with open(args.corpus, encoding="utf-8") as handle:
         rows = [
-            r for r in csv.DictReader(handle)
+            r
+            for r in csv.DictReader(handle)
             if r["cleaned_path"].startswith("data/cleaned/ita_recitation/")
         ]
     pairs = []
@@ -81,7 +82,12 @@ def main() -> int:
             print(f"  [{index}] REQUEST FAILED: {exc}")
             failures += 1
             continue
-        text = (data.get("choices") or [{}])[0].get("message", {}).get("content", "").strip()
+        text = (
+            (data.get("choices") or [{}])[0]
+            .get("message", {})
+            .get("content", "")
+            .strip()
+        )
         total_words += len(text)
         if not text:
             failures += 1
@@ -97,16 +103,22 @@ def main() -> int:
                 shared += 1
             if shared >= max(2, len(truth) // 3):
                 prefix += 1
-    print(json.dumps({
-        "model": args.model,
-        "corpus": args.corpus,
-        "tasks": len(pairs),
-        "scored": valid,
-        "exact_prefix_rate": exact / valid if valid else None,
-        "partial_prefix_rate": prefix / valid if valid else None,
-        "failures": failures,
-        "avg_output_chars": total_words / max(1, valid),
-    }, ensure_ascii=False, indent=2))
+    print(
+        json.dumps(
+            {
+                "model": args.model,
+                "corpus": args.corpus,
+                "tasks": len(pairs),
+                "scored": valid,
+                "exact_prefix_rate": exact / valid if valid else None,
+                "partial_prefix_rate": prefix / valid if valid else None,
+                "failures": failures,
+                "avg_output_chars": total_words / max(1, valid),
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
     return 0
 
 
