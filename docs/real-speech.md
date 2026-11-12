@@ -95,6 +95,41 @@ See `docs/benchmark.md` for the synthetic evaluation, `docs/experiment-protocol.
 for the human study design, and `docs/real-speech.md` (this file) for the
 Limited Corpus evaluation.
 
+## How to reproduce these numbers
+
+```bash
+# ASR evaluation (whisper-base-mlx) — see docs/real-speech.md results above.
+.venv/bin/python - <<'PY'
+import csv, mlx_whisper, time
+t0 = time.time()
+rows = list(csv.DictReader(open('data/real-speech/lux/metadata.csv', encoding='utf-8')))
+total = 0; match = 0
+for row in rows:
+    if not row['cleaned_path'].startswith('data/cleaned/ita_recitation/'):
+        continue
+    wav = 'data/real-speech/lux/' + row['cleaned_path']
+    result = mlx_whisper.transcribe(
+        wav, path_or_hf_repo='/tmp/whisper-base',
+        language='ja', task='transcribe', fp16=False, verbose=None,
+    )
+    pred = result['text'].strip()
+    truth = row['transcript'].strip()
+    sm = __import__('difflib').SequenceMatcher(None, pred, truth)
+    match += sum(m.size for m in sm.get_matching_blocks())
+    total += len(truth)
+print(f"{total} chars, character accuracy: {match / total * 100:.1f}%, time {time.time() - t0:.1f}s")
+PY
+
+# n-gram evaluation
+.venv/bin/python scripts/tune_ngram.py --corpus data/real-speech/lux/metadata.csv \
+  --order 3 --prefix-chars 8 --span-characters 8 \
+  --eval-mod 10 --eval-remainder 0
+```
+
+Whisper characterization needs `mlx-whisper` installed; the pip experience on
+PyPI for MLX is slow (~20 minutes per wheel). The Lux corpus is deliberately
+git-ignored — don't commit the WAVs.
+
 ## Next steps
 
 1. Accept Xcode license on the developer laptop and run the macOS on-device
