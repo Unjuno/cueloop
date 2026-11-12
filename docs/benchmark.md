@@ -30,14 +30,13 @@ effect is exactly the difference the analyzer should find.
 24 sessions × 8 clauses per cell, effects 0 / 0.2 / 0.4, two seeds each
 (`artifacts/benchmark/simulated-*.json`):
 
-| programmed effect | seed | uptake delta (95% CI) | carryover delta |
-| --- | --- | --- | --- |
-| 0.0 | 0 | +0.000 [+0.000, +0.000] | +0.000 |
-| 0.0 | 1 | +0.000 [+0.000, +0.000] | +0.000 |
-| 0.2 | 0 | +0.097 [+0.043, +0.152] | +0.044 |
-| 0.2 | 1 | +0.105 [+0.048, +0.174] | +0.028 |
-| 0.4 | 0 | +0.127 [+0.060, +0.199] | +0.073 |
-| 0.4 | 1 | +0.163 [+0.101, +0.226] | +0.109 |
+| programmed effect | seed 0 | seed 1 | seed 2 | seed 3 |
+| --- | --- | --- | --- | --- |
+| uptake 0.0 | +0.000 [±0.000] | +0.000 [±0.000] | +0.000 [±0.000] | +0.000 [±0.000] |
+| uptake 0.2 | +0.097 [+0.043, +0.152] | +0.105 [+0.048, +0.174] | +0.095 [+0.031, +0.156] | +0.050 [+0.001, +0.099] |
+| uptake 0.4 | +0.127 [+0.060, +0.199] | +0.163 [+0.101, +0.226] | +0.122 [+0.050, +0.190] | +0.130 [+0.043, +0.214] |
+| carryover 0.2 | +0.044 | +0.028 | +0.021 | +0.015 |
+| carryover 0.4 | +0.073 | +0.109 | +0.071 | +0.081 |
 
 The null arm here is exact (+0.000 everywhere); the analyzer recovers the
 programmed effect with CIs excluding zero at 0.2 and 0.4.

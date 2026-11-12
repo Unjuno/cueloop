@@ -29,7 +29,7 @@ for seed in 0 1 2; do
 done
 
 echo "== end-to-end runtime simulation: effects {0, 0.2, 0.4} x seeds {0, 1} =="
-for seed in 0 1; do
+for seed in 0 1 2 3; do
   for effect in 0 0.2 0.4; do
     dir="$OUT/simulated-${effect}-s${seed}"
     if [ ! -d "$dir" ]; then
