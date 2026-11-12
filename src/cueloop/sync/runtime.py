@@ -474,7 +474,9 @@ class SyncRuntime:
                 scheduled_at_ms=intervention.scheduled_at_ms + shift_ms,
                 expires_at_ms=intervention.expires_at_ms + shift_ms,
             )
-        else:
+        elif intervention.prediction.created_at_ms < now_ms:
+            # A stale prediction computed in the past must wait out its own
+            # latency; shifting protects the tie it relies on.
             total_latency_ms = prediction_penalty_ms + decision_latency_ms
             if total_latency_ms > 0:
                 intervention = replace(

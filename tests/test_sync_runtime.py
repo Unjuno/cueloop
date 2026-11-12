@@ -322,6 +322,24 @@ class AsyncDecisionRuntimeTests(unittest.TestCase):
         self.assertEqual(produced[0].delivered_at_ms, 800)
         self.assertEqual(runtime.decision_model.last_source, "fallback")
 
+    def test_synchronous_slow_decision_delivers_at_boundary(self) -> None:
+        # A synchronous local decision is computed while the speaker is still
+        # in the current clause; pushing its cue out by its own latency would
+        # deliver into an already-missed window.
+        runtime = SyncRuntime(
+            predictor=ScriptedPredictor({"この設計": ("だから結論は決まる。", 0.9)}),
+            decision_model=_SlowDecisionModel(delay=0.05),
+            speaker=CallableSpeaker(lambda text: None),
+            cooldown_ms=2_500,
+        )
+        runtime.feed(event("speech_started", 0))
+        produced = runtime.feed(
+            event("transcript_partial", 800, "この設計は前提を分けて考える。")
+        )
+        self.assertEqual(len(produced), 1)
+        self.assertEqual(produced[0].status, "DELIVERED")
+        self.assertEqual(produced[0].delivered_at_ms, 800)
+
 
 class CommandSpeakerTests(unittest.TestCase):
     def test_background_speaker_does_not_block(self) -> None:
