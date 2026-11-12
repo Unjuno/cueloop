@@ -23,7 +23,7 @@ writing or reasoning improvement require a delayed, unassisted task.
 
 | What | State |
 | --- | --- |
-| Sync core (predict → synchronize → decide → speak) | working; 124 tests, CI green |
+| Sync core (predict → synchronize → decide → speak) | working; 127 tests, CI green |
 | macOS microphone adapter + live demo | working on this machine (ambient-noise dependent) |
 | Default voice | Japanese, macOS `say -v Kyoko` |
 | Synthetic calibration | analyzer recovers programmed effects end-to-end (docs/benchmark.md) |
