@@ -181,7 +181,8 @@ predictions                      480 (identical in both arms)
 interventions                    457 CUE / 466 SILENCE
 delivered                        0  (both arms; all interventions cancelled/held)
 files with >= 1 prediction       201 / 328
-predictions not intervened        23 (decision model vetoed its own prediction)
+predictions not intervened        23 CUE / 14 SILENCE (decision model vetoed
+                                 its own prediction)
 uptake / carryover               0.00 / 0.00 (identical; read speech)
 paired delta                     +0.000 on every metric
 n_pairs                          328
