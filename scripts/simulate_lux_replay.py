@@ -114,7 +114,9 @@ def load_or_transcribe(
             verbose=False,
         )
         cache[row["file_name"]] = result
-        whisper_cache.write_text(json.dumps(cache, ensure_ascii=False), encoding="utf-8")
+        whisper_cache.write_text(
+            json.dumps(cache, ensure_ascii=False), encoding="utf-8"
+        )
     subset = {
         row["file_name"]: cache[row["file_name"]]
         for row in rows
@@ -303,7 +305,9 @@ def main() -> int:
             whisper_cache = args.corpus.with_name(
                 args.corpus.stem + "-whisper-results.json"
             )
-    cache = load_or_transcribe(args.corpus, whisper_cache, args.whisper_model, limit=args.limit)
+    cache = load_or_transcribe(
+        args.corpus, whisper_cache, args.whisper_model, limit=args.limit
+    )
 
     if args.output_dir.exists() and any(args.output_dir.iterdir()):
         print(

@@ -48,23 +48,41 @@ class CacheSubsetTests(unittest.TestCase):
             metadata = tmp / "metadata.csv"
             with metadata.open("w", newline="", encoding="utf-8") as handle:
                 writer = csv.writer(handle)
-                writer.writerow(["file_name", "id", "raw_path", "cleaned_path", "transcript"])
-                writer.writerow(["000/a.flac", "a", "000/a.flac", "000/a.flac", "テスト例文"])
-                writer.writerow(["000/b.flac", "b", "000/b.flac", "000/b.flac", "もう一つの例文"])
+                writer.writerow(
+                    ["file_name", "id", "raw_path", "cleaned_path", "transcript"]
+                )
+                writer.writerow(
+                    ["000/a.flac", "a", "000/a.flac", "000/a.flac", "テスト例文"]
+                )
+                writer.writerow(
+                    ["000/b.flac", "b", "000/b.flac", "000/b.flac", "もう一つの例文"]
+                )
             cache = tmp / "cache.json"
             cache.write_text(
                 json.dumps(
                     {
                         "000/a.flac": {
-                            "segments": [{"words": [{"word": "テスト", "start": 0.0, "end": 0.5}]}]
+                            "segments": [
+                                {
+                                    "words": [
+                                        {"word": "テスト", "start": 0.0, "end": 0.5}
+                                    ]
+                                }
+                            ]
                         },
                         "000/b.flac": {
                             "segments": [
-                                {"words": [{"word": "もう一つ", "start": 0.0, "end": 0.5}]}
+                                {
+                                    "words": [
+                                        {"word": "もう一つ", "start": 0.0, "end": 0.5}
+                                    ]
+                                }
                             ]
                         },
                         "000/c.flac": {
-                            "segments": [{"words": [{"word": "余分", "start": 0.0, "end": 0.5}]}]
+                            "segments": [
+                                {"words": [{"word": "余分", "start": 0.0, "end": 0.5}]}
+                            ]
                         },
                     },
                     ensure_ascii=False,

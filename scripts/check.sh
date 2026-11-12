@@ -10,6 +10,7 @@ fi
 
 echo "== ruff =="
 "$PYTHON" -m ruff check src tests scripts/*.py
+"$PYTHON" -m ruff format --check src tests scripts/*.py
 
 echo "== pytest =="
 "$PYTHON" -m pytest -q
