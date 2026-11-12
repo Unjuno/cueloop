@@ -70,6 +70,33 @@ corpus on Japanese-software-reasoning prose, (b) always launch with
 `--predictor local` for live sessions, (c) retire the n-gram fallback
 entirely.
 
+### 3. Local-LLM predictor on the corpus
+
+The local model is the workhorse (`--predictor local`, the intended live
+path). Using the exact `LocalLLMPredictor` code CUELOOP ships with, the
+same prefix task on the same corpus:
+
+```text
+model: qwen2.5:7b-instruct (Ollama)
+corpus: Lux ita_recitation, 12-char prefix
+exact_prefix_rate: 0/30
+```
+
+The local model *never replicates* the human-spoken continuation. This is
+unsurprising: the Lux ita_recitation is translations of European literature
+and philosophy — far from own-domain Japanese software-engineering speech,
+which is what CUELOOP was built around. Topicality is much better (it
+writes `笑顔で手を振っている` for `女の子がキッキッ嬉しそう`), but no model
+knows which specific token a writer picked.
+
+The signal we can draw here is narrower than it first appears:
+
+- Out-of-domain Japanese: no predictor helps. This does not indict CUELOOP's
+  mechanism; it means we have no proof either way for the target domain until
+  live sessions exist.
+- The decision-model latency to consider: local LLM is still the only model
+  with any signal; n-gram does nothing at all beyond substring recall.
+
 ## What was not measured
 
 - **The CUELOOP arbitration pipeline as a whole**: we cannot yet test
