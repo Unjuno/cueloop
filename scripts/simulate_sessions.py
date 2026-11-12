@@ -32,6 +32,7 @@ from cueloop.sync.models import EventType, Prediction, SyncEvent
 from cueloop.sync.policy import CanonicalAssigner, RuleDecisionModel
 from cueloop.sync.predictors import NgramPredictor, ScriptedPredictor
 from cueloop.sync.runtime import CallableSpeaker, SyncRuntime
+from cueloop.sync.stem import StemCueGenerator
 from cueloop.sync.vocabulary import tag_operations
 
 
@@ -165,6 +166,7 @@ def run_session(
     predictor_name: str,
     cooldown_ms: int,
     outcome_window_ms: int,
+    cue_style: str = "bare",
 ) -> dict:
     silent = condition == "SILENCE"
     rng = random.Random(f"{seed}|{index}|skeleton")
@@ -182,12 +184,23 @@ def run_session(
         if predictor_name == "scripted"
         else NgramPredictor.default()
     )
+    stem_generator = (
+        StemCueGenerator(
+            base_url="http://127.0.0.1:1",  # unreachable on purpose: template falls back
+            model="test-model",
+            timeout=0.2,
+        )
+        if cue_style == "stem"
+        else None
+    )
     runtime = SyncRuntime(
         predictor=predictor,
         decision_model=RuleDecisionModel(
             CanonicalAssigner(),
             insertion_delay_ms=0,
             context_fit=False,
+            cue_style=cue_style,
+            stem_generator=stem_generator,
         ),
         speaker=CallableSpeaker(lambda text: None),
         cooldown_ms=cooldown_ms,
@@ -291,6 +304,15 @@ def main(argv: list[str] | None = None) -> int:
 'scripted' always predicts a conclusion-only span (cue is then rule-first
 missing, i.e. ground); 'ngram' uses the embedded corpus for realism.""",
     )
+    parser.add_argument(
+        "--cue-style",
+        choices=["bare", "stem"],
+        default="bare",
+        help="""Cue style to speak. 'bare' (default) speaks the operation word;
+'stem' speaks a complete initial-condition sentence rendered from the
+deterministic span template (the LLM bow-outs on the unreachable test
+server on purpose, so the arm is reproducible offline).""",
+    )
     parser.add_argument("--cooldown-ms", type=int, default=1_500)
     args = parser.parse_args(argv)
     if args.sessions < 1 or args.clauses < 1:
@@ -316,6 +338,7 @@ missing, i.e. ground); 'ngram' uses the embedded corpus for realism.""",
                 carryover_effect=args.carryover_effect,
                 base_carryover=args.base_carryover,
                 outcome_window_ms=args.outcome_window_ms,
+                cue_style=args.cue_style,
             )
             path = args.output_dir / f"{condition.lower()}-{index:03d}.json"
             path.write_text(

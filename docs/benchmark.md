@@ -61,6 +61,23 @@ mechanism (e.g., uptake at single-boundary cost).
 The null arm here is exact (+0.000 everywhere); the analyzer recovers the
 programmed effect with CIs excluding zero at 0.2 and 0.4.
 
+## Stem-cue arm (end-to-end with stems)
+
+The same simulator with `--cue-style stem` speaks a complete, context-grounded
+"initial-condition" sentence rendered from the deterministic span template
+(stems generated from unreachable test server fail over to template, so the
+arm is reproducible offline). Effect recovery matches the bare arm exactly,
+and the null arm is exactly zero:
+
+| stem effect | seed 0 | seed 1 |
+| --- | --- | --- |
+| 0.0 | +0.000 [±0.000] | +0.000 [±0.000] |
+| 0.2 | +0.081 [+0.033, +0.132] | +0.114 [+0.064, +0.169] |
+| 0.4 | +0.115 [+0.051, +0.177] | +0.176 [+0.114, +0.243] |
+
+This validates that `cue_style` is only a presentation knob — the
+intervention assignment (when, what operation) is unchanged.
+
 ## Analyzer grid: programmed uptake effect × seed
 
 24 clause-pairs per cell, 8 clauses per session, three backends
