@@ -138,11 +138,11 @@ The signal we can draw here is narrower than it first appears:
 - `scripts/simulate_lux_replay.py` — replays Lux *or any compatible corpus*
   (CSV with file_name/cleaned_path/transcript) through the actual
   `SyncRuntime`, emitting analyzer-ready paired reports (CUE and SILENCE).
-  On ReazonSpeech it delivered 455 cues with the rule backend and zero with
-  the local-LLM backend, and confirmed the live measurement path runs on
-  real Japanese discourse without changing the runtime. Also fixes a
-  cache-subset bug where a warm whisper cache returned extra files not in
-  the requested corpus (regression test included).
+  On ReazonSpeech it delivers 455 cues with the rule backend; under the
+  fixed runtime local-LLM deliveries complete at the boundary event as well
+  (668/668 on the full 200-file arm). Also fixes a cache-subset bug where a
+  warm whisper cache returned extra files not in the requested corpus
+  (regression test included).
 
 Note: the Lux corpus is literary Japanese (read speech) with essentially no
 operation-tag vocabulary overlap — both the embedded n-gram and the local
@@ -187,6 +187,13 @@ because the embedded corpus is dominated by example-language (`例えば`,
 `具体的`); the fatigue penalty now rotates the mix (see above).
 
 ## Local-LLM end-to-end on the Lux corpus
+
+> **Note.** This block (Lux) was recorded under the pre-runtime-fix pipeline:
+> a synchronous local-LLM decision was pushed out by its own wall-clock
+> latency and then cancelled by the synchronizer's diverged check. Lux was
+> not re-measured after the fix. The fix moves delivery to the boundary
+> event itself (see the ReazonSpeech measurements above) — the Lux numbers
+> below would change accordingly.
 
 A complete local-LLM run was executed over all 328 local Lux files under both
 conditions (command below; reports at `artifacts/lux-llm-328-full/`):
@@ -273,6 +280,12 @@ paired uptake delta     +0.000 (both arms identical: the continuation text
 
 ### Local-LLM backend, 200-file full sample (qwen2.5:1.5b-instruct)
 
+_A precursor (pre runtime-fix) run with qwen2.5:1.5b-instruct delivered
+2 cues (`boundary 範囲は？`, `ground 根拠は？`). The runtime fix above
+supersedes these numbers — the fix moves every synchronous delivery to
+the boundary event, same as the rule backend. Below gemm is measured
+post-fix; this section documents the precursor for calibration transparency._
+
 A full-sample local-LLM run was executed with the fast local model
 (`qwen2.5:1.5b-instruct`, ~25 min per arm on this machine):
 
@@ -299,46 +312,61 @@ impossibility, just rarity. The local-LLM arm still fires essentially never
 enough to affect anything: ~0.5% delivery rate vs 455 delivered (100% of
 interventions) under the rule backend on the same files.
 
-### Local-LLM backend, 200-file full sample (gemma3:4b-it-qat)
+### Local-LLM backend, 200-file full sample (gemma3:4b-it-qat, post-fix)
 
-The full sample was also run with gemma3:4b-it-qat (~12 s of LLM time per
-15 s utterance per arm; both arms complete; reports at
-`artifacts/reazon-llm-200/`):
+The full 200-file re-run under the fixed runtime (see CHANGELOG
+"Runtime delivery clamp") — both arms, same seed, same whisper cache:
 
 ```text
-files                    200 CUE + 200 SILENCE
-predictions              1131 CUE / 1133 SILENCE (142/200 files with
-                          predictions in both arms; not bit-deterministic)
-interventions            1100 CUE / 1109 SILENCE
-delivered                0  (both arms; every intervention cancelled/held)
-analyzer n_pairs         200, every metric +0.000
-median delay ms          insufficient (no deliveries)
-repertoire_growth        0.18 both arms (transcript tags, not effect)
+file                    artifacts/reazon-llm-200-v2/ (328 paired CUE+SILENCE reports)
+predictions              687 CUE / 687 SILENCE (142/200 files with predictions
+                          in both arms)
+interventions            668 CUE / 664 SILENCE
+delivered                668 CUE / 0 SILENCE (0 cancelled, 0 expired)
+files with ≥ 1 delivery  142 / 200
+max delivered per file   13
+operations delivered     ground 225, boundary 179, dependency 168,
+                            comparison 72, mechanism 23, conclusion 1
+paired uptake delta     +0.002 CI [-0.000, +0.007]  (both arms 0.01)
+paired carryover delta  +0.000 CI [+0.000, +0.000]
+analyzer n_pairs         200, report at artifacts/reazon-llm-200-v2-analysis.md
+median delay ms          0 / 0.00 in both arms
+repertoire_growth        0.14 both arms (nothing carried over)
 ```
 
-The gemma3 arm never completes a delivery on this corpus — 1,100 interventions
-are all cancelled — consistent with the 30 operation-tagged files (0/250) and
-with Lux (0/457). `qwen2.5:1.5b-instruct` is not recommended as a predictor
-for this domain; it was used earlier because each session costs ~4 s of
-client time (2 delivered — boundary `範囲は？` and ground `根拠は？`).
+Deliveries now complete at the boundary event itself; 0 were cancelled.
+The analyzer shows no measurable uptake, as expected — both arms replay
+the same canned transcript, so any uptake excess (7/668 in CUE vs 7/664
+in SILENCE) is an alignment artefact, not an effect.
 
-### Local-LLM backend, 30 operation-tagged files (gemma3:4b-it-qat)
+The older (pre-fix) run of the same model had every intervention cancelled
+after the decision returned measurably later than the next audio event.
+That failure mode is gone.
+
+### Local-LLM backend, 30 operation-tagged files (gemma3:4b-it-qat, post-fix)
 
 The 30 files whose transcripts tag at least one CUELOOP operation — the
-domain where a cue has a real target — were run with gemma3:4b-it-qat
-(~25 s of LLM time per 15 s utterance per arm):
+domain where a cue has a real target — re-run under the fixed runtime:
 
 ```text
 files                    30 (CUE and SILENCE paired)
-predictions fired        254 (identical in both arms)
-interventions            250 CUE / 249 SILENCE (not bit-deterministic)
-delivered                0 (all 250/249 cancelled/held)
-files with ≥ 1 delivered 0 / 30
-analyzer n_pairs         30, every metric +0.000
-median delay             insufficient (no deliveries)
-repertoire_growth        1.03 both arms (transcript tags, not effect —
-                            nothing was delivered)
+predictions fired        143 CUE / 142 SILENCE (not bit-deterministic)
+interventions            138 CUE / 141 SILENCE
+delivered                138 CUE / 0 SILENCE (max 12 per file; 25/30 files
+                            at least one delivery)
+analyzer n_pairs         30
+paired uptake delta     +0.022 CI [+0.000, +0.061]
+paired carryover delta  +0.000 CI [+0.000, +0.000]
+median delay ms          0 in both arms (analyzer CI [+0.000, +0.000], n_pairs=25)
+repertoire_growth        0.73 both arms (nothing carried over)
+operations delivered     ground 59, dependency 29, boundary 28,
+                            comparison 16, mechanism 6
 ```
+
+The +0.022 uptake delta is a count artefact of the canned arm pairing
+(CUE has 28 outcomes vs SILENCE's 33, with the same operations appearing
+by construction); the CI touches zero and the result is NOT evidence of
+the mechanism working. It proves delivery completes end-to-end.
 
 The local-LLM predictor produces plausible continuations but never the exact
 author's wording — so after each boundary the synchronizer marks the speech
@@ -367,12 +395,14 @@ PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 \
 .venv/bin/python scripts/analyze_experiment.py artifacts/reazon-rule-200/cue \
   artifacts/reazon-rule-200/silence --markdown artifacts/reazon-rule-200-analysis.md
 
-# 30 operation-tagged files, local-LLM backend (~60 min; needs Ollama + gemma3)
+# 30 operation-tagged files, local-LLM backend (~15 min; needs Ollama + gemma3)
 PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 \
   scripts/simulate_lux_replay.py --corpus data/real-speech/reazon/metadata-sample-tagged.csv \
   --whisper-cache data/real-speech/reazon/metadata-sample-200-whisper-results.json \
-  --source-name reazon-tagged --output-dir artifacts/reazon-llm-tagged \
+  --source-name reazon-tagged-v2 --output-dir artifacts/reazon-llm-tagged-v2 \
   --predictor local --decision local --local-model gemma3:4b-it-qat
+.venv/bin/python scripts/analyze_experiment.py artifacts/reazon-llm-tagged-v2/cue \
+  artifacts/reazon-llm-tagged-v2/silence --markdown artifacts/reazon-llm-tagged-v2-analysis.md
 
 # full 200-file sample, fast local model (~30 min; needs Ollama + qwen2.5:1.5b)
 PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 \
@@ -385,10 +415,10 @@ PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 \
 PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 \
   scripts/simulate_lux_replay.py --corpus data/real-speech/reazon/metadata-sample-200.csv \
   --whisper-cache data/real-speech/reazon/metadata-sample-200-whisper-results.json \
-  --source-name reazon-fulllm8 --output-dir artifacts/reazon-llm-200 \
+  --source-name reazon-fulllm9 --output-dir artifacts/reazon-llm-200-v2 \
   --predictor local --decision local --local-model gemma3:4b-it-qat
-.venv/bin/python scripts/analyze_experiment.py artifacts/reazon-llm-200/cue \
-  artifacts/reazon-llm-200/silence --markdown artifacts/reazon-llm-200-analysis.md
+.venv/bin/python scripts/analyze_experiment.py artifacts/reazon-llm-200-v2/cue \
+  artifacts/reazon-llm-200-v2/silence --markdown artifacts/reazon-llm-200-v2-analysis.md
 
 # corpus acquisition (audio is not in git):
 #   tar of chunk 000 from huggingface.co/datasets/osanpo/reazonspeech (CDLA-Sharing-1.0)
@@ -450,9 +480,9 @@ git-ignored — don't commit the WAVs.
    comparing error profile vs whisper-base-mlx.
 2. **Human sessions remain the only gate to H1/H2**: Japanese reasoning
    speech recorded live with a speaker who can hear and react to cues.
-   The Reazon arm shows real content with the vocabulary present, but
-   everything remains held/cancelled — nothing has been measured about
-   effect on a human. Issue #6.
+   The Reazon arm shows real discourse with the vocabulary present and cues
+   deliver end-to-end, but canned arms replay the same text both rounds, so
+   no effect on a human has been measured. Issue #6.
 3. With a Reazon-style discourse corpus in hand, the most valuable next
    technical step is *domain-adapted prediction*: measure whether the local
    LLM (or n-gram) can anticipate operations in the 30-tagged-file subset

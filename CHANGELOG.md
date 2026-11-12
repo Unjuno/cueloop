@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### Fixed
+- **Runtime delivery clamp**: synchronous backends (fresh prediction created
+  in the same event) no longer have their intervention pushed out by
+  prediction+decision wall latency. Before, the shift landed the cue into an
+  already-diverged window and the synchronizer cancelled it — so every
+  local-LLM intervention on the ReazonSpeech sample and in live replays was
+  cancelled (0 delivered). With the fix the local-LLM backend delivers at
+  the boundary event, like the rule backend: 668/668 on the full 200-file
+  ReazonSpeech sample (gemma3:4b-it-qat), 138/138 on the
+  operation-tagged 30-file subset; synthetic calibration unchanged (null
+  cells +0.000, 27/27 effect cells CI-excluding-zero).
+
 ### Added
 - Per-session repetition fatigue in `RuleDecisionModel` (`fatigue_penalty`,
   default 2.0): each chosen operation accrues fatigue so the rule backend
@@ -16,14 +28,12 @@
   file regardless of the requested corpus) and a relative-path corpus
   resolution bug that created duplicate caches; both covered by tests.
 - Real-speech replay completed end-to-end on the ReazonSpeech 200-file
-  sample for the local-LLM decision path too: qwen2.5:1.5b-instruct scores
-  986 predictions / 434 interventions / **2 delivered** (boundary `範囲は？`
-  and ground `根拠は？`) — the first local-LLM cue ever delivered on real
-  Japanese audio (0.5% delivery rate; zero uptake). gemma3:4b-it-qat on the
-  full 200-file arm (both arms): 1,131/1,133 predictions, 1,100/1,109
-  interventions, 0 delivered — every intervention cancelled/held. gemma3
-  remains 0-delivered on real Japanese discourse at every tested scale
-  (200/30/328 files).
+  sample for the local-LLM decision path too (pre-runtime-fix numbers
+  retained for transparency; the fix above supersedes them):
+  qwen2.5:1.5b-instruct delivered **2 cues** (boundary `範囲は？`,
+  ground `根拠は？`). Under the fixed runtime the local-LLM backend delivers
+  at every decision boundary: 668/668 interventions on the 200-file sample
+  (gemma3:4b-it-qat) and 138/138 on the operation-tagged 30-file subset.
 
 ## 0.3.0 (2026-11-12)
 
