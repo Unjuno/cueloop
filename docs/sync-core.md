@@ -3,7 +3,11 @@
 The sync core replaces turn-based response with predictive insertion. The
 system does not wait for silence and then reply. It predicts what the speaker
 is about to say, tracks how the live transcript aligns with that prediction,
-and inserts a very short cue while the speaker is still talking.
+and inserts a cue while the speaker is still talking. By default the cue is a
+stem — a complete, context-grounded "initial-condition" sentence (e.g.
+"根拠は、観測データでは弱いからです。") written by the local LLM —
+rather than a bare interrogative word; `--cue-style bare` restores the short
+operation cue.
 
 ## Loop
 
@@ -32,7 +36,8 @@ predictor can act at the moment the speaker announces an operation:
 
 ```text
 speaker: "この設計の結論は"
-cue:                         "根拠は？"
+cue:                         "根拠は、観測データでは弱いからです。"   # stem (default)
+cue:                         "根拠は？"                            # bare (--cue-style bare)
 speaker: "……観測データではまだ弱い。"
 ```
 
@@ -48,6 +53,8 @@ linguistic-framing intervention the project is trying to measure.
   `AsyncPredictor`, `ScriptedPredictor`
 - `cueloop.sync.policy` — `RuleDecisionModel`, `LinearDecisionModel`,
   `LocalLLMDecisionModel`, `AsyncDecisionModel`, and cue assignment
+- `cueloop.sync.stem` — initial-condition (stem) sentences: LLM writer with
+  a span-template fallback, used by the `--cue-style stem` default
 - `cueloop.sync.policy_model` — policy observation features, the linear
   carryover model, and its offline trainer
 - `cueloop.sync.runtime` — event loop, delivery, cancellation, echo
@@ -60,7 +67,12 @@ linguistic-framing intervention the project is trying to measure.
 | Concern | Owner | Experimental role |
 | --- | --- | --- |
 | When to intervene | `RuleDecisionModel`, `LinearDecisionModel`, or `LocalLLMDecisionModel` | held comparable across conditions |
-| What cue is heard | `CueAssigner` | manipulation (canonical, fixed, alternate, randomized) |
+| What cue is heard | `CueAssigner` (bare mode) or the stem writer (default) | manipulation (canonical, fixed, alternate, randomized) |
+
+In stem mode the cue is a full sentence written for this context (inside the
+`local`/`steer` decision call, or by a synchronous LLM call for
+`rule`/`linear`), so the `CueAssigner` does not run. `cue_style` in every
+intervention log entry records which path produced it.
 
 Do not let a model choose the cue from measured effectiveness in a live
 experiment. That confounds the cue's framing effect with the model's selection
@@ -89,6 +101,14 @@ the missing operations. It returns one of:
 {"action": "CUE", "operation": "ground", "cue": "根拠は？", "confidence": 0.8, "reason": "..."}
 {"action": "SILENCE", "confidence": 0.2, "reason": "..."}
 ```
+
+In stem mode (the default) the `cue` value is a complete declarative
+sentence (e.g. `"根拠は、観測データでは弱いからです。"`): the model writes
+the most plausible initial condition for the operation instead of an
+interrogative fragment. A stem that fails validation (overlong, JSON
+leakage, unusable) falls back to a predicted-span template, so the decision
+never depends on the stem being parseable; only the bare `max_characters`
+path can reject for length.
 
 The runtime fails closed on invalid JSON, low confidence, a covered operation,
 a contentless prediction, or a cue that does not map to an operation. The

@@ -2,14 +2,54 @@
 
 CUELOOP synchronizes an inserted cue with a person's speech while they are
 still talking. It predicts the next short span, tracks how the live transcript
-aligns with that prediction, and inserts a very short cue before the next
-clause is produced.
+aligns with that prediction, and inserts a cue before the next clause is
+produced. By default the cue is a **stem**: a complete, context-grounded
+"initial-condition" sentence that embodies the operation ("根拠は、
+観測データでは弱いからです。"), which the speaker can adopt or adapt.
+`--cue-style bare` restores the short operation word ("根拠は？").
 
 The goal is to test a weak linguistic-framing hypothesis: does hearing a
 specific operation word at the moment the speaker announces that operation
 change what they say next, and does repeated practice improve the structure of
 their reasoning? The mechanism can be measured now. Claims about durable
 writing or reasoning improvement require a delayed, unassisted task.
+
+## Stem cues (default) and bare cues
+
+The default `--cue-style stem` speaks a complete sentence, not an interrogative
+fragment. A bare cue names the missing operation; a stem cue *demonstrates* it,
+so the speaker hears the shape of the clause and the word connection to the
+its content:
+
+```text
+bare: "根拠は？"                              (8 characters, the old default)
+stem: "根拠は、観測データでは弱いからです。"   (LLM-written for this context)
+```
+
+Stem provenance, per backend:
+
+- `--decision local` / `--decision steer` — the stem is written inside the same
+  decision call, so it costs no extra round trip. (`--max-tokens` is raised to
+  at least 192 in stem mode so truncated JSON stays unlikely.)
+- `--decision rule` / `--decision linear` — with `--async-decision` (default)
+  the stem writer runs speculatively in the background as partials arrive; at
+  the boundary the precomputed stem decision lands at boundary + insertion
+  delay. If it is not ready in time, a bare cue is delivered instead of a
+  late stem (`--decision-fallback none` waits instead; that can miss the
+  clause). `--no-async-decision` forces the synchronous path, which adds
+  seconds at the boundary and often misses it. Either way the stem writer is
+  bounded by `--stem-timeout` (default 1.5 s); failure falls back to a
+  predicted-span template (`根拠は、{span}からです。`), then to the bare
+  wording. If the local server is unreachable at startup, the runner warns
+  and uses templates.
+- `--assignment random-operation` — the wrapper draws the operation, then
+  renders a stem for the *drawn* operation.
+
+Stems are longer (default cap `--max-stem-characters` 48), so speaking takes
+seconds instead of under a second, and TTS echo suppression scales with
+length (`1000 + 150 ms` per character, capped at 8 s). For experiments,
+length-match `NEUTRAL` to the stem condition or use `--cue-style bare`.
+`intervention` log records carry `cue_style` and the full `cue` sentence.
 
 ## The loop
 
@@ -256,6 +296,8 @@ scripts/run_experiment.py --mode live --condition CUE \
 
 `--condition SILENCE` records the same timing decisions without speaking the
 cue. `linear` uses `--policy-model` (default `artifacts/sync-policy.json`).
+The runner passes `--cue-style bare` by default to keep sessions comparable
+to earlier ones; pass `--cue-style stem` to run the stem condition.
 Replay is available for smoke tests with `--mode replay`; it defaults to TTS
 off and to unpaced timing, so paired replay runs are deterministic. Pass
 `--realtime` to pace a replay by its event timestamps.
@@ -316,6 +358,18 @@ scripts/analyze_experiment.py logs/synthetic-effect030 \
   --json artifacts/synthetic-effect030.json
 ```
 
+The full calibration benchmark (analyzer grid over effects × seeds ×
+backends, plus policy training at scale on synthetic logs with a planted
+reward structure) regenerates with one command:
+
+```bash
+scripts/run_synthetic_benchmark.sh            # writes artifacts/benchmark/
+```
+
+Current results: all 9 null cells exactly zero; 27/27 effect cells (≥ 0.10)
+with CIs excluding zero; linear policy ROC-AUC 0.695 (training holdout) /
+0.664 (independent holdout), ceiling ≈ 0.73. See `docs/benchmark.md`.
+
 The CUE and SILENCE sessions of a pair share the missing-operation path and
 per-boundary uniforms (common random numbers); only the programmed effect
 differs. With `--uptake-effect 0.30` and 24 pairs, the analyzer reports
@@ -358,6 +412,9 @@ are the persistence outcomes. See `docs/experiment-protocol.md` and
 
 ## Failure behavior
 
+- Stem-writing failure falls back to a predicted-span template, then to the
+  bare operation word; a session never stays silent just because the stem
+  writer hiccuped. Fail-closed silence applies to decisions, not to stems.
 - Predictor or decision failure returns no cue; the runtime stays silent.
 - A cue is cancelled when the speaker diverges from the prediction before
   delivery, when speech ends, or when the participant pauses interventions.
@@ -373,6 +430,8 @@ are the persistence outcomes. See `docs/experiment-protocol.md` and
 src/cueloop/sync/       event loop, predictors, policy, runtime, CLI
 scripts/demo.sh         replay and live microphone demo
 scripts/run_experiment.py live/replay policy-comparison sessions
+scripts/synthesize_logs.py synthetic session logs for policy training at scale
+scripts/run_synthetic_benchmark.sh regenerate the calibration benchmark (docs/benchmark.md)
 scripts/train_policy.py offline linear policy trainer + holdout metrics
 scripts/evaluate_policy.py score a saved policy on recorded logs
 scripts/compare_policies.py aggregate rule/linear/LLM reports

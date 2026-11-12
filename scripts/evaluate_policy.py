@@ -71,7 +71,7 @@ def main(argv: list[str] | None = None) -> int:
     summary = {
         "model": str(args.model),
         "label": args.label,
-        "logs": [str(path) for path in args.logs],
+        "log_files": len(args.logs),
         "metrics": metrics,
     }
     if args.report is not None:

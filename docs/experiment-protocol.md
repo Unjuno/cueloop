@@ -37,6 +37,13 @@ Hold constant across conditions:
 
 Only the spoken content varies.
 
+Cue style is part of the manipulation: the default `--cue-style stem` speaks
+a complete LLM-written sentence (~48 characters, several seconds of audio),
+which is not length-matchable to a NEUTRAL filler or comparable to a bare
+`--cue-style bare` condition. For experiments either use `--cue-style bare`
+throughout, or hold the stem condition constant across arms and length-match
+NEUTRAL to it. `cue_style` is logged on every intervention.
+
 ## Procedure
 
 1. Consent, audio/transcript retention choice, and a microphone check.
