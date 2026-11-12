@@ -106,7 +106,18 @@ The signal we can draw here is narrower than it first appears:
     - To test uptake/carryover on real humans you need headsets/microphones.
 - **The macOS SFSpeechRecognizer on Lux files**: not run locally (Xcode
   license not accepted; the Swift file-asr tool in `tools/file_asr.swift`
-  waits on CI or this machine accepting the license).
+  waits on CI or this machine accepting the license).  The microphone path
+  has been driven once against a clean recording of Lux files played back
+  from a speaker, which produced recognizable transcript events: on
+  `EMOTION100_011.wav`, the on-device recognizer recorded `イタリア旅行で`,
+  `例えばナポリやフィレンツェ`, etc.; on `EMOTION100_066.wav`, the trigger
+  phrase `だから` was detected and a boundary fired at 4505 ms, but the rule
+  policy stayed silent because the embedded corpus predicted the next span
+  was `。` (only punctuation, no operations to rank). With
+  `--decision local --predictor local` on the same file, one intervention
+  (`仕組みは？`) was planned but then cancelled because the speaker resumed
+  within the insertion window — that is the intended cancellation behaviour,
+  observed live on real audio.
 - **A Japanese-software-reasoning speech corpus**: none publicly available
   short of paying for it. The synthetic CUELOOP corpus in
   `experiments/`/`docs/benchmark.md` is the closest substitute.
