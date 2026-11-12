@@ -145,6 +145,35 @@ See `docs/benchmark.md` for the synthetic evaluation, `docs/experiment-protocol.
 for the human study design, and `docs/real-speech.md` (this file) for the
 Limited Corpus evaluation.
 
+## Local-LLM end-to-end on the Lux corpus
+
+`scripts/simulate_lux_replay.py --predictor local --decision local` was run
+on the 38 files that finished first (the rest are queued as a background job).
+The output is re
+produced in `artifacts/lux-llm-328/`:
+
+```text
+files with predictions:    26 / 38 (every prediction produced an intervention)
+delivered:                  0 / 38 (all 71 interventions cancelled — speaker kept talking)
+held on SILENCE:           71 (next-best, latency-matched arm receives 0)
+perceived novel wording:   71 interventions matched the symbolic parser
+```
+
+**The key mismatch is also visible in the emotions files most frequently
+engaging the predictor**: `EMOTION100_011` (a participant speech containing
+例えば) yields 7 predictions; `EMOTION100_072` (理由 gives 13); the written
+recitation corpus (e.g. `RECITATION324_002` etc.) produces rarely any
+predictions (1 or 0). The predictor is engaging on the *trigger words*
+its own regex detects, not on the actual reasoning/shape of the sentence.
+
+The local LLM cannot detect the announcement and the reason for a mutation;
+it merely fires on the presence of vocabulary (前提/結論/依存 etc.) absent
+of any genuine reason to intervene. This means the live Japanese behaviour
+of CUELOOP's local-LLM path will be triggered predominantly by `trigger_words`
+rarely by reasoned operation shifts.
+
+## How to reproduce these numbers
+
 ## How to reproduce these numbers
 
 ```bash
