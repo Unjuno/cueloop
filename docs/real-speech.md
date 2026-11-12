@@ -155,8 +155,33 @@ produced in `artifacts/lux-llm-328/`:
 ```text
 files with predictions:    26 / 38 (every prediction produced an intervention)
 delivered:                  0 / 38 (all 71 interventions cancelled — speaker kept talking)
-held on SILENCE:           71 (next-best, latency-matched arm receives 0)
-perceived novel wording:   71 interventions matched the symbolic parser
+held on SILENCE:            71 (next-best, latency-matched arm receives 0)
+perceived novel wording:    71 interventions matched the symbolic parser
+
+A 50-file rerun (`--limit 50`) produced:
+
+```text
+files                 50
+predictions          60
+interventions        60
+delivered            0
+cancelled            60 (all)
+SILENCE interventions 60 (all)
+```
+
+Every local-LLM prediction fires the symbolic parser (every predicted span
+tags at least one operation token, or the context-fit constraint is
+satisfied), and every intervention is cancelled because the actually spoken
+text diverges from the prediction before the speaker pauses long enough for
+a cue to land. This is the honest state: **the pipeline knows when to speak,
+but not what to say**, because the corpus is literary Japanese and the local
+model cannot match the author's choices. To improve:
+
+- (a) train a Japanese software-reasoning speech corpus targeted at the
+  vocabulary CUELOOP uses — not available publicly;
+- (b) evaluate on real software-reasoning recordings — not available publicly;
+- (c) accept that the reliable arm is the `rule` backend with the bare cue,
+  not the local LLM.
 ```
 
 **The key mismatch is also visible in the emotions files most frequently
