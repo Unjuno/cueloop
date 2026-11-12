@@ -32,8 +32,10 @@ writing or reasoning improvement require a delayed, unassisted task.
 
 Immediate uptake is only a mechanism check; it is not evidence of durable
 improvement. No claim here is supported by human data yet. See
-`docs/real-speech.md` for a limited ASR calibration against a local sample of
-real Japanese speech.
+`docs/real-speech.md` for calibration against two real Japanese speech
+corpora: Lux (read prose, CC-BY-4.0) and ReazonSpeech (YouTube-derived
+discourse Japanese, CDLA-Sharing-1.0), including paired CUE/SILENCE replays
+through the real runtime.
 
 ## Stem cues (default) and bare cues
 

@@ -97,13 +97,18 @@ and the null arm is exactly zero:
 This validates that `cue_style` is only a presentation knob — the
 intervention assignment (when, what operation) is unchanged.
 
-## Real-speech replay (Lux corpus)
+## Real-speech replay (Lux corpus and ReazonSpeech)
 
-`scripts/simulate_lux_replay.py` replays the 328 locally available Lux audio
-files through the actual `SyncRuntime` with per-word `transcript_partial`
-timestamps produced by `whisper-base-mlx`. Each file is one session, paired
-with itself under CUE and SILENCE. Speaker output is held; outcome scoring,
-boundary detection, and analyzer pairing all run end-to-end.
+`scripts/simulate_lux_replay.py` replays real Japanese audio through the
+actual `SyncRuntime` with per-word `transcript_partial` timestamps produced
+by `whisper-base-mlx`. Each file is one session, paired with itself under
+CUE and SILENCE. Two corpora are covered — the Lux read corpus (this
+section) and the ReazonSpeech YouTube-discourse sample (~200 files, 30
+operation-tagged) in `docs/real-speech.md`, where the rule backend delivered
+455 cues and the local-LLM backend delivered zero. The Lux replay:
+
+Speaker output is held; outcome scoring, boundary detection, and analyzer
+pairing all run end-to-end.
 
 Full run live at `artifacts/lux-rule-328/` (328 CUE / 328 SILENCE reports):
 

@@ -2,21 +2,28 @@
 
 CUELOOP's live path depends on (a) the macOS microphone adapter for ASR and
 (b) the n-gram predictor for low-latency prediction with the local LLM as
-semantic prior. This document records what we found when we put a publicly
-available Japanese speech corpus (real human audio of Japanese) through that
-pipeline.
+semantic prior. This document records what we found when we put publicly
+available Japanese speech corpora through that pipeline.
 
-**Corpus.** *Lux Japanese Speech Corpus* (Lami Inc., CC-BY-4.0) — the
-`ita_recitation` clean read subset: 324 files, ~230 MB, 96 kHz/16-bit WAV,
-transcriptions in `metadata.csv`. It contains one Japanese voice (the Lux
-character) reading diverse prose (biographical, historical, culinary,
-epistemic). License is attribution-only for CC-BY-4.0.
+**Corpora.**
 
-This is a **non-conversational, purposeful read speech** corpus. It is not a
-representative sample of spontaneous Japanese reasoning, and it is not the
-kind of speech CUELOOP operates on live. It is, however, real recorded speech,
-and it is broadly Japanese, so it is a far more honest calibration target
-than a synthetic replay.
+- *Lux Japanese Speech Corpus* (Lami Inc., CC-BY-4.0) — the `ita_recitation`
+  clean read subset: 324 files, ~230 MB, 96 kHz/16-bit WAV. Read prose;
+  no CUELOOP operation-vocabulary overlap. Used for the first real-speech arm.
+- *ReazonSpeech* (Reazon Holdings, CDLA-Sharing-1.0; mirror
+  `osanpo/reazonspeech`) — YouTube-derived Japanese speech (news, sports,
+  talk, cooking — real speaker discourse). `metadata-sample-200.csv` draws the
+  200 longest/most-content-dense utterances with at least 6 s and 15
+  characters from chunk `000` (matches `efwkjn/reazonspeech_metadata` for
+  transcriptions; YouTube-derived; audio is not redistributed in this repo —
+  `data/` is git-ignored). Average content density ~4.5× the Lux set; 30/200
+  lines tag at least one CUELOOP operation. Used for the vocabulary-domain
+  arm.
+
+These corpora are real recorded Japanese speech but they are not CUELOOP's
+live target either: neither contains human-against-cue interaction (canned
+audio cannot respond). They remain honest calibration targets, just ordered by
+proximity to the operational discourse register.
 
 ## What was measured
 
@@ -128,11 +135,14 @@ The signal we can draw here is narrower than it first appears:
   `metadata.csv`. Useful once a proper corpus appears for the target domain.
 - `tools/file_asr.swift` — Swift one-shot recognizer per Lux-style file,
   for direct SFSpeechRecognizer comparison when the license is accepted.
-- `scripts/simulate_lux_replay.py` — replays the 328 local Lux files through
-  the actual `SyncRuntime`, emitting analyzer-ready paired reports (CUE and
-  SILENCE) for every file. Produces zero uptake in both arms, as expected
-  for read speech; confirms the live measurement path runs on real Japanese
-  audio without changing the runtime.
+- `scripts/simulate_lux_replay.py` — replays Lux *or any compatible corpus*
+  (CSV with file_name/cleaned_path/transcript) through the actual
+  `SyncRuntime`, emitting analyzer-ready paired reports (CUE and SILENCE).
+  On ReazonSpeech it delivered 455 cues with the rule backend and zero with
+  the local-LLM backend, and confirmed the live measurement path runs on
+  real Japanese discourse without changing the runtime. Also fixes a
+  cache-subset bug where a warm whisper cache returned extra files not in
+  the requested corpus (regression test included).
 
 Note: the Lux corpus is literary Japanese (read speech) with essentially no
 operation-tag vocabulary overlap — both the embedded n-gram and the local
@@ -221,6 +231,97 @@ To improve:
 - (c) accept that the reliable arm on this corpus is the `rule` backend with
   the bare cue (276 delivered, all `具体は？`-heavy), not the local LLM.
 
+## ReazonSpeech sample: vocabulary-domain arm (YouTube Japanese)
+
+YouTube-derived ReazonSpeech audio is the closest publicly available corpus
+to the register CUELOOP was built for, and it does contain CUELOOP's
+operation vocabulary:
+
+```text
+sample:         200 files, ≥6 s and ≥15 chars, total ≈ 52 minutes
+ops tagged in transcripts:  30 / 200 files (conclusion 10, concretize 7,
+                            dependency 6, mechanism 5, boundary 3,
+                            invert 1, ground 1, comparison 1)
+whisper-base-mlx vs dataset whisper-turbo pseudo-labels: 78.0% char accuracy
+                            (0/200 exact; both are machine transcriptions,
+                            so this is an agreement bound, not an accuracy bound)
+```
+
+### Rule backend, 200-file sample
+
+```text
+files                    200 (CUE and SILENCE paired)
+predictions fired        894  (vs 405 on the Lux read corpus; 2.2×)
+interventions delivered  455  (CUE)
+held (SILENCE)          455
+cancellations            0
+files delivering ≥ 1 cue 133 / 200
+max cues per file         9
+operations delivered     concretize 427, invert 12, ground 7,
+                            conclusion 5, mechanism 2, dependency 2
+paired uptake delta     +0.000 (both arms identical: the continuation text
+                            is identical in both arms, so target_operation_seen
+                            fired 8/455 times in both)
+```
+
+### Local-LLM backend, 30 operation-tagged files
+
+Running `local-LLM` over all 200 files was not feasible on this machine
+(~1 min of LLM time per 15 s utterance per arm), so the local-LLM arm was
+run on exactly the 30 files whose transcripts tag at least one CUELOOP
+operation — the domain where the cue has a real target.
+
+```text
+files                    30 (CUE and SILENCE paired)
+predictions fired        254 (identical in both arms)
+interventions            250 CUE / 249 SILENCE (not bit-deterministic)
+delivered                0 (all 250/249 cancelled/held)
+files with ≥ 1 delivered 0 / 30
+analyzer n_pairs         30, every metric +0.000
+median delay             insufficient (no deliveries)
+repertoire_growth        1.03 both arms (transcript tags, not effect —
+                            nothing was delivered)
+```
+
+The local-LLM predictor produces plausible continuations but never the exact
+author's wording — so after each boundary the synchronizer marks the speech
+diverged and every intervention is cancelled. The rule backend survives the
+same data because its echo-like n-gram predictions partially match the
+continuation often enough to keep the synchronizer un-diverged long enough
+for the delivery window to elapse; that is not foresight, it is substring
+echo, and it is why the rule arm can deliver while the local-LLM arm cannot.
+
+**Honest framing.** This corpus changes the *base rate*, not the mechanism:
+CUELOOP's operation vocabulary is genuinely present in real Japanese
+discourse, the rule backend fires and delivers cues against it (455 times,
+concentrated on `具体は？`), and the local-LLM backend fires often but never
+completes a delivery. Neither result says anything about whether a human
+hearing a cue would shift their reasoning — that remains the open H1/H2
+question for live sessions.
+
+### Artifacts and reproduction
+
+```bash
+# whisper transcription (already cached in data/real-speech/reazon/)
+# full 200-file sample, rule backend (~4 min)
+PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 \
+  scripts/simulate_lux_replay.py --corpus data/real-speech/reazon/metadata-sample-200.csv \
+  --source-name reazon --output-dir artifacts/reazon-rule-200 --predictor ngram --decision rule
+.venv/bin/python scripts/analyze_experiment.py artifacts/reazon-rule-200/cue \
+  artifacts/reazon-rule-200/silence --markdown artifacts/reazon-rule-200-analysis.md
+
+# 30 operation-tagged files, local-LLM backend (~60 min; needs Ollama)
+PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 \
+  scripts/simulate_lux_replay.py --corpus data/real-speech/reazon/metadata-sample-tagged.csv \
+  --whisper-cache data/real-speech/reazon/metadata-sample-200-whisper-results.json \
+  --source-name reazon-tagged --output-dir artifacts/reazon-llm-tagged \
+  --predictor local --decision local --local-model gemma3:4b-it-qat
+
+# corpus acquisition (audio is not in git):
+#   tar of chunk 000 from huggingface.co/datasets/osanpo/reazonspeech (CDLA-Sharing-1.0)
+#   transcriptions from huggingface.co/datasets/efwkjn/reazonspeech_metadata
+```
+
 ## How to reproduce these numbers
 
 ```bash
@@ -272,11 +373,19 @@ git-ignored — don't commit the WAVs.
 ## Next steps
 
 1. Accept Xcode license on the developer laptop and run the macOS on-device
-   recognizer on Lux files (tools/file_asr.swift + a tiny harness),
+   recognizer on Lux/Reazon files (tools/file_asr.swift + a tiny harness),
    comparing error profile vs whisper-base-mlx.
-2. Record live CUELOOP sessions on actual laptop microphones against a
-   controlling condition (politeness-matched recording of Lux reading the
-   same transcripts), with per-condition diarization scored offline.
-3. Expand the embedded corpus on Japanese software engineering (code review,
+2. **Human sessions remain the only gate to H1/H2**: Japanese reasoning
+   speech recorded live with a speaker who can hear and react to cues.
+   The Reazon arm shows real content with the vocabulary present, but
+   everything remains held/cancelled — nothing has been measured about
+   effect on a human. Issue #6.
+3. With a Reazon-style discourse corpus in hand, the most valuable next
+   technical step is *domain-adapted prediction*: measure whether the local
+   LLM (or n-gram) can anticipate operations in the 30-tagged-file subset
+   with enough fidelity to keep the synchronizer un-diverged past the
+   delivery window — that is the only way local-LLM cues can complete a
+   delivery on recorded speech.
+4. Expand the embedded corpus on Japanese software engineering (code review,
    design discussion) texts; re-evaluate `exact_prefix_rate`. The embedded
    corpus is the single largest source of false-positive predictions.
