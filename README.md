@@ -1,5 +1,7 @@
 # CUELOOP
 
+![tests](https://github.com/Unjuno/cueloop/actions/workflows/test.yml/badge.svg)
+
 CUELOOP synchronizes an inserted cue with a person's speech while they are
 still talking. It predicts the next short span, tracks how the live transcript
 aligns with that prediction, and inserts a cue before the next clause is
@@ -13,6 +15,20 @@ specific operation word at the moment the speaker announces that operation
 change what they say next, and does repeated practice improve the structure of
 their reasoning? The mechanism can be measured now. Claims about durable
 writing or reasoning improvement require a delayed, unassisted task.
+
+## Status
+
+| What | State |
+| --- | --- |
+| Sync core (predict → synchronize → decide → speak) | working; 124 tests, CI green |
+| macOS microphone adapter + live demo | working on this machine (ambient-noise dependent) |
+| Default voice | Japanese, macOS `say -v Kyoko` |
+| Synthetic calibration | analyzer recovers programmed effects (docs/benchmark.md) |
+| Human sessions | **none yet** — no H1/H2 result exists |
+| License | not set (all rights reserved) — public for reading, not for reuse |
+
+Immediate uptake is only a mechanism check; it is not evidence of durable
+improvement. No claim here is supported by human data yet.
 
 ## Stem cues (default) and bare cues
 
