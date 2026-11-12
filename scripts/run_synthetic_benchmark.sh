@@ -31,6 +31,21 @@ if [ -d "$lux_out/cue" ] && [ -d "$lux_out/silence" ]; then
     --markdown "$OUT/simulated-lux-s0.md" >/dev/null
 fi
 
+echo "== extended effect grid: effects {0, 0.10, 0.15, 0.20, 0.25, 0.30, 0.40} x seeds {0, 1} =="
+for seed in 0 1; do
+  for effect in 0.10 0.15 0.25 0.30; do
+    dir="$OUT/simulated-${effect}-s${seed}"
+    if [ ! -d "$dir" ]; then
+      "$PYTHON" scripts/simulate_sessions.py \
+        --output-dir "$dir" --sessions 24 --clauses 8 --seed "$seed" \
+        --uptake-effect "$effect" --carryover-effect "$effect" >/dev/null
+    fi
+    "$PYTHON" scripts/analyze_experiment.py "$dir" \
+      --json "$OUT/simulated-${effect}-s${seed}.json" \
+      --markdown "$OUT/simulated-${effect}-s${seed}.md" >/dev/null
+  done
+done
+
 echo "== analyzer grid: effects {0, 0.10, 0.20, 0.30} x seeds {0, 1, 2} =="
 for seed in 0 1 2; do
   for effect in 0 0.10 0.20 0.30; do

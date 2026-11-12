@@ -38,6 +38,25 @@ effect is exactly the difference the analyzer should find.
 | carryover 0.2 | +0.029 | +0.045 | +0.033 | +0.010 |
 | carryover 0.4 | +0.026 | +0.077 | +0.092 | +0.055 |
 
+## Extended effect grid (detection curve at smaller effects)
+
+Replicating the in-the-loop calibration at smaller effects proves the
+detection machinery at the low end. Two seeds shown, 24 paired sessions each:
+
+| effect | seed 0 CI | seed 1 CI |
+| --- | --- | --- |
+| 0.10 | +0.038 [+0.004, +0.077] | +0.064 [+0.027, +0.106] |
+| 0.15 | +0.075 [+0.033, +0.116] | +0.075 [+0.033, +0.119] |
+| 0.20 | +0.081 [+0.033, +0.132] | +0.114 [+0.064, +0.169] |
+| 0.25 | +0.095 [+0.038, +0.154] | +0.140 [+0.090, +0.194] |
+| 0.30 | +0.095 [+0.040, +0.153] | +0.155 [+0.105, +0.210] |
+| 0.40 | +0.115 [+0.051, +0.177] | +0.176 [+0.114, +0.243] |
+
+Detection clears CI-excluding-zero at 0.10+, comparing group-level paired
+differences through the same bootstrap CI. The 0.05 boundary is at the noise
+floor of the default `simulate_sessions` model and was deliberately left out.
+
+
 ## Sample size for the human study (power analysis)
 
 `scripts/analyze_power.py` re-runs the event-level simulator across 16 random
