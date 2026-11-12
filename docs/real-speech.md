@@ -299,17 +299,34 @@ impossibility, just rarity. The local-LLM arm still fires essentially never
 enough to affect anything: ~0.5% delivery rate vs 455 delivered (100% of
 interventions) under the rule backend on the same files.
 
-A `gemma3:4b-it-qat` run over the same sample started but was stopped at
-52/200 CUE files for compute (partial CUE-only run: 255 predictions, 249
-interventions, 0 delivered — consistent with the 30-tagged-file gemma3:4b
-run). `qwen2.5:1.5b-instruct` is not recommended as a predictor for this
-domain; it was used here because each session costs ~4s of client time.
+### Local-LLM backend, 200-file full sample (gemma3:4b-it-qat)
+
+The full sample was also run with gemma3:4b-it-qat (~12 s of LLM time per
+15 s utterance per arm; both arms complete; reports at
+`artifacts/reazon-llm-200/`):
+
+```text
+files                    200 CUE + 200 SILENCE
+predictions              1131 CUE / 1133 SILENCE (142/200 files with
+                          predictions in both arms; not bit-deterministic)
+interventions            1100 CUE / 1109 SILENCE
+delivered                0  (both arms; every intervention cancelled/held)
+analyzer n_pairs         200, every metric +0.000
+median delay ms          insufficient (no deliveries)
+repertoire_growth        0.18 both arms (transcript tags, not effect)
+```
+
+The gemma3 arm never completes a delivery on this corpus — 1,100 interventions
+are all cancelled — consistent with the 30 operation-tagged files (0/250) and
+with Lux (0/457). `qwen2.5:1.5b-instruct` is not recommended as a predictor
+for this domain; it was used earlier because each session costs ~4 s of
+client time (2 delivered — boundary `範囲は？` and ground `根拠は？`).
 
 ### Local-LLM backend, 30 operation-tagged files (gemma3:4b-it-qat)
 
 The 30 files whose transcripts tag at least one CUELOOP operation — the
 domain where a cue has a real target — were run with gemma3:4b-it-qat
-(~1 min of LLM time per 15 s utterance per arm):
+(~25 s of LLM time per 15 s utterance per arm):
 
 ```text
 files                    30 (CUE and SILENCE paired)
@@ -363,6 +380,15 @@ PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 \
   --whisper-cache data/real-speech/reazon/metadata-sample-200-whisper-results.json \
   --source-name reazon-llm15b --output-dir artifacts/reazon-llm15b-200 \
   --predictor local --decision local --local-model qwen2.5:1.5b-instruct
+
+# full 200-file sample, gemma3:4b-it-qat (~80 min total; needs Ollama + gemma3)
+PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 \
+  scripts/simulate_lux_replay.py --corpus data/real-speech/reazon/metadata-sample-200.csv \
+  --whisper-cache data/real-speech/reazon/metadata-sample-200-whisper-results.json \
+  --source-name reazon-fulllm8 --output-dir artifacts/reazon-llm-200 \
+  --predictor local --decision local --local-model gemma3:4b-it-qat
+.venv/bin/python scripts/analyze_experiment.py artifacts/reazon-llm-200/cue \
+  artifacts/reazon-llm-200/silence --markdown artifacts/reazon-llm-200-analysis.md
 
 # corpus acquisition (audio is not in git):
 #   tar of chunk 000 from huggingface.co/datasets/osanpo/reazonspeech (CDLA-Sharing-1.0)

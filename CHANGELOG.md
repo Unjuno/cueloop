@@ -20,7 +20,10 @@
   986 predictions / 434 interventions / **2 delivered** (boundary `範囲は？`
   and ground `根拠は？`) — the first local-LLM cue ever delivered on real
   Japanese audio (0.5% delivery rate; zero uptake). gemma3:4b-it-qat on the
-  30 operation-tagged files: 254 predictions, 0 delivered (all cancelled).
+  full 200-file arm (both arms): 1,131/1,133 predictions, 1,100/1,109
+  interventions, 0 delivered — every intervention cancelled/held. gemma3
+  remains 0-delivered on real Japanese discourse at every tested scale
+  (200/30/328 files).
 
 ## 0.3.0 (2026-11-12)
 
