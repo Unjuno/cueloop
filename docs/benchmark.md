@@ -78,6 +78,29 @@ and the null arm is exactly zero:
 This validates that `cue_style` is only a presentation knob — the
 intervention assignment (when, what operation) is unchanged.
 
+## Real-speech replay (Lux corpus)
+
+`scripts/simulate_lux_replay.py` replays the 328 locally available Lux audio
+files through the actual `SyncRuntime` with per-word `transcript_partial`
+timestamps produced by `whisper-base-mlx`. Each file is one session, paired
+with itself under CUE and SILENCE. Speaker output is held; outcome scoring,
+boundary detection, and analyzer pairing all run end-to-end.
+
+Measured on the latest run (artifacts/benchmark/simulated-lux-s0.md):
+
+| arm | sessions | interventions | uptake | carryover | growth | delay ms |
+| --- | --- | --- | --- | --- | --- | --- |
+| CUE | 328 | 276 (194 forced / 0 cancelled / 0 expired) | 0.00 | 0.00 | 0.04 | 0 |
+| SILENCE | 328 | 276 (held) | 0.00 | 0.00 | 0.04 | 0 |
+| delta | — | — | +0.000 | +0.000 | +0.000 | +0.000 |
+
+This is the expected result: the Lux recordings are single utterances of
+foreign-language TTS proofreading, not live reasoning, so there is no
+mechanism for induced uptake and no cue to pick up. The value of this arm is
+that the full live pipeline — ASR event gating, prediction, decision, leak
+suppression, dispatch, outcome scoring, analyzer pairing — is exercised on
+real Japanese audio without any microphone or speaker hardware.
+
 ## Analyzer grid: programmed uptake effect × seed
 
 24 clause-pairs per cell, 8 clauses per session, three backends

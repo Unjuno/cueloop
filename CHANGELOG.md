@@ -12,6 +12,10 @@
   (cycle predictor, rule decision, assignment, canned speaker), emitting
   analyzer-ready reports and JSONL logs. Its null arm is exactly +0.000;
   programmed effects of 0.2/0.4 are recovered with CIs excluding zero.
+- Real-speech replay (`scripts/simulate_lux_replay.py`): plays the local Lux
+  corpus back through the same `SyncRuntime`, emitting 656 analyzer-ready
+  reports (328 CUE + 328 SILENCE) with zero uptake as expected for read
+  speech. Confirms the live measurement path runs on real Japanese audio.
 - One-command calibration benchmark (`scripts/run_synthetic_benchmark.sh`,
   documented in `docs/benchmark.md`): analyzer grid over effects × seeds ×
   backends (null cells exactly zero, 27/27 effect cells CI-excludes-zero), the

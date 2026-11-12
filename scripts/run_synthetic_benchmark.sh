@@ -13,6 +13,24 @@ fi
 OUT="${1:-artifacts/benchmark}"
 mkdir -p "$OUT"
 
+echo "== real-speech replay: Lux corpus =="
+lux_out="$OUT/simulated-lux-s0"
+if [ ! -d "$lux_out" ]; then
+  if [ -f data/real-speech/lux/lux-whisper-results.json ] && command -v /opt/homebrew/bin/python3 >/dev/null; then
+    PYTHONPATH="$PWD/.venv/lib/python$(python3 -c 'import sys;print(f"{sys.version_info.major}.{sys.version_info.minor}")')/site-packages" \
+      /opt/homebrew/bin/python3 scripts/simulate_lux_replay.py \
+        --output-dir "$lux_out" --whisper-model /tmp/whisper-base >/dev/null || \
+      echo "(lux replay skipped: mlx_whisper unavailable)"
+  else
+    echo "(lux replay skipped: corpus/cache missing)"
+  fi
+fi
+if [ -d "$lux_out/cue" ] && [ -d "$lux_out/silence" ]; then
+  "$PYTHON" scripts/analyze_experiment.py "$lux_out/cue" "$lux_out/silence" \
+    --json "$OUT/simulated-lux-s0.json" \
+    --markdown "$OUT/simulated-lux-s0.md" >/dev/null
+fi
+
 echo "== analyzer grid: effects {0, 0.10, 0.20, 0.30} x seeds {0, 1, 2} =="
 for seed in 0 1 2; do
   for effect in 0 0.10 0.20 0.30; do
