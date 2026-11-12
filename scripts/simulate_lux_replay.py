@@ -152,6 +152,7 @@ def run_session(
         )
     elif predictor_name == "cycle":
         from cueloop.sync.predictors import ScriptedPredictor
+
         # A minimal synthetic cycle predictor, useful as a stable test target.
         # It rotates one operation-spanning span per call; CUELOOP's rule
         # policy will therefore fire a deterministic sequence of cues.
