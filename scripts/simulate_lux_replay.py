@@ -65,6 +65,20 @@ from cueloop.sync.runtime import NullSpeaker, SyncRuntime
 LUX_METADATA = ROOT / "data" / "real-speech" / "lux" / "metadata.csv"
 
 
+def _derive_whisper_cache(corpus: Path, whisper_cache: Path | None) -> Path:
+    """Resolve the default whisper-cache path for a corpus.
+
+    Paths are compared after ``resolve()`` so a relative
+    ``--corpus data/real-speech/lux/metadata.csv`` selects the canonical Lux
+    cache instead of creating a duplicate.
+    """
+    if whisper_cache is not None:
+        return whisper_cache
+    if corpus.resolve() == LUX_METADATA.resolve():
+        return LUX_METADATA.with_name("lux-whisper-results.json")
+    return corpus.with_name(corpus.stem + "-whisper-results.json")
+
+
 def load_or_transcribe(
     metadata_path: Path,
     whisper_cache: Path,
@@ -297,14 +311,7 @@ def main() -> int:
     parser.add_argument("--local-base-url", default="http://127.0.0.1:11434")
     args = parser.parse_args()
 
-    whisper_cache = args.whisper_cache
-    if whisper_cache is None:
-        if args.corpus == LUX_METADATA:
-            whisper_cache = LUX_METADATA.with_name("lux-whisper-results.json")
-        else:
-            whisper_cache = args.corpus.with_name(
-                args.corpus.stem + "-whisper-results.json"
-            )
+    whisper_cache = _derive_whisper_cache(args.corpus, args.whisper_cache)
     cache = load_or_transcribe(
         args.corpus, whisper_cache, args.whisper_model, limit=args.limit
     )

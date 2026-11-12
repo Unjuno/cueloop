@@ -34,6 +34,33 @@ class EventsForTests(unittest.TestCase):
         self.assertEqual(events_for("dummy.wav", [{"words": []}]), [])
 
 
+class DeriveWhisperCacheTests(unittest.TestCase):
+    def test_relative_lux_corpus_selects_canonical_lux_cache(self) -> None:
+        from scripts.simulate_lux_replay import LUX_METADATA, _derive_whisper_cache
+
+        relative = Path("data/real-speech/lux/metadata.csv")
+        expected = LUX_METADATA.with_name("lux-whisper-results.json")
+        self.assertEqual(_derive_whisper_cache(relative, None), expected)
+
+    def test_non_lux_corpus_gets_sibling_cache(self) -> None:
+        from scripts.simulate_lux_replay import _derive_whisper_cache
+
+        corpus = Path("data/real-speech/reazon/metadata-sample-200.csv")
+        self.assertEqual(
+            _derive_whisper_cache(corpus, None),
+            Path("data/real-speech/reazon/metadata-sample-200-whisper-results.json"),
+        )
+
+    def test_explicit_whisper_cache_wins(self) -> None:
+        from scripts.simulate_lux_replay import _derive_whisper_cache
+
+        corpus = Path("data/real-speech/lux/metadata.csv")
+        self.assertEqual(
+            _derive_whisper_cache(corpus, Path("/tmp/custom-cache.json")),
+            Path("/tmp/custom-cache.json"),
+        )
+
+
 class CacheSubsetTests(unittest.TestCase):
     def test_cache_with_extra_entries_returns_exactly_the_corpus(self) -> None:
         import tempfile

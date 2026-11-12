@@ -463,6 +463,55 @@ class DecisionModelTests(unittest.TestCase):
         self.assertEqual(intervention.cue, "根拠は？")
         self.assertEqual(intervention.scheduled_at_ms, 1_000)
 
+    def test_fatigue_rotates_away_from_repeats(self) -> None:
+        model = RuleDecisionModel(CanonicalAssigner(), context_fit=True)
+
+        def _state() -> SyncState:
+            prediction = Prediction(
+                span="だから結論は決まる。",
+                operations=("conclusion",),
+                confidence=0.9,
+                source="test",
+                created_at_ms=800,
+                base_length=len("この設計は前提を分けて考える。"),
+            )
+            return SyncState(
+                utterance_id="u1",
+                text="この設計は前提を分けて考える。",
+                context=(),
+                now_ms=800,
+                started_at_ms=0,
+                chars_per_second=4.0,
+                at_boundary=True,
+                prediction=prediction,
+                prediction_match=6,
+                diverged=False,
+                clause_operations=frozenset({"dependency"}),
+                recent_operations=frozenset(),
+            )
+
+        picks = [model.decide(_state()).requested_operation for _ in range(6)]
+        self.assertEqual(picks[0], "concretize")
+        self.assertNotEqual(picks[1], "concretize")
+        self.assertLessEqual(picks.count("concretize"), 2)
+        self.assertGreaterEqual(len(set(picks)), 3)
+
+    def test_no_fatigue_when_disabled(self) -> None:
+        model = RuleDecisionModel(
+            CanonicalAssigner(), context_fit=True, fatigue_penalty=0
+        )
+        state = _state(
+            prediction=_prediction(
+                "だから結論は決まる。", operations=("conclusion",)
+            ),
+            clause_operations=frozenset({"dependency"}),
+        )
+        first = model.decide(state)
+        second = model.decide(state)
+        assert first is not None
+        assert second is not None
+        self.assertEqual(first.requested_operation, second.requested_operation)
+
     def test_rejects_low_confidence(self) -> None:
         model = RuleDecisionModel(CanonicalAssigner(), min_confidence=0.95)
         state = _state(prediction=_prediction("だから結論は決まる。", confidence=0.5))

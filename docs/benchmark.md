@@ -119,11 +119,16 @@ Full run live at `artifacts/lux-rule-328/` (328 CUE / 328 SILENCE reports):
 | delta | — | — | — | +0.000 | +0.000 | +0.000 | +0.000 |
 
 405 boundary\_predictions fired across the 328 files (1.23 per file).
-Operations chosen by rule: concretize 264, invert 6, ground 4, mechanism 1,
-conclusion 1. Cues deployed: `具体は？` 264×, `逆は？` 6×, `根拠は？` 4×,
-`仕組みは？` 1×, `結論は？` 1×. The rule fires on the embedded n-gram's
+Operations chosen by rule (after fatigue tuning): concretize 194, dependency 50,
+mechanism 13, conclusion 8, invert 6, ground 4, comparison 1 — cues used:
+`具体は？` 194×, `何に？` 50×, `仕組みは？` 13×, `結論は？` 8×, `逆は？` 6×,
+`根拠は？` 4×, `何と比べる？` 1×. The rule fires on the embedded n-gram's
 predictions at the small pauses in the TTS read-through — not at any
-announced operation the speaker is producing.
+announced operation the speaker is producing. The rule backend now applies
+per-session repetition fatigue (`fatigue_penalty=2.0`): without it the
+delivery mix was concretize 264 (96%); fatigue rotated the mix while
+preserving identical counts (276 delivered, 405 predictions) and identical
++0.000 deltas.
 
 This is the expected result: the Lux recordings are single utterances of
 foreign-language TTS proofreading, not live reasoning, so there is no

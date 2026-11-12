@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- Per-session repetition fatigue in `RuleDecisionModel` (`fatigue_penalty`,
+  default 2.0): each chosen operation accrues fatigue so the rule backend
+  stops delivering a near-monotone stream of one cue on discourse Japanese.
+  Cue diversity on the ReazonSpeech arm rose from 94% `concretize` to a
+  7-operation mix (concretize 46%); delivery counts, prediction counts and all paired analyzer deltas
+  (+0.000) are unchanged; synthetic null/effect cells are unchanged
+  (27/27 effect cells CI-excludes-zero).
+- `scripts/simulate_lux_replay.py` accepts `--corpus`/`--whisper-cache`/
+  `--source-name` and replays any compatible corpus (Lux or ReazonSpeech).
+  Fixes a whisper-cache subset bug (warm cache used to return the whole
+  file regardless of the requested corpus) and a relative-path corpus
+  resolution bug that created duplicate caches; both covered by tests.
+
 ## 0.3.0 (2026-11-12)
 
 ### Added

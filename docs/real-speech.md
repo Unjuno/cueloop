@@ -169,16 +169,22 @@ uptake / carryover     0.00 / 0.00 (both arms identical; read speech)
 repertoire_growth      0.04
 ```
 
-Distribution of chosen operations: `concretize 264`, `invert 6`, `ground 4`,
-`mechanism 1`, `conclusion 1`. Cues used: `具体は？`, `逆は？`, `根拠は？`,
-`仕組みは？`, `結論は？` in the same order of frequency.
+Distribution of chosen operations (after fatigue tuning): `concretize 194`,
+`dependency 50`, `mechanism 13`, `conclusion 8`, `invert 6`, `ground 4`,
+`comparison 1`. Cues used: `具体は？` 194×, `何に？` 50×, `仕組みは？` 13×,
+`結論は？` 8×, `逆は？` 6×, `根拠は？` 4×, `何と比べる？` 1×. The rule backend
+now applies per-session repetition fatigue (`fatigue_penalty=2.0`, see
+`RuleDecisionModel`): before it, concretize took 264/276 (96%); after it the
+mix spans 7 distinct operations while the delivery count (276), prediction
+count (405) and every paired delta (+0.000) are unchanged.
 
 The rule fires on the embedded n-gram's predictions at the small pauses in
 the TTS read-through — both arms receive an identical count of
 interventions so the paired delta is `+0.000` on every metric. The
 trigger is *not* meaningful announcement detection — Lux is a TTS
-proofreader script. Most cues (264/276) fire on `concretize` because our
-embedded corpus is dominated by example-language (`例えば`, `具体的`).
+proofreader script. Before fatigue tuning, most cues fired on `concretize`
+because the embedded corpus is dominated by example-language (`例えば`,
+`具体的`); the fatigue penalty now rotates the mix (see above).
 
 ## Local-LLM end-to-end on the Lux corpus
 
@@ -257,8 +263,9 @@ held (SILENCE)          455
 cancellations            0
 files delivering ≥ 1 cue 133 / 200
 max cues per file         9
-operations delivered     concretize 427, invert 12, ground 7,
-                            conclusion 5, mechanism 2, dependency 2
+operations delivered     concretize 207, dependency 134, conclusion 60,
+                            mechanism 23, ground 18, invert 13
+                            (fatigue tuning; before: concretize 427, dependency 2)
 paired uptake delta     +0.000 (both arms identical: the continuation text
                             is identical in both arms, so target_operation_seen
                             fired 8/455 times in both)

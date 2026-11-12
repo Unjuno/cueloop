@@ -13,6 +13,7 @@ import json
 import random
 import threading
 import time
+from collections import Counter
 from collections.abc import Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, replace
@@ -553,6 +554,7 @@ class RuleDecisionModel:
         cue_style: str = "bare",
         stem_generator: StemCueGenerator | None = None,
         stem_max_characters: int = DEFAULT_STEM_MAX_CHARACTERS,
+        fatigue_penalty: float = 2.0,
     ) -> None:
         if not 0.0 <= min_confidence <= 1.0:
             raise ValueError("min_confidence must be between 0 and 1")
@@ -560,6 +562,8 @@ class RuleDecisionModel:
             raise ValueError("delivery_window_ms must be positive")
         if insertion_delay_ms < 0:
             raise ValueError("insertion_delay_ms must be non-negative")
+        if fatigue_penalty < 0:
+            raise ValueError("fatigue_penalty must be non-negative")
         _check_cue_style(cue_style)
         if stem_max_characters < 8:
             raise ValueError("stem_max_characters must be at least 8")
@@ -571,9 +575,38 @@ class RuleDecisionModel:
         self.insertion_delay_ms = insertion_delay_ms
         self.context_fit = context_fit
         self.cue_style = cue_style
+        self.fatigue_penalty = fatigue_penalty
+        self._chosen_counts: Counter[str] = Counter()
         self.stem_generator = stem_generator
         self.stem_max_characters = stem_max_characters
         self.label = f"prediction-gap(assigner={assigner.label})"
+
+    def _choose_with_fatigue(self, missing: list[str]) -> str:
+        """Pick the best-fitting operation, damping repeats within this model.
+
+        The ranked missing list is ordered by context fit; with all counts
+        equal this returns ``missing[0]`` unchanged. Every time an operation
+        is chosen it accrues fatigue, so after a few cues of the same
+        operation a genuinely uncued operation (even one with a slightly
+        weaker link score) takes over. This is deliberate cue-diversity:
+        without it the rule backend can deliver 4-to-1 ratios of a single
+        operation on discourse Japanese, habituating the speaker.
+
+        The counter is per model instance; a fresh runtime per session
+        starts from zero, so sessions cannot bleed fatigue into each other.
+        """
+        if len(missing) <= 1 or self.fatigue_penalty == 0:
+            chosen = missing[0]
+            self._chosen_counts[chosen] += 1
+            return chosen
+        total = len(missing)
+        chosen = max(
+            missing,
+            key=lambda operation: (total - missing.index(operation))
+            - self.fatigue_penalty * self._chosen_counts[operation],
+        )
+        self._chosen_counts[chosen] += 1
+        return chosen
 
     def decide(self, state: SyncState) -> Intervention | None:
         prediction = state.prediction
@@ -604,7 +637,7 @@ class RuleDecisionModel:
             if ranked:
                 missing = list(ranked)
             context_fit = True
-        requested_operation = missing[0]
+        requested_operation = self._choose_with_fatigue(missing)
         if self.cue_style == "stem":
             cue = _resolve_stem_cue(
                 self.stem_generator,
