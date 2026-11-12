@@ -1,6 +1,6 @@
 // One-shot file transcription with the same SFSpeechRecognizer engine the
-// live macOS adapter uses. Used by scripts/evaluate_asr.py to score a local
-// Japanese speech corpus against CUELOOP's production ASR path.
+// live macOS adapter uses. Used by hand (not by any script yet) to score a
+// local Japanese speech corpus against CUELOOP's production ASR path.
 //
 // Build: swiftc tools/file_asr.swift -o .build/lux-file-asr \
 //   -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __info_plist \
@@ -57,7 +57,7 @@ let task = recognizer.recognitionTask(with: request) { result, error in
         let transcription = result.bestTranscription.formattedString
         let segments = result.bestTranscription.segments
         let confidence = segments.isEmpty ? 1.0
-            : segments.reduce(0.0, { $0 + $1.confidence }) / Double(segments.count)
+            : segments.reduce(0.0, { $0 + Double($1.confidence) }) / Double(segments.count)
         if result.isFinal {
             finalTranscript = transcription
             finalConfidence = confidence
