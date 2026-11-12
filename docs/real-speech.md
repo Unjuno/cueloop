@@ -128,6 +128,18 @@ The signal we can draw here is narrower than it first appears:
   `metadata.csv`. Useful once a proper corpus appears for the target domain.
 - `tools/file_asr.swift` — Swift one-shot recognizer per Lux-style file,
   for direct SFSpeechRecognizer comparison when the license is accepted.
+- `scripts/simulate_lux_replay.py` — replays the 328 local Lux files through
+  the actual `SyncRuntime`, emitting analyzer-ready paired reports (CUE and
+  SILENCE) for every file. Produces zero uptake in both arms, as expected
+  for read speech; confirms the live measurement path runs on real Japanese
+  audio without changing the runtime.
+
+Note: the Lux corpus is literary Japanese (read speech) with essentially no
+operation-tag vocabulary overlap — both the embedded n-gram and the local
+LLM produce predictions whose operation tags never coincide with the real
+operations in the next sentence. This is intrinsic to the corpus (it is not
+a reasoning dataset) rather than something that can be fixed by tuning the
+predictor.
 
 See `docs/benchmark.md` for the synthetic evaluation, `docs/experiment-protocol.md`
 for the human study design, and `docs/real-speech.md` (this file) for the
