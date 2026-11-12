@@ -602,8 +602,10 @@ class RuleDecisionModel:
         total = len(missing)
         chosen = max(
             missing,
-            key=lambda operation: (total - missing.index(operation))
-            - self.fatigue_penalty * self._chosen_counts[operation],
+            key=lambda operation: (
+                (total - missing.index(operation))
+                - self.fatigue_penalty * self._chosen_counts[operation]
+            ),
         )
         self._chosen_counts[chosen] += 1
         return chosen
