@@ -27,16 +27,36 @@ Cue and SILENCE arms share a skeleton and the same uniforms (common random
 numbers); only the audible cue can cause uptake/carryover — the programmed
 effect is exactly the difference the analyzer should find.
 
-24 sessions × 8 clauses per cell, effects 0 / 0.2 / 0.4, two seeds each
+24 sessions × 8 clauses per cell, effects 0 / 0.2 / 0.4, four seeds each
 (`artifacts/benchmark/simulated-*.json`):
 
 | programmed effect | seed 0 | seed 1 | seed 2 | seed 3 |
 | --- | --- | --- | --- | --- |
 | uptake 0.0 | +0.000 [±0.000] | +0.000 [±0.000] | +0.000 [±0.000] | +0.000 [±0.000] |
-| uptake 0.2 | +0.097 [+0.043, +0.152] | +0.105 [+0.048, +0.174] | +0.095 [+0.031, +0.156] | +0.050 [+0.001, +0.099] |
-| uptake 0.4 | +0.127 [+0.060, +0.199] | +0.163 [+0.101, +0.226] | +0.122 [+0.050, +0.190] | +0.130 [+0.043, +0.214] |
-| carryover 0.2 | +0.044 | +0.028 | +0.021 | +0.015 |
-| carryover 0.4 | +0.073 | +0.109 | +0.071 | +0.081 |
+| uptake 0.2 | +0.081 [+0.033, +0.132] | +0.114 [+0.064, +0.169] | +0.129 [+0.079, +0.175] | +0.074 [+0.019, +0.129] |
+| uptake 0.4 | +0.115 [+0.051, +0.177] | +0.176 [+0.114, +0.243] | +0.180 [+0.106, +0.256] | +0.190 [+0.099, +0.281] |
+| carryover 0.2 | +0.029 | +0.045 | +0.033 | +0.010 |
+| carryover 0.4 | +0.026 | +0.077 | +0.092 | +0.055 |
+
+## Sample size for the human study (power analysis)
+
+`scripts/analyze_power.py` re-runs the event-level simulator across 16 random
+seeds per (effect × pairs) cell and reports how often the analyzer's 95% CI
+excludes zero. Output (`artifacts/power-analysis.json`):
+
+| effect | pairs=8 | pairs=16 | pairs=24 | pairs=48 |
+| --- | --- | --- | --- | --- |
+| 0.0 | 0/16 | 0/16 | 0/16 | 0/16 |
+| 0.1 | 9/16 (56%) | 12/16 (75%) | 14/16 (88%) | 16/16 (100%) |
+| 0.2 | 12/16 (75%) | 16/16 (100%) | 16/16 (100%) | 16/16 (100%) |
+| 0.3 | 14/16 (88%) | 16/16 (100%) | 16/16 (100%) | 16/16 (100%) |
+
+Type-I rate is exactly zero at every cell size (the null never excludes
+zero; detecting what isn't there is the noise floor and stays at 0%). At an
+uptake effect of 0.1, 24+ pairs are needed for consistent detection; at
+0.2+, 16+ pairs reach 100%. **For the human study, plan 24–32 pairs per
+cell** — more if you want to stratify (word vs reading task) or add a
+mechanism (e.g., uptake at single-boundary cost).
 
 The null arm here is exact (+0.000 everywhere); the analyzer recovers the
 programmed effect with CIs excluding zero at 0.2 and 0.4.

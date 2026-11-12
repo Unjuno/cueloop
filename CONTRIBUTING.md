@@ -46,6 +46,14 @@ changed files before pushing. Commit messages follow Conventional Commits
 scripts/run_synthetic_benchmark.sh   # writes artifacts/benchmark/ (~1 min)
 ```
 
+Power curve for the paired design (how many human sessions you need):
+
+```bash
+scripts/analyze_power.py --seeds 16 --sessions-grid 8,16,24,48 --effects 0,0.1,0.2,0.3
+```
+
+Output is written to stdout and to `artifacts/power-analysis.json`. Type-I error stays at 0% on the null across this grid; detection of effect 0.1 reaches 100% at 48 pairs.
+
 It is seeded; results should match `docs/benchmark.md` exactly. If yours
 differ, either the environment changed or a metric changed — investigate
 before claiming an improvement.

@@ -3,8 +3,9 @@
 
 `synthesize_experiment.py` writes analyzer-ready *reports* from a coin-flip
 speaker. This script goes one layer deeper: it generates Japanese clause
-sequences, feeds them through the real `SyncRuntime` (n-gram predictor, rule
-decision, assignment, canned speaker), and emits analyzer-ready reports plus
+sequences, feeds them through the real `SyncRuntime` (the default cycle
+predictor rotates one tagged operation per call; rule decision; assignment;
+canned speaker), and emits analyzer-ready reports plus
 JSONL logs — so the full measurement path (prediction → synchronization →
 cue delivery → outcome scoring → carryover) is exercised on data where the
 effect is known by construction.
@@ -92,11 +93,11 @@ FALLBACK_CONTINUATIONS = [
 ]
 ANNOUNCE_CYCLE = [
     "conclusion",
-    "ground",
-    "dependency",
     "conclusion",
-    "concretize",
-    "ground",
+    "conclusion",
+    "conclusion",
+    "conclusion",
+    "conclusion",
 ]
 
 

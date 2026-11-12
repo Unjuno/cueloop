@@ -15,7 +15,10 @@
 - One-command calibration benchmark (`scripts/run_synthetic_benchmark.sh`,
   documented in `docs/benchmark.md`): analyzer grid over effects × seeds ×
   backends (null cells exactly zero, 27/27 effect cells CI-excludes-zero), the
-  end-to-end runtime simulation, plus policy training/evaluation at scale.
+  end-to-end runtime simulation (null exactly zero; 0.2/0.4 effects recovered),
+  plus policy training/evaluation at scale. `scripts/analyze_power.py`
+  computes the paired design's power curve (16 seeds/cell; type-I stays at 0%;
+  effect 0.1 detection hits 88% at 24 pairs and 100% at 48).
 - Operation-level exploration arm (`--assignment random-operation`): the timing
   policy still decides *when* to fire; the delivered operation is drawn
   uniformly from the missing-operation set so `requested_operation` and

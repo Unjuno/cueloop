@@ -450,6 +450,7 @@ src/cueloop/sync/       event loop, predictors, policy, runtime, CLI
 scripts/demo.sh         replay and live microphone demo
 scripts/run_experiment.py live/replay policy-comparison sessions
 scripts/synthesize_logs.py synthetic session logs for policy training at scale
+scripts/analyze_power.py power curve for the paired CUE/SILENCE design (sample-size planning)
 scripts/simulate_sessions.py end-to-end runtime simulation (synthetic Japanese speaker, paired CUE/SILENCE, analyzer-ready reports)
 scripts/run_synthetic_benchmark.sh regenerate the calibration benchmark (docs/benchmark.md)
 scripts/train_policy.py offline linear policy trainer + holdout metrics

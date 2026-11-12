@@ -414,7 +414,8 @@ src/cueloop/sync/       イベントループ・予測器・ポリシー・ラ�
 scripts/demo.sh         リプレイとライブマイク用デモ
 scripts/run_experiment.py ライブ／リプレイのポリシー比較セッション
 scripts/synthesize_logs.py ポリシー学習を大規模化する合成セッションログ
-scripts/simulate_sessions.py ランタイム end-to-end シミュレーション（合成日本語話者のペア CUE/SILENCE、解析器向けレポートを出力）
+scripts/analyze_power.py ペア CUE/SILENCE 設計の検出力解析（サンプルサイズ計画）
+scripts/simulate_sessions.py エンドツーエンド・ランタイム・シミュレーション（合成日本語話者のペア CUE/SILENCE、アナライザー向けレポート）
 scripts/run_synthetic_benchmark.sh 較正ベンチマークの再生成（docs/benchmark.md）
 scripts/train_policy.py 線形ポリシーのオフライン学習＋ホールドアウト指標
 scripts/evaluate_policy.py 保存済みポリシーをログで採点
