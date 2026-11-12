@@ -186,17 +186,30 @@ proofreader script. Before fatigue tuning, most cues fired on `concretize`
 because the embedded corpus is dominated by example-language (`例えば`,
 `具体的`); the fatigue penalty now rotates the mix (see above).
 
-## Local-LLM end-to-end on the Lux corpus
+## Local-LLM end-to-end on the Lux corpus (post-fix)
 
-> **Note.** This block (Lux) was recorded under the pre-runtime-fix pipeline:
-> a synchronous local-LLM decision was pushed out by its own wall-clock
-> latency and then cancelled by the synchronizer's diverged check. Lux was
-> not re-measured after the fix. The fix moves delivery to the boundary
-> event itself (see the ReazonSpeech measurements above) — the Lux numbers
-> below would change accordingly.
+> The pre-fix Lux measurements were invalidated by the runtime latency clamp:
+> a synchronous local-LLM decision was pushed beyond the next audio event and
+> then cancelled by the synchronizer. Lux was re-measured under the fixed
+> runtime (`artifacts/lux-llm-328-full-v2/`):
 
-A complete local-LLM run was executed over all 328 local Lux files under both
-conditions (command below; reports at `artifacts/lux-llm-328-full/`):
+```text
+file                              328 CUE + 328 SILENCE (reports at artifacts/lux-llm-328-full-v2/)
+predictions                      333 CUE / 332 SILENCE (201/328 files with predictions both arms)
+interventions                    324 CUE / 325 SILENCE
+delivered                        324 CUE / 0 SILENCE (all delivered, 0 cancelled)
+files with >= 1 prediction       201 / 328
+operations delivered             dependency 122, boundary 107, ground 47,
+                                 comparison 37, mechanism 11
+uptake / carryover               0.00 / 0.00 (identical; read speech)
+pair delta                       +0.002 CI [+0.000, +0.005] (not significant)
+n_pairs                          328
+median boundary->delivery delay   0 both arms (n_pairs=198)
+repertoire_growth                0.03 both arms
+```
+
+Earlier pre-fix run: 480 predictions, 0 delivered (both arms) — recorded for
+transparency below this section.
 
 ```text
 file                              328 CUE + 328 SILENCE
@@ -278,39 +291,32 @@ paired uptake delta     +0.000 (both arms identical: the continuation text
                             fired 8/455 times in both)
 ```
 
-### Local-LLM backend, 200-file full sample (qwen2.5:1.5b-instruct)
+### Local-LLM backend, 200-file full sample (qwen2.5:1.5b-instruct, post-fix)
 
-_A precursor (pre runtime-fix) run with qwen2.5:1.5b-instruct delivered
-2 cues (`boundary 範囲は？`, `ground 根拠は？`). The runtime fix above
-supersedes these numbers — the fix moves every synchronous delivery to
-the boundary event, same as the rule backend. Below gemm is measured
-post-fix; this section documents the precursor for calibration transparency._
-
-A full-sample local-LLM run was executed with the fast local model
-(`qwen2.5:1.5b-instruct`, ~25 min per arm on this machine):
+Post-fix re-measurement:
 
 ```text
-files                    200 CUE + 200 SILENCE
-predictions              986 CUE / 973 SILENCE (sampled with the model's
-                          default temperature; not bit-deterministic)
-files with ≥ 1 prediction 142 / 200 (both arms)
-interventions            434 CUE / 425 SILENCE
-delivered                2 CUE / 0 SILENCE  <-- first non-zero LLM deliveries
-cancelled                432 CUE / 424 SILENCE
-delivery rate            0.46%
-analyzer n_pairs         200, every metric +0.000
-median delay ms          1570 (2 deliveries)
-uptake / carryover       0.00 / 0.00 in both arms (the 2 delivered cues —
-                          boundary `範囲は？` on `ミリカ!`, ground `根拠は？`
-                          on `おととい、` — were not picked up; read speech,
-                          expected)
+files                    200 CUE + 200 SILENCE (artifacts/reazon-llm15b-200-v2/)
+predictions              741 CUE / 723 SILENCE (142/200 files with predictions
+                          in both arms; not bit-deterministic)
+interventions            327 CUE / 314 SILENCE
+delivered                327 CUE / 0 SILENCE
+files with ≥ 1 prediction 142 / 200
+operations delivered     ground 133, boundary 122, concretize 58,
+                            comparison 13, dependency 1
+analyzer n_pairs         200
+paired uptake delta     +0.002 CI [-0.006, +0.011] (not significant)
+paired carryover delta  +0.000 CI [+0.000, +0.000]
+repertoire_growth        -0.025 CI [-0.060, +0.010] both arms
+median delay ms          0 / 0.00 (n_pairs=108)
 ```
 
-The 2 delivered cues are the first ever produced by the local-LLM path on
-real Japanese audio — they prove the cancellation is not a structural
-impossibility, just rarity. The local-LLM arm still fires essentially never
-enough to affect anything: ~0.5% delivery rate vs 455 delivered (100% of
-interventions) under the rule backend on the same files.
+Pre-runtime-fix precursor (superseded): 986/973 predictions, delivered 2
+(`boundary 範囲は？` on `ミリカ!`, `ground 根拠は？` on `おととい、`),
+analyzer n_pairs=200, every metric +0.000. Retained here for calibration
+transparency. These were the first ever local-LLM deliveries on real
+Japanese; the fix supersedes the framing — the local-LLM arm now delivers
+in the same way the rule backend does (post-fix: 327/327, 0 cancelled).
 
 ### Local-LLM backend, 200-file full sample (gemma3:4b-it-qat, post-fix)
 
@@ -318,7 +324,7 @@ The full 200-file re-run under the fixed runtime (see CHANGELOG
 "Runtime delivery clamp") — both arms, same seed, same whisper cache:
 
 ```text
-file                    artifacts/reazon-llm-200-v2/ (328 paired CUE+SILENCE reports)
+run                     artifacts/reazon-llm-200-v2/ (200 paired CUE+SILENCE reports)
 predictions              687 CUE / 687 SILENCE (142/200 files with predictions
                           in both arms)
 interventions            668 CUE / 664 SILENCE
@@ -404,12 +410,22 @@ PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 \
 .venv/bin/python scripts/analyze_experiment.py artifacts/reazon-llm-tagged-v2/cue \
   artifacts/reazon-llm-tagged-v2/silence --markdown artifacts/reazon-llm-tagged-v2-analysis.md
 
-# full 200-file sample, fast local model (~30 min; needs Ollama + qwen2.5:1.5b)
+# full 200-file sample, fast local model (~15 min; needs Ollama + qwen2.5:1.5b)
 PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 \
   scripts/simulate_lux_replay.py --corpus data/real-speech/reazon/metadata-sample-200.csv \
   --whisper-cache data/real-speech/reazon/metadata-sample-200-whisper-results.json \
-  --source-name reazon-llm15b --output-dir artifacts/reazon-llm15b-200 \
+  --source-name reazon-llm15b-v2 --output-dir artifacts/reazon-llm15b-200-v2 \
   --predictor local --decision local --local-model qwen2.5:1.5b-instruct
+.venv/bin/python scripts/analyze_experiment.py artifacts/reazon-llm15b-200-v2/cue \
+  artifacts/reazon-llm15b-200-v2/silence --markdown artifacts/reazon-llm15b-200-v2-analysis.md
+
+# full Lux corpus, local-LLM backend (~10 min; needs Ollama + gemma3)
+PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 \
+  scripts/simulate_lux_replay.py --corpus data/real-speech/lux/metadata.csv \
+  --source-name lux-v2 --output-dir artifacts/lux-llm-328-full-v2 \
+  --predictor local --decision local --local-model gemma3:4b-it-qat
+.venv/bin/python scripts/analyze_experiment.py artifacts/lux-llm-328-full-v2/cue \
+  artifacts/lux-llm-328-full-v2/silence --markdown artifacts/lux-llm-328-full-v2-analysis.md
 
 # full 200-file sample, gemma3:4b-it-qat (~80 min total; needs Ollama + gemma3)
 PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 \
@@ -461,12 +477,12 @@ PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 scripts/
 .venv/bin/python scripts/analyze_experiment.py artifacts/lux-rule-328/cue artifacts/lux-rule-328/silence \
   --markdown artifacts/lux-rule-328-analysis.md
 
-# full Lux replay, local-LLM backend (~30 minutes; needs Ollama + a model)
+# full Lux replay, local-LLM backend (path as above, ~10 minutes)
 PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 scripts/simulate_lux_replay.py \
-  --output-dir artifacts/lux-llm-328-full --predictor local --decision local \
-  --local-model gemma3:4b-it-qat
-.venv/bin/python scripts/analyze_experiment.py artifacts/lux-llm-328-full/cue artifacts/lux-llm-328-full/silence \
-  --markdown artifacts/lux-llm-328-full-analysis.md
+  --output-dir artifacts/lux-llm-328-full-v2 --predictor local --decision local \
+  --local-model gemma3:4b-it-qat --source-name lux-v2
+.venv/bin/python scripts/analyze_experiment.py artifacts/lux-llm-328-full-v2/cue artifacts/lux-llm-328-full-v2/silence \
+  --markdown artifacts/lux-llm-328-full-v2-analysis.md
 ```
 
 Whisper characterization needs `mlx-whisper` installed; the pip experience on

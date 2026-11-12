@@ -11,8 +11,10 @@
   cancelled (0 delivered). With the fix the local-LLM backend delivers at
   the boundary event, like the rule backend: 668/668 on the full 200-file
   ReazonSpeech sample (gemma3:4b-it-qat), 138/138 on the
-  operation-tagged 30-file subset; synthetic calibration unchanged (null
-  cells +0.000, 27/27 effect cells CI-excluding-zero).
+  operation-tagged 30-file subset, 324/324 on the full Lux 328-file corpus
+  (gemma3:4b-it-qat), and 327/327 on the Reazon qwen2.5:1.5b-instruct full
+  sample; synthetic calibration unchanged (null cells +0.000, 27/27 effect
+  cells CI-excluding-zero).
 
 ### Added
 - Per-session repetition fatigue in `RuleDecisionModel` (`fatigue_penalty`,
@@ -27,13 +29,14 @@
   Fixes a whisper-cache subset bug (warm cache used to return the whole
   file regardless of the requested corpus) and a relative-path corpus
   resolution bug that created duplicate caches; both covered by tests.
-- Real-speech replay completed end-to-end on the ReazonSpeech 200-file
-  sample for the local-LLM decision path too (pre-runtime-fix numbers
-  retained for transparency; the fix above supersedes them):
-  qwen2.5:1.5b-instruct delivered **2 cues** (boundary `範囲は？`,
-  ground `根拠は？`). Under the fixed runtime the local-LLM backend delivers
-  at every decision boundary: 668/668 interventions on the 200-file sample
-  (gemma3:4b-it-qat) and 138/138 on the operation-tagged 30-file subset.
+- Real-speech replay completed end-to-end on the Lux and Reazon corpora for
+  the local-LLM decision path, pre-fix and post-fix; post-fix measurements
+  now dominate the docs (pre-fix numbers retained for transparency, clearly
+  labeled "pre-runtime-fix"): local-LLM delivers at every decision boundary
+  under the fixed runtime — 668/668 interventions on the full 200-file
+  ReazonSpeech sample (gemma3:4b-it-qat), 138/138 on the operation-tagged
+  30-file subset, 327/327 on the Reazon qwen2.5:1.5b-instruct full sample,
+  and 324/324 on the full Lux 328-file corpus (gemma3:4b-it-qat).
 
 ## 0.3.0 (2026-11-12)
 

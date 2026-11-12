@@ -107,8 +107,10 @@ section) and the ReazonSpeech YouTube-discourse sample (~200 files, 30
 operation-tagged) in `docs/real-speech.md`, where the rule backend delivered
 455 cues; the local-LLM backends deliver as well once the runtime
 latency-clamp was fixed (see real-speech.md and CHANGELOG): 668/668 on the
-gemma3:4b-it-qat full arm, and previously-measured pre-fix results (0
-delivered) are documented there as well. The Lux replay:
+gemma3:4b-it-qat full arm, 324/324 on Lux 328 with gemma3:4b-it-qat,
+327/327 on the qwen2.5:1.5b-instruct full sample, and 138/138 on the
+operation-tagged 30-file subset — previously-measured pre-fix results
+(0 delivered everywhere) are documented there as well. The Lux replay:
 
 Speaker output is held; outcome scoring, boundary detection, and analyzer
 pairing all run end-to-end.
