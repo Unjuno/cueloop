@@ -378,8 +378,8 @@ scripts/analyze_experiment.py logs/synthetic-effect030 \
 ```
 
 The full calibration benchmark (analyzer grid over effects × seeds ×
-backends, plus policy training at scale on synthetic logs with a planted
-reward structure) regenerates with one command:
+backends, the end-to-end runtime simulation, and policy training at scale on
+synthetic logs with a planted reward structure) regenerates with one command:
 
 ```bash
 scripts/run_synthetic_benchmark.sh            # writes artifacts/benchmark/
@@ -450,6 +450,7 @@ src/cueloop/sync/       event loop, predictors, policy, runtime, CLI
 scripts/demo.sh         replay and live microphone demo
 scripts/run_experiment.py live/replay policy-comparison sessions
 scripts/synthesize_logs.py synthetic session logs for policy training at scale
+scripts/simulate_sessions.py end-to-end runtime simulation (synthetic Japanese speaker, paired CUE/SILENCE, analyzer-ready reports)
 scripts/run_synthetic_benchmark.sh regenerate the calibration benchmark (docs/benchmark.md)
 scripts/train_policy.py offline linear policy trainer + holdout metrics
 scripts/evaluate_policy.py score a saved policy on recorded logs

@@ -351,6 +351,8 @@ scripts/run_synthetic_benchmark.sh            # artifacts/benchmark/ を出力
 ```
 
 現在の結果：ヌル9セルはすべて正確にゼロ、効果≥0.10の27セルはすべて CI が 0 を含みません。
+エンドツーエンドのランタイム・シミュレーションではヌルは正確に +0.000 で、
+0.2/0.4 の効果を CI が 0 を除外して回収します。
 線形ポリシーの ROC-AUC は 0.695（学習時ホールドアウト）／0.664（独立ホールドアウト）、
 天井 ≒ 0.73。`docs/benchmark.md` を参照。
 
@@ -412,6 +414,7 @@ src/cueloop/sync/       イベントループ・予測器・ポリシー・ラ�
 scripts/demo.sh         リプレイとライブマイク用デモ
 scripts/run_experiment.py ライブ／リプレイのポリシー比較セッション
 scripts/synthesize_logs.py ポリシー学習を大規模化する合成セッションログ
+scripts/simulate_sessions.py ランタイム end-to-end シミュレーション（合成日本語話者のペア CUE/SILENCE、解析器向けレポートを出力）
 scripts/run_synthetic_benchmark.sh 較正ベンチマークの再生成（docs/benchmark.md）
 scripts/train_policy.py 線形ポリシーのオフライン学習＋ホールドアウト指標
 scripts/evaluate_policy.py 保存済みポリシーをログで採点

@@ -28,6 +28,21 @@ for seed in 0 1 2; do
   done
 done
 
+echo "== end-to-end runtime simulation: effects {0, 0.2, 0.4} x seeds {0, 1} =="
+for seed in 0 1; do
+  for effect in 0 0.2 0.4; do
+    dir="$OUT/simulated-${effect}-s${seed}"
+    if [ ! -d "$dir" ]; then
+      "$PYTHON" scripts/simulate_sessions.py \
+        --output-dir "$dir" --sessions 24 --clauses 8 --seed "$seed" \
+        --uptake-effect "$effect" --carryover-effect "$effect" >/dev/null
+    fi
+    "$PYTHON" scripts/analyze_experiment.py "$dir" \
+      --json "$OUT/simulated-${effect}-s${seed}.json" \
+      --markdown "$OUT/simulated-${effect}-s${seed}.md" >/dev/null
+  done
+done
+
 echo "== policy corpus + training at scale =="
 corpus="$OUT/corpus-train"
 if [ ! -d "$corpus" ]; then
@@ -87,6 +102,19 @@ if holdout_path.exists():
     print(f"policy on independent holdout: "
           f"auc={holdout['metrics']['roc_auc']:.3f} "
           f"samples={holdout['metrics']['samples']}")
+
+for path in sorted(glob.glob(str(out / "simulated-*-s*.json"))):
+    data = json.loads(Path(path).read_text())
+    effect = float(path.split("simulated-")[1].split("-s")[0])
+    seed = path.split("-s")[-1].split(".")[0]
+    comp = data.get("comparisons", {}).get("rule", {})
+    if comp:
+        metric = comp["metrics"]["uptake_rate"]
+        carry = comp["metrics"]["carryover_rate"]
+        print(f"simulated effect={effect:.1f} seed={seed}: "
+              f"uptake_delta={metric['point']:+.3f} "
+              f"CI=[{metric['ci_low']:+.3f},{metric['ci_high']:+.3f}] "
+              f"carryover_delta={carry['point']:+.3f}")
 PY
 
 echo "benchmark written under $OUT (synthetic calibration, not human evidence)"

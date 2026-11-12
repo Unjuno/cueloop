@@ -7,10 +7,15 @@
   real-schema logs with a planted, recoverable reward structure for training
   the linear policy at scale (600-session corpus → ROC-AUC ≈ 0.70, close to
   the ≈ 0.73 Bayes ceiling of the generative model).
+- End-to-end runtime simulator (`scripts/simulate_sessions.py`): generates
+  Japanese clause sequences and feeds them through the real `SyncRuntime`
+  (cycle predictor, rule decision, assignment, canned speaker), emitting
+  analyzer-ready reports and JSONL logs. Its null arm is exactly +0.000;
+  programmed effects of 0.2/0.4 are recovered with CIs excluding zero.
 - One-command calibration benchmark (`scripts/run_synthetic_benchmark.sh`,
   documented in `docs/benchmark.md`): analyzer grid over effects × seeds ×
-  backends (null cells exactly zero, 27/27 effect cells CI-excludes-zero) plus
-  policy training/evaluation at scale.
+  backends (null cells exactly zero, 27/27 effect cells CI-excludes-zero), the
+  end-to-end runtime simulation, plus policy training/evaluation at scale.
 - Operation-level exploration arm (`--assignment random-operation`): the timing
   policy still decides *when* to fire; the delivered operation is drawn
   uniformly from the missing-operation set so `requested_operation` and

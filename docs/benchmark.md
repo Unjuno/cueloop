@@ -18,6 +18,30 @@ Regenerate everything with one command (deterministic, seeded):
 scripts/run_synthetic_benchmark.sh            # writes artifacts/benchmark/
 ```
 
+## End-to-end runtime simulation (real runtime, synthetic speaker)
+
+`scripts/simulate_sessions.py` generates Japanese clause sequences, feeds them
+through the real `SyncRuntime` (cycle predictor, rule decision, canonical
+assignment, silent TTS stub), and emits analyzer-ready reports and JSONL logs.
+Cue and SILENCE arms share a skeleton and the same uniforms (common random
+numbers); only the audible cue can cause uptake/carryover — the programmed
+effect is exactly the difference the analyzer should find.
+
+24 sessions × 8 clauses per cell, effects 0 / 0.2 / 0.4, two seeds each
+(`artifacts/benchmark/simulated-*.json`):
+
+| programmed effect | seed | uptake delta (95% CI) | carryover delta |
+| --- | --- | --- | --- |
+| 0.0 | 0 | +0.000 [+0.000, +0.000] | +0.000 |
+| 0.0 | 1 | +0.000 [+0.000, +0.000] | +0.000 |
+| 0.2 | 0 | +0.097 [+0.043, +0.152] | +0.044 |
+| 0.2 | 1 | +0.105 [+0.048, +0.174] | +0.028 |
+| 0.4 | 0 | +0.127 [+0.060, +0.199] | +0.073 |
+| 0.4 | 1 | +0.163 [+0.101, +0.226] | +0.109 |
+
+The null arm here is exact (+0.000 everywhere); the analyzer recovers the
+programmed effect with CIs excluding zero at 0.2 and 0.4.
+
 ## Analyzer grid: programmed uptake effect × seed
 
 24 clause-pairs per cell, 8 clauses per session, three backends
