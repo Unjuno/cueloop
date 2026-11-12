@@ -31,7 +31,9 @@ writing or reasoning improvement require a delayed, unassisted task.
 | License | MIT |
 
 Immediate uptake is only a mechanism check; it is not evidence of durable
-improvement. No claim here is supported by human data yet.
+improvement. No claim here is supported by human data yet. See
+`docs/real-speech.md` for a limited ASR calibration against a local sample of
+real Japanese speech.
 
 ## Stem cues (default) and bare cues
 
@@ -460,7 +462,7 @@ scripts/analyze_experiment.py paired CUE/SILENCE analysis with bootstrap CI
 tools/macos_speech_events.swift  macOS ASR adapter
 tests/                  deterministic unit and replay tests
 experiments/            replay fixtures
-docs/                   design and experiment protocol
+docs/                   design, benchmark, and real-speech calibration
 CONTRIBUTING.md         development and research ground rules
 ```
 

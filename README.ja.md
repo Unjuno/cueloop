@@ -28,7 +28,8 @@ CUELOOP は、話し手が話している**最中に**、話し手が次に言�
 | ライセンス | MIT |
 
 即時の uptake はメカニズムの確認にすぎず、持続的改善の証拠ではありません。
-人間のデータに基づく主張はまだ何もありません。
+人間のデータに基づく主張はまだ何もありません。ローカルにある日本語実話サンプルに対する
+限定的な ASR 較正は `docs/real-speech.md` を参照。
 
 ## ステムcue（既定）とベアcue
 
@@ -424,7 +425,7 @@ scripts/analyze_experiment.py ブートストラップCI付きペア CUE/SILENCE
 tools/macos_speech_events.swift  macOS ASR アダプタ
 tests/                  決定的なユニット／リプレイテスト
 experiments/            リプレイのフィクスチャ
-docs/                   設計と実験プロトコル
+docs/                   設計・ベンチマーク・実話較正
 CONTRIBUTING.md         開発と研究のグランドルール
 ```
 

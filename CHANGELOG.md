@@ -19,6 +19,11 @@
   plus policy training/evaluation at scale. `scripts/analyze_power.py`
   computes the paired design's power curve (16 seeds/cell; type-I stays at 0%;
   effect 0.1 detection hits 88% at 24 pairs and 100% at 48).
+- `scripts/tune_ngram.py`: n-gram evaluation harness for any `metadata.csv`-shaped
+  speech corpus. Used for calibration against the Lux Speech Corpus.
+- `tools/file_asr.swift`: one-shot voicing recognizer using the same
+  SFSpeechRecognizer the live adapter uses; benchmarks CUELOOP's production
+  ASR engine per file when run on a license-accepted macOS machine.
 - Operation-level exploration arm (`--assignment random-operation`): the timing
   policy still decides *when* to fire; the delivered operation is drawn
   uniformly from the missing-operation set so `requested_operation` and

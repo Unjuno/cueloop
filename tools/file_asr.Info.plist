@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleIdentifier</key>
+    <string>dev.cueloop.lux-file-asr</string>
+    <key>CFBundleName</key>
+    <string>CUELOOP File ASR</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>CUELOOP transcribes a local speech file to calibrate the production recognizer on a labeled corpus.</string>
+</dict>
+</plist>
