@@ -24,6 +24,7 @@ from .policy import (
 from .policy_model import LinearPolicyModel
 from .predictors import AsyncPredictor, LocalLLMPredictor, NgramPredictor, Predictor
 from .runtime import CommandSpeaker, NullSpeaker, Speaker, SyncRuntime
+from .stem import DEFAULT_STEM_MAX_CHARACTERS, StemCueGenerator
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -69,7 +70,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--async-decision",
         action=argparse.BooleanOptionalAction,
         default=True,
-        help="Pre-compute the local decision before the boundary (default: enabled).",
+        help="Pre-compute the local decision and stem cues before the boundary (default: enabled).",
     )
     parser.add_argument(
         "--decision-fallback",
@@ -118,7 +119,35 @@ def build_parser() -> argparse.ArgumentParser:
         default=0,
         help="Seed for randomized wording and random-operation exploration.",
     )
-    parser.add_argument("--max-cue-characters", type=int, default=8)
+    parser.add_argument(
+        "--cue-style",
+        choices=["stem", "bare"],
+        default="stem",
+        help=(
+            "What gets spoken (default: stem). 'stem' speaks a full "
+            "initial-condition sentence written by the local LLM "
+            "(e.g. '根拠は、観測データでは弱いからです。'); 'bare' speaks the "
+            "short operation word ('根拠は？'). Use 'bare' for experiment runs."
+        ),
+    )
+    parser.add_argument(
+        "--max-stem-characters",
+        type=int,
+        default=DEFAULT_STEM_MAX_CHARACTERS,
+        help=f"Maximum length of a stem sentence (default: {DEFAULT_STEM_MAX_CHARACTERS}).",
+    )
+    parser.add_argument(
+        "--stem-timeout",
+        type=float,
+        default=1.5,
+        help=(
+            "Timeout in seconds for the stem-writing LLM call used by the "
+            "rule/linear backends; on failure a span template is used, then a "
+            "bare cue (default: 1.5)."
+        ),
+    )
+    parser.add_argument(
+        "--max-cue-characters", type=int, default=8)
     parser.add_argument("--min-confidence", type=float, default=0.55)
     parser.add_argument(
         "--pause-ms", type=int, default=350, help="Pause that marks a clause boundary."
@@ -334,6 +363,24 @@ def main(argv: list[str] | None = None) -> int:
             cue=args.cue,
             max_characters=args.max_cue_characters,
         )
+        stem_generator = None
+        need_stem_generator = args.cue_style == "stem" and (
+            args.decision in {"rule", "linear"} or args.assignment == "random-operation"
+        )
+        if need_stem_generator:
+            try:
+                stem_generator = StemCueGenerator(
+                    base_url=args.base_url,
+                    model=args.model,
+                    timeout=args.stem_timeout,
+                    max_characters=args.max_stem_characters,
+                )
+            except (RuntimeError, OSError) as exc:
+                print(
+                    f"warning: stem LLM unavailable ({exc}); "
+                    "using span-template stems",
+                    file=sys.stderr,
+                )
         if args.decision == "linear":
             decision_model = LinearDecisionModel(
                 LinearPolicyModel.load(args.policy_model),
@@ -341,6 +388,9 @@ def main(argv: list[str] | None = None) -> int:
                 max_characters=args.max_cue_characters,
                 delivery_window_ms=args.delivery_window_ms,
                 insertion_delay_ms=args.insertion_delay_ms,
+                cue_style=args.cue_style,
+                stem_generator=stem_generator,
+                stem_max_characters=args.max_stem_characters,
             )
         elif args.decision in {"local", "steer"}:
             steer = args.decision == "steer"
@@ -355,6 +405,8 @@ def main(argv: list[str] | None = None) -> int:
                 delivery_window_ms=args.delivery_window_ms,
                 insertion_delay_ms=args.insertion_delay_ms,
                 min_confidence=args.min_confidence,
+                cue_style=args.cue_style,
+                stem_max_characters=args.max_stem_characters,
             )
         else:
             decision_model = RuleDecisionModel(
@@ -364,12 +416,30 @@ def main(argv: list[str] | None = None) -> int:
                 delivery_window_ms=args.delivery_window_ms,
                 insertion_delay_ms=args.insertion_delay_ms,
                 context_fit=not args.no_context_fit,
+                cue_style=args.cue_style,
+                stem_generator=stem_generator,
+                stem_max_characters=args.max_stem_characters,
             )
         if args.assignment == "random-operation":
             decision_model = RandomOperationDecisionModel(
-                decision_model, assigner, seed=args.seed
+                decision_model,
+                assigner,
+                seed=args.seed,
+                cue_style=args.cue_style,
+                stem_generator=stem_generator,
+                stem_max_characters=args.max_stem_characters,
             )
-        if args.decision == "local" and args.async_decision:
+        needs_async = (
+            (args.decision == "local" and args.async_decision)
+            or (
+                args.cue_style == "stem"
+                and args.decision in {"rule", "linear"}
+                and args.async_decision
+            )
+        )
+        if needs_async:
+            # The fallback must be instant. A bare cue delivered on time beats
+            # a stem that lands after the clause it was meant to frame.
             fallback = (
                 RuleDecisionModel(
                     assigner,
@@ -384,7 +454,9 @@ def main(argv: list[str] | None = None) -> int:
             )
             if fallback is not None and args.assignment == "random-operation":
                 fallback = RandomOperationDecisionModel(
-                    fallback, assigner, seed=args.seed
+                    fallback,
+                    assigner,
+                    seed=args.seed,
                 )
             decision_model = AsyncDecisionModel(
                 decision_model,
@@ -394,6 +466,8 @@ def main(argv: list[str] | None = None) -> int:
             predictor.warmup()
         if args.decision in {"local", "steer"} and hasattr(decision_model, "warmup"):
             decision_model.warmup()
+        if stem_generator is not None:
+            stem_generator.warmup()
         speaker = _build_speaker(args)
         runtime = SyncRuntime(
             predictor=predictor,
@@ -425,9 +499,11 @@ def main(argv: list[str] | None = None) -> int:
                 last_at_ms = max(last_at_ms, event.at_ms)
                 produced = runtime.feed(event)
                 for delivery in produced:
+                    cue = delivery.intervention.cue
+                    preview = cue if len(cue) <= 48 else cue[:47] + "…"
                     print(
                         f"[{delivery.delivered_at_ms:>6}ms] {delivery.status:9} "
-                        f"cue={delivery.intervention.cue!r} "
+                        f"cue={preview!r} "
                         f"op={delivery.intervention.operation} "
                         f"+{delivery.delivered_at_ms - delivery.intervention.detected_at_ms}ms"
                     )

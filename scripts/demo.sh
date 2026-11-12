@@ -33,6 +33,11 @@ if [[ "${CUELOOP_TTS:-1}" != "0" ]] && command -v say >/dev/null 2>&1; then
   fi
 fi
 
+# The replay demo is a deterministic pipeline check, so it pins the bare
+# condition by default; pass CUELOOP_CUE_STYLE=stem to watch the stem pipeline.
+# The live demo defaults to stem (the new default).
+cue_style="${CUELOOP_CUE_STYLE:-}"
+
 args=(--log "$log" --report "$report" --decision "$decision")
 if [[ "$decision" == "local" ]]; then
   args+=(--decision-fallback rule)
@@ -44,11 +49,14 @@ args+=("${tts[@]}")
 
 case "$mode" in
   replay)
+    style="${cue_style:-bare}"
     echo "CUELOOP replay demo: ${events}"
     echo "A cue is spoken at the first boundary. Set CUELOOP_TTS=0 to mute."
-    "${sync[@]}" --events "$events" --realtime "${args[@]}"
+    echo "cue style: ${style} (set CUELOOP_CUE_STYLE=stem to watch the stem pipeline)"
+    "${sync[@]}" --events "$events" --realtime "${args[@]}" --cue-style "$style"
     ;;
   live)
+    style="${cue_style:-stem}"
     adapter=".build/macos-speech-events"
     if [[ ! -x "$adapter" ]]; then
       echo "missing $adapter" >&2
@@ -58,8 +66,9 @@ case "$mode" in
     echo "CUELOOP live demo: ${duration}s"
     echo "Speak a sentence containing 結論は / つまり / 前提は / 逆に."
     echo "The cue is spoken through macOS say. Press Ctrl-C to stop."
+    echo "cue style: ${style}"
     event_cmd=$(printf '[".build/macos-speech-events","--duration","%s"]' "$duration")
-    "${sync[@]}" --event-command-json "$event_cmd" --tts-async "${args[@]}"
+    "${sync[@]}" --event-command-json "$event_cmd" --tts-async "${args[@]}" --cue-style "$style"
     ;;
   *)
     echo "usage: $0 [replay|live] [duration_seconds]" >&2

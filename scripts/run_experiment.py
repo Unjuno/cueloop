@@ -66,6 +66,16 @@ def build_parser() -> argparse.ArgumentParser:
             "'random-operation' is the exploration arm that draws the operation."
         ),
     )
+    parser.add_argument(
+        "--cue-style",
+        choices=["bare", "stem"],
+        default="bare",
+        help=(
+            "Cue style passed to the CLI (default: bare, preserving the "
+            "historical experiment behaviour). 'stem' speaks a complete "
+            "initial-condition sentence; length-match NEUTRAL to it."
+        ),
+    )
     parser.add_argument("--cue", help="Cue used with --assignment fixed.")
     parser.add_argument(
         "--output-dir",
@@ -156,6 +166,8 @@ def main(argv: list[str] | None = None) -> int:
         args.decision,
         "--assignment",
         args.assignment,
+        "--cue-style",
+        args.cue_style,
         "--seed",
         str(args.seed),
         "--condition-label",
@@ -204,6 +216,7 @@ def main(argv: list[str] | None = None) -> int:
         "started_at": datetime.now(UTC).isoformat(),
         "condition": args.condition,
         "decision": args.decision,
+        "cue_style": args.cue_style,
         "mode": args.mode,
         "seed": args.seed,
         "assignment": args.assignment,

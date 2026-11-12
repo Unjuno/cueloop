@@ -3,7 +3,9 @@
 The original CUELOOP loop was turn-based: wait for silence, classify, then
 respond. The synchronization loop is different. It models what the speaker is
 about to say, tracks how the live partial transcript aligns with that
-prediction, and inserts a very short cue *before* the predicted span is spoken.
+prediction, and inserts a cue *before* the predicted span is spoken — by
+default a complete "initial-condition" sentence (stem) that embodies the
+operation, rather than a bare interrogative word.
 
 Two concerns are deliberately separate:
 
@@ -51,6 +53,7 @@ from .predictors import (
     ScriptedPredictor,
 )
 from .runtime import SyncRuntime
+from .stem import StemCueGenerator
 from .synchronizer import Synchronizer
 from .vocabulary import CUE_BY_OPERATION, OPERATIONS, tag_operations
 
@@ -79,6 +82,7 @@ __all__ = [
     "RandomAssigner",
     "RuleDecisionModel",
     "ScriptedPredictor",
+    "StemCueGenerator",
     "SyncEvent",
     "SyncRuntime",
     "SyncState",

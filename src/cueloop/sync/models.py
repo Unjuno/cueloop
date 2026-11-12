@@ -119,6 +119,7 @@ class Intervention:
     assignment: str
     base_text: str
     prediction: Prediction
+    cue_style: str = "bare"
 
 
 @dataclass(frozen=True)

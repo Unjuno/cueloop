@@ -492,6 +492,7 @@ class SyncRuntime:
                 "operation": intervention.operation,
                 "requested_operation": intervention.requested_operation,
                 "cue": intervention.cue,
+                "cue_style": intervention.cue_style,
                 "reason": intervention.reason,
                 "confidence": intervention.confidence,
                 "scheduled_at_ms": intervention.scheduled_at_ms,

@@ -21,6 +21,12 @@ from typing import Protocol
 from .models import Intervention, SyncState
 from .policy_model import LinearPolicyModel, PolicyObservation
 from .predictors import PREFERRED_DECISION_MODELS, chat_completion, resolve_model
+from .stem import (
+    DEFAULT_STEM_MAX_CHARACTERS,
+    StemCueGenerator,
+    finalize_stem,
+    render_stem_template,
+)
 from .vocabulary import (
     CUE_BY_OPERATION,
     OPERATIONS,
@@ -269,6 +275,8 @@ class LocalLLMDecisionModel:
         insertion_delay_ms: int = 0,
         min_confidence: float = 0.5,
         require_missing: bool = True,
+        cue_style: str = "bare",
+        stem_max_characters: int = DEFAULT_STEM_MAX_CHARACTERS,
     ) -> None:
         if not 0.0 <= min_confidence <= 1.0:
             raise ValueError("min_confidence must be between 0 and 1")
@@ -280,6 +288,9 @@ class LocalLLMDecisionModel:
             raise ValueError("delivery_window_ms must be positive")
         if insertion_delay_ms < 0:
             raise ValueError("insertion_delay_ms must be non-negative")
+        _check_cue_style(cue_style)
+        if stem_max_characters < 8:
+            raise ValueError("stem_max_characters must be at least 8")
         self.base_url = base_url.rstrip("/")
         self.model = model or resolve_model(
             self.base_url,
@@ -295,7 +306,10 @@ class LocalLLMDecisionModel:
         self.insertion_delay_ms = insertion_delay_ms
         self.min_confidence = min_confidence
         self.require_missing = require_missing
-        self.label = f"local-llm({self.model})"
+        self.cue_style = cue_style
+        self.stem_max_characters = stem_max_characters
+        style_tag = f"+{cue_style}" if cue_style != "bare" else ""
+        self.label = f"local-llm({self.model}){style_tag}"
         self.last_error: str | None = None
 
     def warmup(self) -> None:
@@ -332,12 +346,36 @@ class LocalLLMDecisionModel:
         covered = ", ".join(sorted(covered_set)) or "なし"
         recent = ", ".join(sorted(state.recent_operations)) or "なし"
         context = " / ".join(state.context[-4:]) or "なし"
-        system = (
-            "あなたは話し手の発話中に短い日本語の cue を差し込む意思決定モデルです。"
-            "目的は、話し手が次に言おうとしていることの構造的な抜けを、1語だけ補うことです。"
-            "割り込むと思考を妨げる場合は SILENCE を選びます。"
-            "必ずJSONオブジェクトだけを返し、説明を含めないこと。"
-        )
+        if self.cue_style == "stem":
+            system = (
+                "あなたは話し手の発話中に、構造的な抜けを埋める「初期条件の一文」を"
+                "差し込む意思決定モデルです。"
+                "目的は、その操作を体現する宣言文を渡し、話し手がそのまま採用して"
+                "続きを話せるようにすることです。"
+                "割り込むと思考を妨げる場合は SILENCE を選びます。"
+                "必ずJSONオブジェクトだけを返し、説明を含めないこと。"
+            )
+            cue_instruction = (
+                "【指示】CUE か SILENCE を選んでください。CUE なら【補う候補】から "
+                "operation を1つ選び、その操作を体現する、この文脈に最も妥当な一文を"
+                "日本語の宣言文で書いてください。改行・引用符・説明を含めない一文のみで、"
+                f"{self.stem_max_characters}文字以内とし、話し手がそのまま採用して"
+                "続きを話せる形にしてください。"
+            )
+            cue_example = '"cue":"根拠は、観測データでは弱い、からです。",'
+        else:
+            system = (
+                "あなたは話し手の発話中に短い日本語の cue を差し込む意思決定モデルです。"
+                "目的は、話し手が次に言おうとしていることの構造的な抜けを、1語だけ補うことです。"
+                "割り込むと思考を妨げる場合は SILENCE を選びます。"
+                "必ずJSONオブジェクトだけを返し、説明を含めないこと。"
+            )
+            cue_instruction = (
+                "【指示】CUE か SILENCE を選んでください。CUE なら【補う候補】から "
+                "operation を1つ選び、"
+                f"{self.max_characters}文字以内の日本語 cue を返してください。"
+            )
+            cue_example = '"cue":"根拠は？",'
         user = (
             f"【直前までの文脈】\n{context}\n\n"
             f"【現在の発話】\n{state.text}\n\n"
@@ -346,14 +384,13 @@ class LocalLLMDecisionModel:
             f"【既に現れた操作】\n{covered}\n"
             f"【直近の操作】\n{recent}\n"
             f"【補う候補】\n{', '.join(missing)}\n\n"
-            "【指示】CUE か SILENCE を選んでください。CUE なら【補う候補】から "
-            "operation を1つ選び、"
-            f"{self.max_characters}文字以内の日本語 cue を返してください。"
+            f"{cue_instruction}"
             "confidence は 0.0〜1.0 の実数で、CUE の確信度を表します。"
             "既に現れた操作や予測に含まれる操作を選ばず、抜けている操作を1つ選んでください。"
             "予測が確実でない、または割り込む価値が低い場合は SILENCE にしてください。\n\n"
             "【出力形式】\n"
-            '{"action":"CUE","operation":"ground","cue":"根拠は？",'
+            '{"action":"CUE","operation":"ground",'
+            f'{cue_example}'
             '"confidence":0.7,"reason":"..."}\n'
             'または {"action":"SILENCE","confidence":0.7,"reason":"..."}'
         )
@@ -368,6 +405,10 @@ class LocalLLMDecisionModel:
         if messages is None:
             return None
         system, user = messages
+        max_tokens = self.max_tokens
+        if self.cue_style == "stem":
+            # A sentence needs more room than a bare cue; truncated JSON fails closed.
+            max_tokens = max(self.max_tokens, 192)
         try:
             content = chat_completion(
                 self.base_url,
@@ -378,7 +419,7 @@ class LocalLLMDecisionModel:
                 ],
                 temperature=self.temperature,
                 timeout=self.timeout,
-                max_tokens=self.max_tokens,
+                max_tokens=max_tokens,
             )
             intervention = self._parse(content, state)
         except (RuntimeError, TypeError, ValueError) as exc:
@@ -412,8 +453,31 @@ class LocalLLMDecisionModel:
         if operation not in OPERATIONS and isinstance(cue, str):
             operation = operation_for_cue(cue.strip())
         requested_operation = operation if operation in OPERATIONS else "unmapped"
-        if self.assigner is not None:
+        if self.cue_style == "stem":
+            span = state.prediction.span if state.prediction is not None else ""
+            sentence = (
+                finalize_stem(cue, max_characters=self.stem_max_characters)
+                if isinstance(cue, str)
+                else None
+            )
+            if sentence is None and requested_operation in OPERATIONS:
+                sentence = render_stem_template(
+                    requested_operation,
+                    span,
+                    max_characters=self.stem_max_characters,
+                )
+            if sentence is None:
+                # Unusable sentence and nothing to ground a template in: stay silent.
+                return None
+            cue = sentence
+            actual_operation = (
+                requested_operation
+                if requested_operation in OPERATIONS
+                else "unmapped"
+            )
+        elif self.assigner is not None:
             cue = self.assigner.assign(requested_operation)
+            actual_operation = operation_for_cue(cue) or "unmapped"
         else:
             if not isinstance(cue, str) or not cue.strip():
                 if requested_operation not in OPERATIONS:
@@ -431,7 +495,7 @@ class LocalLLMDecisionModel:
                 if fallback is None:
                     raise ValueError("cue is longer than max_characters")
                 cue = fallback
-        actual_operation = operation_for_cue(cue) or "unmapped"
+            actual_operation = operation_for_cue(cue) or "unmapped"
         if self.require_missing:
             covered = (
                 set(state.prediction.operations)
@@ -465,6 +529,7 @@ class LocalLLMDecisionModel:
             assignment=self.assigner.label if self.assigner else "local-llm",
             base_text=state.text,
             prediction=state.prediction,
+            cue_style=self.cue_style,
         )
 
 
@@ -487,6 +552,9 @@ class RuleDecisionModel:
         delivery_window_ms: int = 1_200,
         insertion_delay_ms: int = 0,
         context_fit: bool = True,
+        cue_style: str = "bare",
+        stem_generator: StemCueGenerator | None = None,
+        stem_max_characters: int = DEFAULT_STEM_MAX_CHARACTERS,
     ) -> None:
         if not 0.0 <= min_confidence <= 1.0:
             raise ValueError("min_confidence must be between 0 and 1")
@@ -494,6 +562,9 @@ class RuleDecisionModel:
             raise ValueError("delivery_window_ms must be positive")
         if insertion_delay_ms < 0:
             raise ValueError("insertion_delay_ms must be non-negative")
+        _check_cue_style(cue_style)
+        if stem_max_characters < 8:
+            raise ValueError("stem_max_characters must be at least 8")
         self.assigner = assigner
         self.min_confidence = min_confidence
         self.max_characters = max_characters
@@ -501,6 +572,9 @@ class RuleDecisionModel:
         self.delivery_window_ms = delivery_window_ms
         self.insertion_delay_ms = insertion_delay_ms
         self.context_fit = context_fit
+        self.cue_style = cue_style
+        self.stem_generator = stem_generator
+        self.stem_max_characters = stem_max_characters
         self.label = f"prediction-gap(assigner={assigner.label})"
 
     def decide(self, state: SyncState) -> Intervention | None:
@@ -533,8 +607,18 @@ class RuleDecisionModel:
                 missing = list(ranked)
             context_fit = True
         requested_operation = missing[0]
-        cue = self.assigner.assign(requested_operation)
-        operation = operation_for_cue(cue) or "unmapped"
+        if self.cue_style == "stem":
+            cue = _resolve_stem_cue(
+                self.stem_generator,
+                state,
+                requested_operation,
+                max_characters=self.stem_max_characters,
+                assigner=self.assigner,
+            )
+            operation = requested_operation
+        else:
+            cue = self.assigner.assign(requested_operation)
+            operation = operation_for_cue(cue) or "unmapped"
         scheduled_at = state.now_ms + self.insertion_delay_ms
         digest = hashlib.sha256(
             f"{state.utterance_id}:{state.now_ms}:{operation}:{cue}:{state.text}".encode()
@@ -557,6 +641,7 @@ class RuleDecisionModel:
             assignment=self.assigner.label,
             base_text=state.text,
             prediction=prediction,
+            cue_style=self.cue_style,
         )
 
 
@@ -574,7 +659,8 @@ class SteeringDecisionModel(LocalLLMDecisionModel):
 
     def __init__(self, **kwargs: object) -> None:
         super().__init__(**kwargs)  # type: ignore[arg-type]
-        self.label = f"steering({self.model})"
+        style_tag = f"+{self.cue_style}" if self.cue_style != "bare" else ""
+        self.label = f"steering({self.model}){style_tag}"
 
     def _build_messages(self, state: SyncState) -> tuple[str, str] | None:
         prediction = state.prediction
@@ -585,14 +671,41 @@ class SteeringDecisionModel(LocalLLMDecisionModel):
         covered = ", ".join(sorted(covered_set)) or "なし"
         recent = ", ".join(sorted(state.recent_operations)) or "なし"
         context = " / ".join(state.context[-4:]) or "なし"
-        system = (
-            "あなたは話し手の発話中に短い日本語の cue を差し込む推論ファシリテーターです。"
-            "目的は「抜けを埋める」ではなく「この話し手の推論軌道を、より有用な方向へ1手だけ押し進める」"
-            "ことです。同じ操作を繰り返している、1つの枠に固執している、根拠なく飛躍している、"
-            "逆を検討していない、といった軌道の癖を見抜いて、その1手で軌道が変わる促しを入れます。"
-            "現時点の軌道で十分有用な場合や、割り込むと思考を妨げる場合は SILENCE を選びます。"
-            "必ずJSONオブジェクトだけを返し、説明を含めないこと。"
-        )
+        if self.cue_style == "stem":
+            system = (
+                "あなたは話し手の発話中に、推論軌道を1手だけ伸ばす「初期条件の一文」を"
+                "差し込む推論ファシリテーターです。"
+                "目的は「抜けを埋める」ではなく「この話し手の推論軌道を、より有用な方向へ1手だけ押し進める」"
+                "ことです。同じ操作を繰り返している、1つの枠に固執している、根拠なく飛躍している、"
+                "逆を検討していない、といった軌道の癖を見抜いて、その1手で軌道が変わる促しを入れます。"
+                "現時点の軌道で十分有用な場合や、割り込むと思考を妨げる場合は SILENCE を選びます。"
+                "必ずJSONオブジェクトだけを返し、説明を含めないこと。"
+            )
+            cue_instruction = (
+                "【指示】この話し手の推論軌道を1手だけ伸ばすか、逆に振る操作を、"
+                f"【未登場の操作】の中から選んでください。その操作を体現する、"
+                "この文脈に最も妥当な一文を日本語の宣言文で書いてください。"
+                "改行・引用符・説明を含めない一文のみで、"
+                f"{self.stem_max_characters}文字以内とし、話し手がそのまま採用して"
+                "続きを話せる形にしてください。"
+            )
+            cue_example = (
+                '"cue":"逆に言うと、その前提が成り立たない場合は採用できません。",'
+            )
+        else:
+            system = (
+                "あなたは話し手の発話中に短い日本語の cue を差し込む推論ファシリテーターです。"
+                "目的は「抜けを埋める」ではなく「この話し手の推論軌道を、より有用な方向へ1手だけ押し進める」"
+                "ことです。同じ操作を繰り返している、1つの枠に固執している、根拠なく飛躍している、"
+                "逆を検討していない、といった軌道の癖を見抜いて、その1手で軌道が変わる促しを入れます。"
+                "現時点の軌道で十分有用な場合や、割り込むと思考を妨げる場合は SILENCE を選びます。"
+                "必ずJSONオブジェクトだけを返し、説明を含めないこと。"
+            )
+            cue_instruction = (
+                "【指示】この話し手の推論軌道を1手だけ伸ばすか、逆に振る cue を、"
+                f"【未登場の操作】の中から選んでください。{self.max_characters}文字以内の日本語の cue を返し、"
+            )
+            cue_example = '"cue":"逆は？",'
         user = (
             f"【直前までの文脈】\n{context}\n\n"
             f"【現在の発話】\n{state.text}\n\n"
@@ -601,12 +714,12 @@ class SteeringDecisionModel(LocalLLMDecisionModel):
             f"【既に現れた操作】\n{covered}\n"
             f"【直近の操作】\n{recent}\n"
             f"【未登場の操作】\n{', '.join(missing)}\n\n"
-            "【指示】この話し手の推論軌道を1手だけ伸ばすか、逆に振る cue を、"
-            f"【未登場の操作】の中から選んでください。{self.max_characters}文字以内の日本語の cue を返し、"
+            f"{cue_instruction}"
             "どの癖に対してどんな狙いの一手なのかを reason に一言で書いてください。"
             "confidence は 0.0〜1.0 の実数です。軌道に問題がないなら SILENCE にしてください。\n\n"
             "【出力形式】\n"
-            '{"action":"CUE","operation":"invert","cue":"逆は？",'
+            '{"action":"CUE","operation":"invert",'
+            f'{cue_example}'
             '"confidence":0.7,"reason":"結論を出す前に反対側を試すべき"}\n'
             'または {"action":"SILENCE","confidence":0.7,"reason":"..."}'
         )
@@ -630,16 +743,25 @@ class LinearDecisionModel:
         delivery_window_ms: int = 1_200,
         insertion_delay_ms: int = 0,
         max_characters: int = 8,
+        cue_style: str = "bare",
+        stem_generator: StemCueGenerator | None = None,
+        stem_max_characters: int = DEFAULT_STEM_MAX_CHARACTERS,
     ) -> None:
         if delivery_window_ms < 1:
             raise ValueError("delivery_window_ms must be positive")
         if insertion_delay_ms < 0:
             raise ValueError("insertion_delay_ms must be non-negative")
+        _check_cue_style(cue_style)
+        if stem_max_characters < 8:
+            raise ValueError("stem_max_characters must be at least 8")
         self.model = model
         self.assigner = assigner
         self.delivery_window_ms = delivery_window_ms
         self.insertion_delay_ms = insertion_delay_ms
         self.max_characters = max_characters
+        self.cue_style = cue_style
+        self.stem_generator = stem_generator
+        self.stem_max_characters = stem_max_characters
         self.label = f"linear-policy({model.label})"
 
     def decide(self, state: SyncState) -> Intervention | None:
@@ -654,8 +776,18 @@ class LinearDecisionModel:
         if chosen is None:
             return None
         requested_operation, score = chosen
-        cue = self.assigner.assign(requested_operation)
-        operation = operation_for_cue(cue) or "unmapped"
+        if self.cue_style == "stem":
+            cue = _resolve_stem_cue(
+                self.stem_generator,
+                state,
+                requested_operation,
+                max_characters=self.stem_max_characters,
+                assigner=self.assigner,
+            )
+            operation = requested_operation
+        else:
+            cue = self.assigner.assign(requested_operation)
+            operation = operation_for_cue(cue) or "unmapped"
         scheduled_at = state.now_ms + self.insertion_delay_ms
         digest = hashlib.sha256(
             f"{state.utterance_id}:{state.now_ms}:{operation}:{cue}:{state.text}".encode()
@@ -677,6 +809,7 @@ class LinearDecisionModel:
             assignment=self.assigner.label,
             base_text=state.text,
             prediction=prediction,
+            cue_style=self.cue_style,
         )
 
 
@@ -697,12 +830,21 @@ class RandomOperationDecisionModel:
         assigner: CueAssigner,
         *,
         seed: int = 0,
+        cue_style: str = "bare",
+        stem_generator: StemCueGenerator | None = None,
+        stem_max_characters: int = DEFAULT_STEM_MAX_CHARACTERS,
     ) -> None:
         if seed < 0:
             raise ValueError("seed must be non-negative")
+        _check_cue_style(cue_style)
+        if stem_max_characters < 8:
+            raise ValueError("stem_max_characters must be at least 8")
         self.inner = inner
         self.assigner = assigner
         self.seed = seed
+        self.cue_style = cue_style
+        self.stem_generator = stem_generator
+        self.stem_max_characters = stem_max_characters
         self._random = random.Random(seed)
         self._lock = threading.Lock()
         self.label = f"{inner.label}+random-operation(seed={seed})"
@@ -731,8 +873,18 @@ class RandomOperationDecisionModel:
             return None
         with self._lock:
             operation = self._random.choice(list(candidates))
-        cue = self.assigner.assign(operation)
-        actual = operation_for_cue(cue) or "unmapped"
+        if self.cue_style == "stem":
+            cue = _resolve_stem_cue(
+                self.stem_generator,
+                state,
+                operation,
+                max_characters=self.stem_max_characters,
+                assigner=self.assigner,
+            )
+            actual = operation
+        else:
+            cue = self.assigner.assign(operation)
+            actual = operation_for_cue(cue) or "unmapped"
         digest = hashlib.sha256(
             f"{state.utterance_id}:{state.now_ms}:{actual}:{cue}:{state.text}".encode()
         ).hexdigest()[:12]
@@ -748,6 +900,7 @@ class RandomOperationDecisionModel:
                 f"randomized operation {actual} "
                 f"(policy requested {base.requested_operation})"
             ),
+            cue_style=self.cue_style,
         )
 
 
@@ -773,6 +926,42 @@ def build_assigner(
 
 def _span_has_content(span: str) -> bool:
     return any(character.isalnum() for character in span)
+
+
+_CUE_STYLES = ("bare", "stem")
+
+
+def _check_cue_style(cue_style: str) -> str:
+    if cue_style not in _CUE_STYLES:
+        raise ValueError(f"cue_style must be one of {_CUE_STYLES}")
+    return cue_style
+
+
+def _resolve_stem_cue(
+    generator: StemCueGenerator | None,
+    state: SyncState,
+    operation: str,
+    *,
+    max_characters: int,
+    assigner: CueAssigner,
+) -> str:
+    """LLM-written stem → predicted-span template stem → bare wording."""
+    span = state.prediction.span if state.prediction is not None else ""
+    if generator is not None:
+        sentence = generator.generate(
+            operation,
+            text=state.text,
+            span=span,
+            context=state.context,
+        )
+        if sentence:
+            return sentence
+    template = render_stem_template(
+        operation, span, max_characters=max_characters
+    )
+    if template:
+        return template
+    return assigner.assign(operation)
 
 
 def operation_priority() -> Mapping[str, int]:
