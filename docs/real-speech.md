@@ -145,6 +145,32 @@ See `docs/benchmark.md` for the synthetic evaluation, `docs/experiment-protocol.
 for the human study design, and `docs/real-speech.md` (this file) for the
 Limited Corpus evaluation.
 
+## Rule arm on full Lux replay (328 files)
+
+The `rule` (default n-gram prediction-gap) pipeline was fired over every
+Lux file. Counts (from the analyzer,`artifacts/lux-rule-328-analysis.md`):
+
+```text
+files                  328
+predictions fired      405
+interventions delivered 276 (held on SILENCE: 276)
+cancellations          0
+outcomes               276
+uptake / carryover     0.00 / 0.00 (both arms identical; read speech)
+repertoire_growth      0.04
+```
+
+Distribution of chosen operations: `concretize 264`, `invert 6`, `ground 4`,
+`mechanism 1`, `conclusion 1`. Cues used: `具体は？`, `逆は？`, `根拠は？`,
+`仕組みは？`, `結論は？` in the same order of frequency.
+
+The rule fires on the embedded n-gram's predictions at the small pauses in
+the TTS read-through — both arms receive an identical count of
+interventions so the paired delta is `+0.000` on every metric. The
+trigger is *not* meaningful announcement detection — Lux is a TTS
+proofreader script. Most cues (264/276) fire on `concretize` because our
+embedded corpus is dominated by example-language (`例えば`, `具体的`).
+
 ## Local-LLM end-to-end on the Lux corpus
 
 `scripts/simulate_lux_replay.py --predictor local --decision local` was run
