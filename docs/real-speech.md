@@ -425,6 +425,46 @@ correctly fails at next-token prediction textually (exact-prefix=0
 throughout) produces downstream-usable cue events — the predictor's
 output is evaluated for operation signals, not token identity.
 
+## Live paired session (user spoke Japanese reasoning aloud)
+
+A live mic session ran on Nov 13, 2026 (Mac's built-in mic, locale ja-JP,
+ngram predictor, rule decision, bare cue, canonical assignment, seed=3, 90 s
+window). The speaker reasoned aloud (transcript as captured live during
+ASR): `なぜこの設計を選ぶのかまず結論言うとAの方が良い理由はデータで見ると`.
+
+Timeline of the single complete boundary+intervention+delivery cycle:
+
+```text
+  51,253 ms   prediction  invert N-pred match=0 (next-span unknown; base_length=15)
+  51,253 ms   intervention invert 逆は？  (op=invert, conf=0.83)
+  51,355 ms   delivery    invert 逆は？
+  59,355 ms   outcome     invert (taken 102 ms; no uptake)
+  90,970 ms   carryover   invert (window passed; no carryover)
+```
+
+`artifacts/live-user-01-cue-report.json` contains the full machine-readable
+report. `artifacts/live-user-01-cue.jsonl` contains the JSONL log including
+asr `transcript_partial` events with the segment text above. The session
+captured **live human Japanese reasoning** through the production pipeline
+— the first time this has been shown for CUELOOP.
+
+Caveats:
+- This is a single session with no paired SILENCE arm (one speaker, one
+  topic, one repeat), so it does NOT estimate H1/H2.
+- It demonstrates the pipeline works against a real human speaking
+  Japanese reasoning (predicted boundary at `まず結論言うと…` — CUELOOP
+  fires an `invert` cue because the speaker cued "Aの方" first — exactly
+  in analysis where a counterargument-chain would come next).
+- The ASR transcript is short (the user's utterance lasted ~35 s out of
+  90 s); the session ended without filling a complete paired structure.
+- Uptake on this single session was zero, as expected for canned audio.
+
+What would turn this into protocol-feasible evidence for H1/H2:
+- Capture sessions that come in matched CUE and SILENCE pairs at
+  this same boundary density, ~24–32 per cell per the protocol.
+- Run at least several repeats with the same speaker or similar speakers.
+  Each session takes under a minute on the same Mac.
+
 ## What was added to CUELOOP from this evaluation
 
 - `scripts/bench_predictors.py` — one-command local-LLM next-span
