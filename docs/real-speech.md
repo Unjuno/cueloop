@@ -25,6 +25,37 @@ live target either: neither contains human-against-cue interaction (canned
 audio cannot respond). They remain honest calibration targets, just ordered by
 proximity to the operational discourse register.
 
+## Predictor capacity across all Japanese corpora (refined)
+
+For every Japanese speech corpus we ran the n-gram predictor sweep. Zero
+exact-prefix everywhere — not one prediction matched even one character:
+
+```text
+corpus                              exact_prefix (best config)
+lux (order 4/5, default/merged)     0.0 / 0.0 / 0.0
+reazon (order 3, all variants)      0.0 / 0.0 / 0.0
+common voice 8.0 ja                 0.0 / 0.0 / 0.0
+common voice 17.0 ja                0.0 / 0.0 / 0.0
+jsut-basic5000                      0.0 / 0.0 / 0.0
+```
+
+Local-LLM delivery counts, expanded across six corpora:
+
+```text
+jsut local-LLM (50 files): 78 predictions, 75 interventions, 75 delivered
+  (ops: dependency 27, boundary 27, ground 14, comparison 5, mechanism 2)
+  files with >=1 delivery: 41/50
+  analyzer n_pairs=50, all deltas +0.000 CI [+0.000, +0.000]
+
+lux local-LLM (post-fix): 324 / 324 delivered, all metrics +0.000 CI
+reazon local-LLM (full 200): 668 / 668 delivered, all metrics +0.000 CI
+dialog (A0022_S0003_0_G0029): 387 / 387 delivered
+```
+
+The local-LLM backend is consistent: it produces downstream-acceptable
+predictions, but on all six real Japanese corpora the paired analyzer
+finds no measurable uptake. This is structural: replay is canned speech.
+
 ## What was measured
 
 ### 1. ASR quality on the corpus (whisper-base-mlx, not the production path)
