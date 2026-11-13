@@ -107,11 +107,16 @@ can rank cues offline; the experiment assigns them.
 
 ## Quickstart
 
+The install step below creates a project-local `.venv`. The examples after it
+assume that venv is on `PATH` (`export PATH="$PWD/.venv/bin:$PATH"`), because
+they invoke `cueloop-sync` and the scripts directly.
+
 ```bash
-python -m pip install -e .
+# python3 -m venv .venv  # if not already created; the commands use .venv/bin/...
+.venv/bin/python -m pip install -e .
 
 # Deterministic replay: at the 900 ms boundary, delivers a cue 100 ms later.
-cueloop-sync --events experiments/sync-smoke.jsonl \
+.venv/bin/cueloop-sync --events experiments/sync-smoke.jsonl \
   --log artifacts/sync-smoke.jsonl \
   --report artifacts/sync-report.json
 ```
@@ -128,11 +133,13 @@ The local LLM is a semantic prior, but it is too slow for every boundary. A
 fast linear policy can be trained offline from the same logs:
 
 ```bash
-cueloop-sync --events experiments/sync-smoke.jsonl --decision local \
-  --log logs/session-001.jsonl
-scripts/train_policy.py logs/*.jsonl \
+# the linear policy needs data; synthesize a small example corpus with a
+# known carryover structure (the trainer rejects corpora with < 20 samples)
+.venv/bin/python scripts/synthesize_logs.py --output-dir /tmp/syn-logs --sessions 600 --seed 0
+.venv/bin/python scripts/train_policy.py /tmp/syn-logs/*.jsonl \
   --label carryover --output artifacts/sync-policy.json
-cueloop-sync --events experiments/sync-smoke.jsonl --decision linear
+cueloop-sync --events experiments/sync-smoke.jsonl --decision linear \
+  --policy-model artifacts/sync-policy.json
 ```
 
 The linear backend scores only the operations the rule policy considers

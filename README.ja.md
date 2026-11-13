@@ -98,11 +98,15 @@ cue を割り当てる（実験変数）
 
 ## クイックスタート
 
+以下の手順は `.venv` を生成し、以降のコマンドは `.venv/bin/cueloop-sync` 前提です
+(`export PATH="$PWD/.venv/bin:$PATH"` でも可)。
+
 ```bash
-python -m pip install -e .
+# python3 -m venv .venv  # 未作成の場合のみ
+.venv/bin/python -m pip install -e .
 
 # 決定的リプレイ: 900ms の境界で cue を 100ms 後に届けます
-cueloop-sync --events experiments/sync-smoke.jsonl \
+.venv/bin/cueloop-sync --events experiments/sync-smoke.jsonl \
   --log artifacts/sync-smoke.jsonl \
   --report artifacts/sync-report.json
 ```
