@@ -23,11 +23,14 @@ writing or reasoning improvement require a delayed, unassisted task.
 
 | What | State |
 | --- | --- |
-| Sync core (predict → synchronize → decide → speak) | working; 127 tests, CI green |
-| macOS microphone adapter + live demo | working on this machine (ambient-noise dependent) |
+| Sync core (predict → synchronize → decide → speak) | working; 139 tests, CI green |
+| macOS microphone adapter + live demo | working on this machine; first paired CUE/SILENCE sessions captured (2 sessions, 1 pair) |
 | Default voice | Japanese, macOS `say -v Kyoko` |
 | Synthetic calibration | analyzer recovers programmed effects end-to-end (docs/benchmark.md) |
-| Human sessions | **none yet** — no H1/H2 result exists |
+| Human-side evidence | partially captured (live-pair-1); not yet at protocol cell size (24-32 pairs/cell) |
+| 8 Japanese real-speech corpora | replayed end-to-end; canned audio, uptake delta +0.000 |
+| Live paired CUE/SILENCE | 1 paired session captured (2026-11-13, Mac mic, Kyoko) |
+| H1/H2 milestone | open — requires Japanese reasoning speaker + mic |
 | License | MIT |
 
 Immediate uptake is only a mechanism check; it is not evidence of durable
