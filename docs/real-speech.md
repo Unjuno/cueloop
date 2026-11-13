@@ -425,6 +425,35 @@ correctly fails at next-token prediction textually (exact-prefix=0
 throughout) produces downstream-usable cue events — the predictor's
 output is evaluated for operation signals, not token identity.
 
+## local-LLM backend on the PlayMaker13 podcast subset (15 clips)
+
+Extended from the 3-clip pilot: full 15 clips with
+`gemma3:4b-it-qat` on BOTH predictor and local decision, paired
+CUE/SILENCE, analyzer pair_key pairing:
+
+```text
+llm | CUE      sessions=15  interventions=443  delivered=443  0 cancelled/expired
+llm | SILENCE  sessions=15  interventions=439  delivered=0 (all HELD)
+per-op delivered (CUE):  ground 119, boundary 112, dependency 105,
+                         comparison 99, mechanism 6, conclusion 2
+repertoire_growth        1.07 both arms
+paired (CUE-SILENCE):    uptake_rate        -0.002 [-0.006, +0.000] n=15
+                         carryover_rate     +0.000 [+0.000, +0.000] n=15
+                         novel_uptake_rate  -0.002 [-0.006, +0.000] n=15
+                         novel_carryover    +0.000 [+0.000, +0.000] n=15
+                         growth             +0.000 [+0.000, +0.000] n=15
+                         median latency     +0.000 (n=15; synchronous)
+```
+
+Reading: the -0.002 uptake delta is canned-audio noise, not an effect:
+the SILENCE arm delivered exactly 0 cues but scored 3 coincidental
+`target_operation_seen` because canned continuations sometimes already
+contain the awaited op tokens; CUE scored 2 (same process). CI upper
+bound is +0.000; lower bound is negative. No uptake difference is
+measured here or anywhere in this repo — the canned-audio asymptote.
+The arm matters because it is the largest local-LLM case with a paired
+15-session CI and it does so with a non-rule decision path.
+
 ## Live paired session (user spoke Japanese reasoning aloud)
 
 Two paired live runs on 2026-11-13 (macOS built-in mic, locale ja-JP,

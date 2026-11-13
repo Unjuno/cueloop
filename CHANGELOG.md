@@ -27,6 +27,11 @@
   /expired); SILENCE arm HELD all 139 by design. Paired n=100: every delta
   +0.000 CI [+0.000, +0.000]. Zero uptake — the canned-audio asymptote on
   the local-LLM path.
+- **Podcast local-LLM arm extended 3 → 15 clips (paired)**: CUE delivered
+  443/443 (ground 119, boundary 112, dependency 105, comparison 99,
+  mechanism 6, conclusion 2); SILENCE HELD 439/439. Paired n=15: uptake
+  −0.002 [−0.006, +0.000] (canned-token coincidence, CI upper-bound zero),
+  all other deltas +0.000. No effect measured.
 - Real-speech replay across 8 Japanese corpora (see docs/real-speech.md) —
   each replayed on real audio end-to-end with local-LLM and rule backends;
   the 8th (`bandad/asr-testset-kw-ja-v1`) shows the highest op-tag density
