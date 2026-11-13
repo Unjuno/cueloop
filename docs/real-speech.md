@@ -507,23 +507,34 @@ are committed and pushed.
   `。、，．！？!?`, truth window 40 chars):
 
   ```text
-  podcast-replay  boundaries=549 sel_truth_next=29 ranking 24.1%  extend-first  3.4%  PRIORITY 0.0%  oracle 93.1%
-  lux             boundaries=215 sel_truth_next= 8 ranking 12.5%  extend-first  0.0%  PRIORITY 0.0%  oracle 100.0%
-  reazon-200      boundaries=273 sel_truth_next=13 ranking 23.1%  extend-first  7.7%  PRIORITY 0.0%  oracle 76.9%
-  jsut-replay     boundaries=429 sel_truth_next= 6 ranking  0.0%  extend-first  0.0%  PRIORITY 0.0%  oracle 66.7%
-  bandad-kw       boundaries=2695 sel_truth_next=106 ranking 18.9% extend-first  5.7%  PRIORITY 1.9%  oracle 78.3%
+  podcast-replay  boundaries=549 sel_truth_next=29 ranking 24.1%  extend-first  3.4%  PRIORITY  0.0%  oracle  93.1%
+  lux             boundaries=215 sel_truth_next= 8 ranking 12.5%  extend-first  0.0%  PRIORITY  0.0%  oracle 100.0%
+  reazon-200      boundaries=273 sel_truth_next=13 ranking 23.1%  extend-first  7.7%  PRIORITY  0.0%  oracle  76.9%
+  jsut-replay     boundaries=429 sel_truth_next= 6 ranking  0.0%  extend-first  0.0%  PRIORITY  0.0%  oracle  66.7%
+  bandad-kw       boundaries=2695 sel_truth_next=106 ranking 18.9% extend-first  5.7%  PRIORITY  1.9%  oracle  78.3%
+  cv8-sample-replay boundaries=87 sel_truth_next=2 ranking  0.0%  extend-first  0.0%  PRIORITY  0.0%  oracle 100.0%
+  cv8-sample      boundaries=2235 sel_truth_next=74 ranking  8.1%  extend-first  6.8%  PRIORITY  9.5%  oracle  77.0%
   ```
+
+  Honest counter-read: on the 4,483-file Common Voice 8.0 ja sample —
+  read sentences, essentially zero reasoning structure — context-blind
+  PRIORITY (9.5%) edges out context-fit scoring (8.1%), the only corpus
+  where that inversion appears. Read prose carries so few op markers that
+  the reasoning-tuned adjacency prior contributes nothing; it only wins
+  where discourse actually moves reasoning. Interpretation should
+  therefore be *domain-dependent*, not an unconditional win.
 
   Interpretation: the missing-op candidate set contains the human's next
   move 67-100% of the time — the mechanism *can* select a relevant
   operation — but context-fit scoring only lands it 0-24% of the time.
   The deterministic adjacency chain (extend the last move through
   CONTEXT_LINKS) lands it 0-7.7%, and the context-blind PRIORITY order
-  lands it 0-1.9%: the weighting in
-  `PolicyObservation.ranked_missing_operations` beats both baselines on
-  every corpus where any next-clause op was tagged, confirming the
-  scoring carries the signal rather than ordering luck. Op-token density
-  is low across these corpora (only 1.6-13.8% of next clauses carry any
+  lands it 0-9.5%: on every reasoning-rich corpus the weighting in
+  `PolicyObservation.ranked_missing_operations` beats both baselines,
+  confirming the scoring carries the signal — but on Common Voice 8.0
+  read prose (non-reasoning) the ordering inverts and PRIORITY wins, so
+  the scoring advantage is domain-specific. Op-token density is low
+  across these corpora (only 1.6-13.8% of next clauses carry any
   marker), so these absolute numbers are floors, not ceilings. Insertion
   appropriateness ≠ uptake: H1/H2 still requires paired live sessions
   (issue #6).
@@ -1059,6 +1070,19 @@ a non-rule decision arm. H1/H2 remain open — issue #6.
 
 ## Next steps
 
+Priority driven by the 2026-11-13 insertion benchmark
+(`artifacts/insertion-benchmark.json`, docs table above):
+
+0. **Selection axis is where signal lives**: the missing-op candidate set
+   contains the human's next op 67-100% everywhere, but selection lands
+   it only 0-24%. Any improvement budget should go to *selection*, not
+   to more corpora or more arms: (a) verify the ranking on op-dense
+   discourse corpora first (bandad-kw non-JSUT), (b) exploit that PRIORITY
+   beats ranking on non-reasoning prose by gating the ranking on an
+   op-presence/confidence signal instead of always ranking (predicted
+   win: matters only for read-prose-like utterances),
+   (c) extend the CONTEXT_LINKS prior to Japanese argumentation markers
+   (例えば→dependency, その理由→ground) — see #6.
 1. Accept Xcode license on the developer laptop and run the macOS on-device
    recognizer on Lux/Reazon files (tools/file_asr.swift + a tiny harness),
    comparing error profile vs whisper-base-mlx.
@@ -1066,13 +1090,13 @@ a non-rule decision arm. H1/H2 remain open — issue #6.
    speech recorded live with a speaker who can hear and react to cues.
    The Reazon arm shows real discourse with the vocabulary present and cues
    deliver end-to-end, but canned arms replay the same text both rounds, so
-   no effect on a human has been measured. Issue #6.
-3. With a Reazon-style discourse corpus in hand, the most valuable next
-   technical step is *domain-adapted prediction*: measure whether the local
-   LLM (or n-gram) can anticipate operations in the 30-tagged-file subset
-   with enough fidelity to keep the synchronizer un-diverged past the
-   delivery window — that is the only way local-LLM cues can complete a
-   delivery on recorded speech.
-4. Expand the embedded corpus on Japanese software engineering (code review,
-   design discussion) texts; re-evaluate `exact_prefix_rate`. The embedded
-   corpus is the single largest source of false-positive predictions.
+   no effect on a human has been measured. Issue #6. This supersedes every
+   remaining corpus/backend arm: new arms are +0.000 re-confirmable noise.
+3. Domain-adapted prediction: measure whether the local LLM (or n-gram)
+   can anticipate operations in the op-dense subsets with enough fidelity
+   to keep the synchronizer un-diverged past the delivery window — the
+   only way local-LLM cues can complete a delivery on recorded speech.
+4. Expand the embedded corpus on Japanese software engineering (code
+   review, design discussion) texts; re-evaluate `exact_prefix_rate` and
+   the insertion benchmark's selection axis together — not each in
+   isolation.

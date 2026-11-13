@@ -3,6 +3,13 @@
 ## Unreleased
 
 ### Added
+- **Insertion benchmark extended to Common Voice 8.0** (4,483-file ja
+  sample + 120-file replay subset). On the full sample: context-fit
+  ranking 8.1% vs RANDOM-order PRIORITY 9.5% — the only corpus where
+  PRIORITY inverts the ranking, because read prose has near-zero
+  reasoning structure. Interpretation updated to domain-dependence; the
+  `Next steps` in docs/real-speech.md is now ordered by the
+  insertion-benchmark evidence (selection axis > prediction axis).
 - **Analyzer reads simulator output directly**: `scripts/analyze_experiment.py`
   now discovers report JSONs one directory level deep, so
   `analyze_experiment.py artifacts/<arm>` works on `<arm>/cue/*.json` +
