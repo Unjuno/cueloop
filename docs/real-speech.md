@@ -175,6 +175,27 @@ what models predict — it lets them answer at all.
 preamble consumed the budget); at `max_tokens=2000` it answered but scored
 identically to the other models. Stand-ins did not buy predictive power.
 
+### 4. N-gram predictor on the Reazon sample
+
+`scripts/tune_ngram.py` sweeps the predictor variants described above against
+the 200-file Reazon sample (180 train / 20 eval), prefix 8 chars, order 3 / 4
+/ 5, span 40:
+
+```text
+model                                  exact_prefix
+default (ngram(3) embedded corpus)     0/15
+lux-only (trained on 180 train lines)  0/20
+merged (embedded + lux-only)           0/20
+order 5 n-gram                          0/20 (order 3 / 4 / 5 all zero)
+```
+
+Zero exact-prefix anywhere. The embedded corpus contains 12 JP software-
+generated lines; train-on-Lux cannot rescue it because natural Japanese is
+far too sparse at char-order 5. This is not evidence against the mechanism —
+it means no offline corpus substituting for human Japanese reasoning exists
+that would make a ppm-matching predictor possible, so predictor quality
+cannot be bought for this domain without collecting real sessions.
+
 ## What was added to CUELOOP from this evaluation
 
 - `scripts/bench_predictors.py` — one-command local-LLM next-span
