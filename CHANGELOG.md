@@ -7,9 +7,13 @@
   sample + 120-file replay subset). On the full sample: context-fit
   ranking 8.1% vs RANDOM-order PRIORITY 9.5% — the only corpus where
   PRIORITY inverts the ranking, because read prose has near-zero
-  reasoning structure. Interpretation updated to domain-dependence; the
-  `Next steps` in docs/real-speech.md is now ordered by the
-  insertion-benchmark evidence (selection axis > prediction axis).
+  reasoning structure. Anchor decomposition (op present in prefix) locates
+  the inversion *inside the anchor cell* (CV8 ranked 10.3% vs PRIORITY
+  12.1%, n=58) while the no-anchor cell is 0.0% everywhere; reasoning
+  corpora keep a 17-29 point margin inside the anchor cell. The
+  JSON export bug collapsing same-basename corpora under one key is
+  fixed (`<dir>/<file>` labels); `Next steps` in docs/real-speech.md
+  re-prioritized by insertion evidence (selection axis first).
 - **Analyzer reads simulator output directly**: `scripts/analyze_experiment.py`
   now discovers report JSONs one directory level deep, so
   `analyze_experiment.py artifacts/<arm>` works on `<arm>/cue/*.json` +

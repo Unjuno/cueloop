@@ -15,7 +15,12 @@ Answers, without any live microphone:
   deterministic adjacency chain that extends the speaker's last move via
   CONTEXT_LINKS (`sel_*_extendfirst`), and context-blind PRIORITY
   (`sel_*_priority`), plus an oracle that credits any op inside the
-  missing set (`sel_oracle`).
+  missing set (`sel_oracle`). The selection block additionally reports
+  an anchor decomposition (`sel_anchor_*`: boundaries where at least one
+  anchor op — clause/recent/predicted — exists in the prefix, split
+  ranked vs PRIORITY; `sel_noanchor_*`: the remainder, where production
+  already falls back to PRIORITY) so the signal source of each selector
+  is identifiable offline.
 
 This is the *insertion-appropriateness* axis: it does not measure whether a
 live cue changes a speaker's real-time reasoning (that needs paired live
@@ -129,6 +134,14 @@ def main() -> int:
 
     summary: dict[str, dict[str, object]] = {}
     for corpus_path in args.corpus:
+        label = (
+            f"{corpus_path.parent.name}/{corpus_path.name}"
+            if (
+                corpus_path.parent.name not in ("", ".")
+                and corpus_path.name == "metadata.csv"
+            )
+            else corpus_path.name
+        )
         rows = list(csv.DictReader(corpus_path.open(encoding="utf-8")))
         boundaries = 0
         predicted = 0
@@ -147,6 +160,11 @@ def main() -> int:
         sel_hit_extendfirst = 0
         sel_oracle = 0
         sel_missing_total = 0
+        sel_anchor_boundaries = 0
+        sel_anchor_hit_ranked = 0
+        sel_anchor_hit_priority = 0
+        sel_noanchor_boundaries = 0
+        sel_noanchor_hit_ranked = 0
 
         for row in rows:
             text = (row.get("transcript") or "").strip()
@@ -239,12 +257,23 @@ def main() -> int:
                             sel_hit_extendfirst += 1
                         if any(op in next_clause_ops for op in missing):
                             sel_oracle += 1
+                        has_anchor = bool(clause_ops or recent_ops or pred_ops_frozen)
+                        if has_anchor:
+                            sel_anchor_boundaries += 1
+                            if ranked[0] in next_clause_ops:
+                                sel_anchor_hit_ranked += 1
+                            if missing[0] in next_clause_ops:
+                                sel_anchor_hit_priority += 1
+                        else:
+                            sel_noanchor_boundaries += 1
+                            if ranked[0] in next_clause_ops:
+                                sel_noanchor_hit_ranked += 1
 
                 recent_clauses.append(clause_text)
 
         denom = offered or 1
         sel_denom = sel_truth_present or 1
-        summary[corpus_path.name] = {
+        summary[label] = {
             "corpus": str(corpus_path),
             "rows": len(rows),
             "boundaries": boundaries,
@@ -274,19 +303,40 @@ def main() -> int:
             "sel_hit_rate_ranked": sel_hit_ranked / sel_denom,
             "sel_hit_rate_priority": sel_hit_priority / sel_denom,
             "sel_hit_rate_extendfirst": sel_hit_extendfirst / sel_denom,
+            "sel_anchor_boundaries": sel_anchor_boundaries,
+            "sel_noanchor_boundaries": sel_noanchor_boundaries,
+            "sel_anchor_hit_rate_ranked": (
+                sel_anchor_hit_ranked / sel_anchor_boundaries
+                if sel_anchor_boundaries
+                else None
+            ),
+            "sel_anchor_hit_rate_priority": (
+                sel_anchor_hit_priority / sel_anchor_boundaries
+                if sel_anchor_boundaries
+                else None
+            ),
+            "sel_noanchor_hit_rate_ranked": (
+                sel_noanchor_hit_ranked / sel_noanchor_boundaries
+                if sel_noanchor_boundaries
+                else None
+            ),
             "sel_oracle": sel_oracle,
             "sel_oracle_rate": sel_oracle / sel_denom,
         }
-        stats = summary[corpus_path.name]
+        stats = summary[label]
+        anchor_ranked = stats["sel_anchor_hit_rate_ranked"]
+        anchor_priority = stats["sel_anchor_hit_rate_priority"]
         print(
-            f"{corpus_path.name}: boundaries={boundaries} "
+            f"{label}: boundaries={boundaries} "
             f"pred_hit@truth_op={stats['op_hit_rate_given_truth_op']} "
             f"sel_truth_next={sel_truth_present} "
             f"sel_rate_ranked={stats['sel_hit_rate_ranked']:.3f} "
             f"sel_rate_extend={stats['sel_hit_rate_extendfirst']:.3f} "
             f"sel_rate_priority={stats['sel_hit_rate_priority']:.3f} "
             f"sel_oracle={stats['sel_oracle_rate']:.3f} "
-            f"avg_missing={stats['sel_avg_missing']:.2f}"
+            f"avg_missing={stats['sel_avg_missing']:.2f} "
+            f"anchor_ranked={anchor_ranked} anchor_priority={anchor_priority} "
+            f"noanchor_ranked={stats['sel_noanchor_hit_rate_ranked']}"
         )
 
     if args.json:

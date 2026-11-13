@@ -545,10 +545,29 @@ are committed and pushed.
   Honest counter-read: on the 4,483-file Common Voice 8.0 ja sample —
   read sentences, essentially zero reasoning structure — context-blind
   PRIORITY (9.5%) edges out context-fit scoring (8.1%), the only corpus
-  where that inversion appears. Read prose carries so few op markers that
-  the reasoning-tuned adjacency prior contributes nothing; it only wins
-  where discourse actually moves reasoning. Interpretation should
-  therefore be *domain-dependent*, not an unconditional win.
+  where that inversion appears. Decomposing the selection block by
+  anchor presence (op tags in clause/recent/predicted prefix) locates
+  the inversion precisely: it lives *inside the anchor cell* —
+
+  ```text
+  anchor decomposition (bounds with any anchor op in prefix):
+  podcast-replay  n=24  anchor_ranked 29.2%  anchor_priority  0.0%
+  lux             n=6   anchor_ranked 16.7%  anchor_priority  0.0%
+  reazon-200      n=12  anchor_ranked 25.0%  anchor_priority  0.0%
+  bandad-kw       n=102 anchor_ranked 19.6%  anchor_priority  2.0%
+  jsut            n=3   anchor_ranked  0.0%  anchor_priority  0.0%
+  common_voice_sample (n=58):
+                  anchor_ranked 10.3%  anchor_priority 12.1%  <- inversion, inside the anchor cell
+  no-anchor cell: 0.0% everywhere (production already falls back to PRIORITY there)
+  ```
+
+  i.e. the CONTEXT_LINKS adjacency prior is real signal for reasoning
+  discourse and slightly misleading on read prose — not a fallback bug
+  and not a global ordering effect. Any next iteration that "fixes" the
+  inversion must do it inside the anchor cell (e.g. domain-adaptive
+  CONTEXT_LINKS or confidence-gated anchors), not by re-ordering
+  PRIORITY. Interpretation stays domain-dependent; insertion
+  appropriateness ≠ uptake (issue #6).
 
   Interpretation: the missing-op candidate set contains the human's next
   move 67-100% of the time — the mechanism *can* select a relevant
