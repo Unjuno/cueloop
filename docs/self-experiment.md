@@ -39,7 +39,18 @@ the analyzer handles pairing by `pair_key`.
 
 ## Recording
 
-Use the mic directly with a `cueloop-sync` session, in CUE and SILENCE arms:
+One-command paired recording (sets the same `pair_key` for both arms):
+
+```bash
+scripts/record_self_pair.sh design-choice 60
+```
+
+That opens the mic for 60 s of CUE (cues spoken in Japanese via Kyoko) then
+60 s of SILENCE (no voice), using the same `pair_key`, and writes
+`logs/self/design-choice-{cue,silence}.jsonl` plus matching reports under
+`logs/self-design-choice-paired/`. It fails loud if the adapter is missing.
+
+To pair them manually:
 
 ```bash
 # 1) record a CUE session (cues spoken, recorded, suppressed in transcript)
