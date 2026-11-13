@@ -34,8 +34,9 @@ Immediate uptake is only a mechanism check; it is not evidence of durable
 improvement. No claim here is supported by human data yet. See
 `docs/real-speech.md` for calibration against three real Japanese speech
 corpora: Lux (read prose, CC-BY-4.0), ReazonSpeech (YouTube-derived
-discourse Japanese, CDLA-Sharing-1.0), and MagicData (spontaneous
-2-speaker smartphone dialogue, HF card: Apache-2.0) — paired CUE/SILENCE
+discourse Japanese, CDLA-Sharing-1.0), MagicData (spontaneous
+2-speaker smartphone dialogue, HF tag Apache-2.0), and Common Voice 8.0
+Japanese (4,483 CC0 clips) — paired CUE/SILENCE
 replays through the real runtime.
 
 ## Stem cues (default) and bare cues
