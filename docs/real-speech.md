@@ -521,10 +521,66 @@ PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 \
 .venv/bin/python scripts/analyze_experiment.py artifacts/reazon-llm-200-v2/cue \
   artifacts/reazon-llm-200-v2/silence --markdown artifacts/reazon-llm-200-v2-analysis.md
 
-# corpus acquisition (audio is not in git):
-#   tar of chunk 000 from huggingface.co/datasets/osanpo/reazonspeech (CDLA-Sharing-1.0)
-#   transcriptions from huggingface.co/datasets/efwkjn/reazonspeech_metadata
+# full corpus replay, rule backend
+PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 \
+  scripts/simulate_dialog_replay.py --output-dir artifacts/dialog-rule \
+  --predictor ngram --decision rule --source-name dialog-rule
+.venv/bin/python scripts/analyze_experiment.py artifacts/dialog-rule/cue \
+  artifacts/dialog-rule/silence --markdown artifacts/dialog-rule-analysis.md
+
+# full corpus replay, local-LLM backend (may take ~10-30 min per arm; needs Ollama + gemma3)
+PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 \
+  scripts/simulate_dialog_replay.py --output-dir artifacts/dialog-llm \
+  --predictor local --decision local --local-model gemma3:4b-it-qat --source-name dialog-llm
+.venv/bin/python scripts/analyze_experiment.py artifacts/dialog-llm/cue \
+  artifacts/dialog-llm/silence --markdown artifacts/dialog-llm-analysis.md
+
+# corpus acquisition (audio not in git):
+#   huggingface.co/datasets/MagicDataTech/Japanese_Spontaneous_Conversation_Training_Dataset
+#   HF card license: apache-2.0
 ```
+
+## MagicData Japanese spontaneous dialogue (third corpus arm)
+
+`MagicDataTech/Japanese_Spontaneous_Conversation_Training_Dataset`
+(Hugging Face dataset tag: Apache-2.0; used here for non-redistributive
+evaluation and never committed — the WAVs stay in a git-ignored
+`data/real-speech/` cache): 20 two-person smartphone conversations,
+~7,477 utterances, 129,707 Japanese characters with publisher-provided
+per-utterance timestamps and two-speaker diarization. The audio is
+natural Japanese — questions interrupted, false starts, overlapping
+speech, backchannels, filler — not read prose or broadcast narration.
+
+Two measurements on this corpus with the rule backend (replaying
+utterance chunks spread evenly across the publisher's `[start_ms, end_ms]`):
+
+```text
+files                                 20 CUE + 20 SILENCE (paired)
+utterances with Japanese content      7477
+utterances tagging >=1 operation      337 (4.5%)
+operation hit counts                  conclusion 161, comparison 69,
+                                       concretize 45, ground 21, boundary 19,
+                                       invert 15, mechanism 12, dependency 11
+delivered (CUE)                        5527
+uptake / carryover                     0.01 / 0.04 (identical in SILENCE;
+                                       canned audio cannot respond)
+paired delta                           +0.000 CI [+0.000, +0.000] (every metric)
+n_pairs                                20
+```
+
+The rule backend fires on virtually every boundary in this corpus (411
+predictions in the first file alone, 316 delivered). Uptake on any canned
+corpus is structurally 0, which it is here; the corpus does, however,
+contain real reasoning-with-announcements (e.g., `結論言うと`, `だから、
+そういった面では`), so this arm is the first committed one with
+genuinely spontaneous reasoning audio. Tagged-operation coverage (4.5% of
+utterances) is small but non-zero; that's the same as the Lux and Reazon
+arms — no working corpus has dense announcements.
+
+A local-LLM replay of this corpus is running — results land in
+`artifacts/dialog-llm/` and will be folded in when complete. The replay
+script is `scripts/simulate_dialog_replay.py`. Corpus is
+git-ignored (`data/real-speech/`).
 
 ## How to reproduce these numbers
 
