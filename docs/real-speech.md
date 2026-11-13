@@ -55,6 +55,25 @@ bandad/asr-testset-kw-ja-v1 local-LLM (10 files): 29 predictions, 28 interventio
   (ops: dependency 10, ground 7, comparison 7, boundary 4)
   files with >=1 delivery: 5/10; analyzer n_pairs=10, all +0.000 CI [+0.000, +0.000]
 
+common voice 8.0 ja local-LLM (15 files): 13 predictions, 13 interventions, 13 delivered
+  (ops: dependency 6, boundary 5, ground 1, comparison 1)
+  files with >=1 delivery: 10/15; analyzer n_pairs=15, all +0.000 CI [+0.000, +0.000]
+
+common voice 17.0 ja local-LLM (15 files): 8 predictions, 8 interventions, 8 delivered
+  (1 file produced no usable ASR — counted as `none` in the paired analyzer)
+  (ops: ground 6, dependency 2)
+  files with >=1 delivery: 5/14; analyzer n_pairs=14, all +0.000 CI [+0.000, +0.000]
+
+lux local-LLM (post-fix): 324 / 324 delivered, all metrics +0.000 CI
+reazon local-LLM (full 200): 668 / 668 delivered, all metrics +0.000 CI
+dialog (A0022_S0003_0_G0029): 387 / 387 delivered
+kw-ja 510-clip arm: 998 delivered (rule backend)
+```
+
+The local-LLM backend is consistent: it produces downstream-acceptable
+predictions, but on all eight real Japanese corpora the paired analyzer
+finds no measurable uptake. This is structural: replay is canned speech.
+The only path to uptake evidence is a human speaker (issue #6).
 lux local-LLM (post-fix): 324 / 324 delivered, all metrics +0.000 CI
 reazon local-LLM (full 200): 668 / 668 delivered, all metrics +0.000 CI
 dialog (A0022_S0003_0_G0029): 387 / 387 delivered
@@ -748,6 +767,22 @@ PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 \
 #   huggingface.co/datasets/FluidInference/JSUT-basic5000 (audio no redistribution; research use free)
 #   bandad/asr-testset-kw-ja-v1 (license unspecified in card data; used for internal eval only)
 #   PlayMaker13/japanese-podcast (license unspecified in card data; public permissive "listen to anyone" podcast)
+
+# common voice 8.0 ja local-LLM arm (15 files; ~1 min; needs Ollama + gemma3)
+PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 \
+  scripts/simulate_lux_replay.py --corpus data/real-speech/common_voice_sample_replay/metadata.csv \
+  --source-name cv8-llm --output-dir artifacts/cv8-llm \
+  --predictor local --decision local --local-model gemma3:4b-it-qat --limit 15
+.venv/bin/python scripts/analyze_experiment.py artifacts/cv8-llm/cue \
+  artifacts/cv8-llm/silence --markdown artifacts/cv8-llm-analysis.md
+
+# common voice 17.0 ja local-LLM arm (15 files; ~1 min; needs Ollama + gemma3)
+PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 \
+  scripts/simulate_lux_replay.py --corpus data/real-speech/cv17-ja/cleaned-metadata.csv \
+  --source-name cv17-llm --output-dir artifacts/cv17-llm \
+  --predictor local --decision local --local-model gemma3:4b-it-qat --limit 15
+.venv/bin/python scripts/analyze_experiment.py artifacts/cv17-llm/cue \
+  artifacts/cv17-llm/silence --markdown artifacts/cv17-llm-analysis.md
 
 # podcast 3-clip local-LLM arm (~10 min, needs Ollama + gemma3:4b-it-qat)
 PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 \
