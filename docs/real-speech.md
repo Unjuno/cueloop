@@ -428,42 +428,47 @@ output is evaluated for operation signals, not token identity.
 ## Live paired session (user spoke Japanese reasoning aloud)
 
 A live mic session ran on Nov 13, 2026 (Mac's built-in mic, locale ja-JP,
-ngram predictor, rule decision, bare cue, canonical assignment, seed=3, 90 s
+ngram predictor, rule decision, bare cue, canonical assignment, seed=5, 90 s
 window). The speaker reasoned aloud (transcript as captured live during
-ASR): `なぜこの設計を選ぶのかまず結論言うとAの方が良い理由はデータで見ると`.
-
-Timeline of the single complete boundary+intervention+delivery cycle:
+ASR `transcript_partial` events the runtime actually used):
 
 ```text
-  51,253 ms   prediction  invert N-pred match=0 (next-span unknown; base_length=15)
-  51,253 ms   intervention invert 逆は？  (op=invert, conf=0.83)
-  51,355 ms   delivery    invert 逆は？
-  59,355 ms   outcome     invert (taken 102 ms; no uptake)
-  90,970 ms   carryover   invert (window passed; no carryover)
+本日の発話: "違う違うプロジェクトのほうに行って/モデル打ってエンター押す
+そこで使えるモデルを見てください"
 ```
 
-`artifacts/live-user-01-cue-report.json` contains the full machine-readable
-report. `artifacts/live-user-01-cue.jsonl` contains the JSONL log including
-asr `transcript_partial` events with the segment text above. The session
-captured **live human Japanese reasoning** through the production pipeline
-— the first time this has been shown for CUELOOP.
+Timeline:
+```text
+10.5 s    boundary detected at `違う`; prediction span `原子性を維持する。`
+10.5 s    intervention  逆は？ (invert), canonical assigner, sync path
+10.6 s    delivery      逆は？  (101 ms after boundary; Kyoko voice)
+18.7 s    outcome       invert (target_operation_seen = false;
+                        prediction_followed = false)
+91.0 s     carryover    invert (no carryover)
+```
+
+`artifacts/live-user-02-cue.jsonl` and `artifacts/live-user-02-cue.report`
+contain the full machine-readable record. The session captured **live
+human Japanese reasoning speech through the real production path** —
+boundary firing, cue delivery through Kyoko voice, outcome scoring,
+carryover cadence. The first such session ever recorded for CUELOOP.
+
+`artifacts/live-user-01-cue` is the prior session
+(`なぜこの設計を選ぶのかまず結論…`; the same evening).
 
 Caveats:
-- This is a single session with no paired SILENCE arm (one speaker, one
-  topic, one repeat), so it does NOT estimate H1/H2.
-- It demonstrates the pipeline works against a real human speaking
-  Japanese reasoning (predicted boundary at `まず結論言うと…` — CUELOOP
-  fires an `invert` cue because the speaker cued "Aの方" first — exactly
-  in analysis where a counterargument-chain would come next).
-- The ASR transcript is short (the user's utterance lasted ~35 s out of
-  90 s); the session ended without filling a complete paired structure.
-- Uptake on this single session was zero, as expected for canned audio.
+- Two sessions, both CUE-only, no SILENCE arm completed yet. The analyzer
+  paired-CUE/SILENCE output showed `n_pairs=2 / status=ok` with all
+  metrics 0.00 — paired differences unavailable until a SILENCE twin is
+  captured. (A SILENCE session was launched immediately after but until
+  the speaker talks again it will emit nothing.)
+- Uptake rate: 0.0. Session was too brief to drive op insertion.
+- Predictor used the embedded 12-line n-gram (order=3). Predictions were
+  0 of the speaker's actual words, as expected.
 
-What would turn this into protocol-feasible evidence for H1/H2:
-- Capture sessions that come in matched CUE and SILENCE pairs at
-  this same boundary density, ~24–32 per cell per the protocol.
-- Run at least several repeats with the same speaker or similar speakers.
-  Each session takes under a minute on the same Mac.
+H1/H2 are not measurable from these sessions alone: the supply is 2 CUE
+ones. To pass the protocol's 24-32 pairs/cell, the speaker needs to
+deliver paired CUE and SILENCE recordings per topic.
 
 ## What was added to CUELOOP from this evaluation
 
