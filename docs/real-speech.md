@@ -114,18 +114,25 @@ The signal we can draw here is narrower than it first appears:
 - **The macOS SFSpeechRecognizer on Lux files**: not run locally (Xcode
   license not accepted; the Swift file-asr tool in `tools/file_asr.swift`
   waits on CI or this machine accepting the license).  The microphone path
-  has been driven once against a clean recording of Lux files played back
-  from a speaker, which produced recognizable transcript events: on
-  `EMOTION100_011.wav`, the on-device recognizer recorded `イタリア旅行で`,
-  `例えばナポリやフィレンツェ`, etc.; on `EMOTION100_066.wav`, the trigger
-  phrase `だから` was detected and a boundary fired at 4505 ms. With the
-  fixed runtime (`--no-async-prediction`, `--decision local
-  --predictor local`), the same recording showed a local-LLM intervention
-  (`何と比べる？` op=comparison, latency 1199 ms) reaching **status SILENT**
-  at 4808 ms — a delivery on live speaker-to-mic audio, which the
-  pre-runtime-fix build cancelled outright. CUE (unscripted human response)
-  uptake is still impossible on recorded speech, so this is a pipeline
-  proof, not an effect result.
+  has been driven against clean recordings of Lux files played back from a
+  speaker, post-fix, with `--no-async-prediction --decision local
+  --predictor local --silent` (local LLM predictions, bare cues, interventions
+  held for suppression-consistent measurement):
+  - `EMOTION100_011.wav`: 5 predictions, 1 intervention (`何と比べる？`
+    op=comparison, latency 1199 ms), **status SILENT at 4808 ms — delivered**.
+    (pre-fix: the equivalent intervention was cancelled outright)
+  - `EMOTION100_066.wav`: 1 prediction (cue `根拠は？`, op=ground,
+    latency 181 ms), **status SILENT at 4498 ms — delivered** (boundary
+    trigger `だから` detected at 4327 ms; `EMOTION100_066.wav` audio is the
+    one that had been failing to cancel pre-fix)
+  - `EMOTION100_072.wav`: 8 predictions, 0 interventions (local decision
+    model vetted every boundary — no tagged operations in the utterance);
+    no delivery.
+
+  All three held silent (`--silent`), so these are mechanism-completions,
+  not effect measurement; uptake on canned audio is structurally zero. CUE
+  (unscripted human response) uptake is still impossible on recorded speech,
+  so this is a pipeline proof, not an effect result.
 - **A Japanese-software-reasoning speech corpus**: none publicly available
   short of paying for it. The synthetic CUELOOP corpus in
   `experiments/`/`docs/benchmark.md` is the closest substitute.

@@ -20,7 +20,10 @@
   operation-tagged 30-file subset, 324/324 on the full Lux 328-file corpus
   (gemma3:4b-it-qat), and 327/327 on the Reazon qwen2.5:1.5b-instruct full
   sample; synthetic calibration unchanged (null cells +0.000, 27/27 effect
-  cells CI-excluding-zero).
+  cells CI-excluding-zero). On the live mic loopback (EMOTION100_011 /
+  _066), cues now reach `status SILENT` delivery instead of being cancelled;
+  EMOTION100_072 vets out at the local decision model (no tagged operations
+  in the utterance; 0 interventions, as designed).
 
 ### Added
 - Per-session repetition fatigue in `RuleDecisionModel` (`fatigue_penalty`,
