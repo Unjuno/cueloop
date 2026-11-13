@@ -10,7 +10,12 @@ Answers, without any live microphone:
 * Selection axis — when the production missing-operation machinery
   (`PolicyObservation.ranked_missing_operations`, used by the rule decision)
   picks the operation to insert at a boundary, does the human continuation
-  actually carry it?  (`sel_hit_*` fields)
+  actually carry it?  (`sel_hit_*` fields). Three selectors are compared:
+  the context-fit ranking (production default, `sel_*_ranked`), a
+  deterministic adjacency chain that extends the speaker's last move via
+  CONTEXT_LINKS (`sel_*_extendfirst`), and context-blind PRIORITY
+  (`sel_*_priority`), plus an oracle that credits any op inside the
+  missing set (`sel_oracle`).
 
 This is the *insertion-appropriateness* axis: it does not measure whether a
 live cue changes a speaker's real-time reasoning (that needs paired live
@@ -40,9 +45,42 @@ sys.path.insert(0, str(ROOT / "src"))
 from cueloop.sync.policy_model import PolicyObservation
 from cueloop.sync.predictors import NgramPredictor
 from cueloop.sync.synchronizer import longest_common_prefix
-from cueloop.sync.vocabulary import tag_operations
+from cueloop.sync.vocabulary import CONTEXT_LINKS, TOKEN_OPERATIONS, tag_operations
 
 CLAUSE_LIMIT = 3  # rolling window of prior clauses used for `recent_operations`
+
+
+def last_tagged_op(text: str) -> str | None:
+    """The operation whose token occurs latest in `text` (the live move)."""
+    best_pos, best_op = -1, None
+    for token, operation in TOKEN_OPERATIONS:
+        pos = text.rfind(token)
+        if pos >= 0 and pos >= best_pos:
+            best_pos, best_op = pos, operation
+    return best_op
+
+
+def extend_first_pick(
+    clause_text: str, recent_clauses: deque[str], missing: tuple[str, ...]
+) -> str:
+    """Adjacency-chain selection: extend the speaker's last move if possible.
+
+    Alternative to the score-based ranking: take the most recent tagged
+    operation in the clause (falling back to recent clauses), then pick its
+    first CONTEXT_LINKS neighbour that is still missing; otherwise fall back
+    to PRIORITY. No weights, no learned scores.
+    """
+    anchor = last_tagged_op(clause_text)
+    if anchor is None:
+        for prior in reversed(tuple(recent_clauses)):
+            anchor = last_tagged_op(prior)
+            if anchor:
+                break
+    if anchor:
+        for link in CONTEXT_LINKS.get(anchor, ()):  # ordered by strength
+            if link in missing:
+                return link
+    return missing[0]
 
 
 def truth_ops_next_clause(
@@ -106,6 +144,7 @@ def main() -> int:
         sel_truth_present = 0
         sel_hit_ranked = 0
         sel_hit_priority = 0
+        sel_hit_extendfirst = 0
         sel_oracle = 0
         sel_missing_total = 0
 
@@ -187,12 +226,17 @@ def main() -> int:
                     sel_boundaries += 1
                     sel_missing_total += len(missing)
                     ranked = obs.ranked_missing_operations()
+                    extend_pick = extend_first_pick(
+                        clause_text, recent_clauses, missing
+                    )
                     if next_clause_ops:
                         sel_truth_present += 1
                         if ranked[0] in next_clause_ops:
                             sel_hit_ranked += 1
                         if missing[0] in next_clause_ops:
                             sel_hit_priority += 1
+                        if extend_pick in next_clause_ops:
+                            sel_hit_extendfirst += 1
                         if any(op in next_clause_ops for op in missing):
                             sel_oracle += 1
 
@@ -226,8 +270,10 @@ def main() -> int:
             "sel_truth_present": sel_truth_present,
             "sel_hit_ranked": sel_hit_ranked,
             "sel_hit_priority": sel_hit_priority,
+            "sel_hit_extendfirst": sel_hit_extendfirst,
             "sel_hit_rate_ranked": sel_hit_ranked / sel_denom,
             "sel_hit_rate_priority": sel_hit_priority / sel_denom,
+            "sel_hit_rate_extendfirst": sel_hit_extendfirst / sel_denom,
             "sel_oracle": sel_oracle,
             "sel_oracle_rate": sel_oracle / sel_denom,
         }
@@ -237,6 +283,7 @@ def main() -> int:
             f"pred_hit@truth_op={stats['op_hit_rate_given_truth_op']} "
             f"sel_truth_next={sel_truth_present} "
             f"sel_rate_ranked={stats['sel_hit_rate_ranked']:.3f} "
+            f"sel_rate_extend={stats['sel_hit_rate_extendfirst']:.3f} "
             f"sel_rate_priority={stats['sel_hit_rate_priority']:.3f} "
             f"sel_oracle={stats['sel_oracle_rate']:.3f} "
             f"avg_missing={stats['sel_avg_missing']:.2f}"

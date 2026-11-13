@@ -12,8 +12,9 @@
   op actually present in the human's next clause. On lux / reazon-200 /
   podcast-replay / jsut-replay: context-fit ranking picks the human's next
   op 12.5%–24.1% of the time; PRIORITY (context-blind) picks it 0.000
-  everywhere; an oracle inside the missing set covers it 66.7–100%. H1/H2
-  remains untested — issue #6 stays open; insertion ≠ uptake.
+  everywhere; a deterministic adjacency-chain selector picks it 0–7.7%; an
+  oracle inside the missing set covers it 66.7–100%. H1/H2 remains
+  untested — issue #6 stays open; insertion ≠ uptake.
 - Real-speech replay across 8 Japanese corpora (see docs/real-speech.md) —
   each replayed on real audio end-to-end with local-LLM and rule backends;
   the 8th (`bandad/asr-testset-kw-ja-v1`) shows the highest op-tag density
