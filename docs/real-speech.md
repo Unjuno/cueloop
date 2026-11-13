@@ -533,14 +533,26 @@ are committed and pushed.
   `。、，．！？!?`, truth window 40 chars):
 
   ```text
-  podcast-replay  boundaries=549 sel_truth_next=29 ranking 24.1%  extend-first  3.4%  PRIORITY  0.0%  oracle  93.1%
-  lux             boundaries=215 sel_truth_next= 8 ranking 12.5%  extend-first  0.0%  PRIORITY  0.0%  oracle 100.0%
-  reazon-200      boundaries=273 sel_truth_next=13 ranking 23.1%  extend-first  7.7%  PRIORITY  0.0%  oracle  76.9%
-  jsut-replay     boundaries=429 sel_truth_next= 6 ranking  0.0%  extend-first  0.0%  PRIORITY  0.0%  oracle  66.7%
-  bandad-kw       boundaries=2695 sel_truth_next=106 ranking 18.9% extend-first  5.7%  PRIORITY  1.9%  oracle  78.3%
-  cv8-sample-replay boundaries=87 sel_truth_next=2 ranking  0.0%  extend-first  0.0%  PRIORITY  0.0%  oracle 100.0%
-  cv8-sample      boundaries=2235 sel_truth_next=74 ranking  8.1%  extend-first  6.8%  PRIORITY  9.5%  oracle  77.0%
+  podcast-replay  boundaries=549 sel_truth_next=29 ranking 24.1%  clausegated  3.4%  weightgated  6.9%  PRIORITY  0.0%  oracle  93.1%
+  lux             boundaries=215 sel_truth_next= 8 ranking 12.5%  clausegated  0.0%  weightgated  0.0%  PRIORITY  0.0%  oracle 100.0%
+  reazon-200      boundaries=273 sel_truth_next=13 ranking 23.1%  clausegated  0.0%  weightgated  7.7%  PRIORITY  0.0%  oracle  76.9%
+  jsut-replay     boundaries=429 sel_truth_next= 6 ranking  0.0%  clausegated  0.0%  weightgated  0.0%  PRIORITY  0.0%  oracle  66.7%
+  bandad-kw       boundaries=2695 sel_truth_next=106 ranking 18.9%  clausegated  3.8%  weightgated  4.7%  PRIORITY  1.9%  oracle  78.3%
+  cv8-sample-replay boundaries=87 sel_truth_next=2 ranking  0.0%  clausegated  0.0%  weightgated  0.0%  PRIORITY  0.0%  oracle 100.0%
+  cv8-sample      boundaries=2235 sel_truth_next=74 ranking  8.1%  clausegated  6.8%  weightgated  8.1%  PRIORITY  9.5%  oracle  77.0%
   ```
+
+  Both candidate gates were measured and **rejected**: gating ranking to
+  clause-anchor boundaries (`sel_*_clausegated`) or to signal weight
+  ≥ 2.0 (`sel_*_weightgated`) is strictly worse than production ranking
+  everywhere (3.8% / 4.7% vs 18.9% on kw-ja; 0-7.7% vs 12.5-24.1% on
+  the reasoning corpora; 6.8% / 8.1% vs 8.1% on Common Voice 8.0). On
+  reasoning text most of the signal arrives through predicted-span and
+  recent-clause anchors, not through clause anchors — so the inversion
+  on Common Voice 8.0 stays as a documented fact of one non-reasoning
+  corpus, not enough to outweigh reasoning-corpus gains 17:1. Production
+  selection stays `ranked_missing_operations`; experimental constants
+  were not changed — the gate arms exist only inside the benchmark.
 
   Honest counter-read: on the 4,483-file Common Voice 8.0 ja sample —
   read sentences, essentially zero reasoning structure — context-blind
@@ -563,10 +575,11 @@ are committed and pushed.
 
   i.e. the CONTEXT_LINKS adjacency prior is real signal for reasoning
   discourse and slightly misleading on read prose — not a fallback bug
-  and not a global ordering effect. Any next iteration that "fixes" the
-  inversion must do it inside the anchor cell (e.g. domain-adaptive
-  CONTEXT_LINKS or confidence-gated anchors), not by re-ordering
-  PRIORITY. Interpretation stays domain-dependent; insertion
+  and not a global ordering effect. Two principled ways to gate the
+  ranking by signal strength were implemented and both were strictly
+  worse than production on every corpus — see the gated table above.
+  Production selection stays as-is; further work belongs on the prior
+  itself (domain-adaptive CONTEXT_LINKS), not on gating. Insertion
   appropriateness ≠ uptake (issue #6).
 
   Interpretation: the missing-op candidate set contains the human's next

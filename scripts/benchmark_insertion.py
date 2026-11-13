@@ -14,13 +14,16 @@ Answers, without any live microphone:
   the context-fit ranking (production default, `sel_*_ranked`), a
   deterministic adjacency chain that extends the speaker's last move via
   CONTEXT_LINKS (`sel_*_extendfirst`), and context-blind PRIORITY
-  (`sel_*_priority`), plus an oracle that credits any op inside the
-  missing set (`sel_oracle`). The selection block additionally reports
-  an anchor decomposition (`sel_anchor_*`: boundaries where at least one
-  anchor op — clause/recent/predicted — exists in the prefix, split
-  ranked vs PRIORITY; `sel_noanchor_*`: the remainder, where production
-  already falls back to PRIORITY) so the signal source of each selector
-  is identifiable offline.
+  (`sel_*_priority`), two signal-gated selectors (`sel_*_clausegated`:
+  ranking only when the clause itself carries an op, else PRIORITY;
+  `sel_*_weightgated`: ranking only when the weighted anchor signal in
+  prefix ≥ 2.0, else PRIORITY), and an oracle that credits any op inside
+  the missing set (`sel_oracle`). The selection block additionally
+  reports an anchor decomposition (`sel_anchor_*`: boundaries where at
+  least one anchor op — clause/recent/predicted — exists in the prefix,
+  split ranked vs PRIORITY; `sel_noanchor_*`: the remainder, where
+  production already falls back to PRIORITY) so the signal source of
+  each selector is identifiable offline.
 
 This is the *insertion-appropriateness* axis: it does not measure whether a
 live cue changes a speaker's real-time reasoning (that needs paired live
@@ -165,6 +168,8 @@ def main() -> int:
         sel_anchor_hit_priority = 0
         sel_noanchor_boundaries = 0
         sel_noanchor_hit_ranked = 0
+        sel_hit_clausegated = 0
+        sel_hit_weightgated = 0
 
         for row in rows:
             text = (row.get("transcript") or "").strip()
@@ -257,6 +262,18 @@ def main() -> int:
                             sel_hit_extendfirst += 1
                         if any(op in next_clause_ops for op in missing):
                             sel_oracle += 1
+                        # gated selectors: signal-strength fallback to PRIORITY
+                        anchor_weight = (
+                            1.5 * len(clause_ops)
+                            + 1.0 * len(recent_ops)
+                            + 1.0 * len(pred_ops_frozen)
+                        )
+                        clausegated = ranked[0] if clause_ops else missing[0]
+                        weightgated = ranked[0] if anchor_weight >= 2.0 else missing[0]
+                        if clausegated in next_clause_ops:
+                            sel_hit_clausegated += 1
+                        if weightgated in next_clause_ops:
+                            sel_hit_weightgated += 1
                         has_anchor = bool(clause_ops or recent_ops or pred_ops_frozen)
                         if has_anchor:
                             sel_anchor_boundaries += 1
@@ -303,6 +320,10 @@ def main() -> int:
             "sel_hit_rate_ranked": sel_hit_ranked / sel_denom,
             "sel_hit_rate_priority": sel_hit_priority / sel_denom,
             "sel_hit_rate_extendfirst": sel_hit_extendfirst / sel_denom,
+            "sel_hit_clausegated": sel_hit_clausegated,
+            "sel_hit_weightgated": sel_hit_weightgated,
+            "sel_hit_rate_clausegated": sel_hit_clausegated / sel_denom,
+            "sel_hit_rate_weightgated": sel_hit_weightgated / sel_denom,
             "sel_anchor_boundaries": sel_anchor_boundaries,
             "sel_noanchor_boundaries": sel_noanchor_boundaries,
             "sel_anchor_hit_rate_ranked": (
@@ -331,6 +352,8 @@ def main() -> int:
             f"pred_hit@truth_op={stats['op_hit_rate_given_truth_op']} "
             f"sel_truth_next={sel_truth_present} "
             f"sel_rate_ranked={stats['sel_hit_rate_ranked']:.3f} "
+            f"sel_rate_clausegated={stats['sel_hit_rate_clausegated']:.3f} "
+            f"sel_rate_weightgated={stats['sel_hit_rate_weightgated']:.3f} "
             f"sel_rate_extend={stats['sel_hit_rate_extendfirst']:.3f} "
             f"sel_rate_priority={stats['sel_hit_rate_priority']:.3f} "
             f"sel_oracle={stats['sel_oracle_rate']:.3f} "

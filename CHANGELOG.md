@@ -32,6 +32,15 @@
   the missing set covers it 66.7–100%. H1/H2 remains
   untested — issue #6 stays open; insertion ≠ uptake.
   (Added 2026-11-13: bandad-kw arm, 2,695 boundaries; context-fit 18.9%.)
+- **Insertion benchmark — anchor decomposition & gate rejection**:
+  selection axis split into anchor/no-anchor cells; CV8's inversion was
+  localized inside the anchor cell (ranked 10.3% vs PRIORITY 12.1%,
+  n=58). Two signal-gated selectors (`sel_*_clausegated`: ranking only
+  with clause ops; `sel_*_weightgated`: ranking only with anchor weight
+  ≥ 2.0) measured on all 7 corpora are **both strictly worse than
+  production ranking everywhere** (e.g. kw-ja 3.8% / 4.7% vs 18.9%;
+  podcast 3.4% / 6.9% vs 24.1%; reazon 0.0% / 7.7% vs 23.1%). Production
+  constants unchanged; gate arms exist only in the benchmark.
 - **JSUT local-LLM arm (100 files, paired)**: `gemma3:4b-it-qat` predictor
   + local decision. CUE delivered 136/136 interventions (dependency 58,
   boundary 41, ground 26, comparison 10, mechanism 1; 1.36/file; 0 cancelled
