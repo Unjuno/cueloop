@@ -16,6 +16,12 @@
   the missing set covers it 66.7–100%. H1/H2 remains
   untested — issue #6 stays open; insertion ≠ uptake.
   (Added 2026-11-13: bandad-kw arm, 2,695 boundaries; context-fit 18.9%.)
+- **JSUT local-LLM arm (100 files, paired)**: `gemma3:4b-it-qat` predictor
+  + local decision. CUE delivered 136/136 interventions (dependency 58,
+  boundary 41, ground 26, comparison 10, mechanism 1; 1.36/file; 0 cancelled
+  /expired); SILENCE arm HELD all 139 by design. Paired n=100: every delta
+  +0.000 CI [+0.000, +0.000]. Zero uptake — the canned-audio asymptote on
+  the local-LLM path.
 - Real-speech replay across 8 Japanese corpora (see docs/real-speech.md) —
   each replayed on real audio end-to-end with local-LLM and rule backends;
   the 8th (`bandad/asr-testset-kw-ja-v1`) shows the highest op-tag density

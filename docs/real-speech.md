@@ -996,6 +996,38 @@ Whisper characterization needs `mlx-whisper` installed; the pip experience on
 PyPI for MLX is slow (~20 minutes per wheel). The Lux corpus is deliberately
 git-ignored — don't commit the WAVs.
 
+## local-LLM backend on JSUT-basic5000 (full 100-file double arm)
+
+After the rule arm on all 500 JSUT files, the local-LLM arm was rerun
+end-to-end on 100 clips with `gemma3:4b-it-qat` for BOTH the predictor
+and the rule-fallback decision (`--predictor local --decision local`).
+Paired, n_pairs=100:
+
+```text
+llm | CUE      sessions=100  interventions=136 (1.36/file)
+llm | SILENCE  sessions=100  interventions=139  delivered=0 (all HELD)
+per-op delivered (CUE):
+                     dependency 58
+                     boundary   41
+                     ground     26
+                     comparison 10
+                     mechanism   1
+cancelled / expired   0 / 0
+paired (CUE-SILENCE): uptake_rate     +0.000 CI [+0.000, +0.000] n=100
+                      carryover_rate  +0.000 CI [+0.000, +0.000] n=100
+                      novel uptake    +0.000 CI [+0.000, +0.000] n=100
+                      growth          +0.000 CI [+0.000, +0.000] n=100
+                      median latency  +0.000 (n=83; cue reports 0ms
+                                       synchronous delivery)
+```
+
+Reading: the local-LLM backend also fires cues densely on JSUT read
+prose (136/100 files), holds every one of them in the SILENCE arm, and
+painstakingly delivers them in CUE — and still delivers exactly zero
+uptake. This is the expected canned-audio asymptote, now confirmed on
+the local-LLM path with the first fully-bounded paired CI at n=100 on
+a non-rule decision arm. H1/H2 remain open — issue #6.
+
 ## Next steps
 
 1. Accept Xcode license on the developer laptop and run the macOS on-device
