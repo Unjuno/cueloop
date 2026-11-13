@@ -117,22 +117,28 @@ The signal we can draw here is narrower than it first appears:
   has been driven against clean recordings of Lux files played back from a
   speaker, post-fix, with `--no-async-prediction --decision local
   --predictor local --silent` (local LLM predictions, bare cues, interventions
-  held for suppression-consistent measurement):
-  - `EMOTION100_011.wav`: 5 predictions, 1 intervention (`何と比べる？`
-    op=comparison, latency 1199 ms), **status SILENT at 4808 ms — delivered**.
-    (pre-fix: the equivalent intervention was cancelled outright)
-  - `EMOTION100_066.wav`: 1 prediction (cue `根拠は？`, op=ground,
-    latency 181 ms), **status SILENT at 4498 ms — delivered** (boundary
-    trigger `だから` detected at 4327 ms; `EMOTION100_066.wav` audio is the
-    one that had been failing to cancel pre-fix)
-  - `EMOTION100_072.wav`: 8 predictions, 0 interventions (local decision
-    model vetted every boundary — no tagged operations in the utterance);
-    no delivery.
+  held for suppression-consistent measurement). Live loopback deliveries
+  (SILENT arm = `--silent`; all detections vs. built-in speaker output):
 
-  All three held silent (`--silent`), so these are mechanism-completions,
-  not effect measurement; uptake on canned audio is structurally zero. CUE
-  (unscripted human response) uptake is still impossible on recorded speech,
-  so this is a pipeline proof, not an effect result.
+  | file | ASR headline | predictions | interventions | delivered | note |
+  | --- | --- | --- | --- | --- | --- |
+  | EMOTION100_011 | `イタリア旅行で彼は…` | 4 | 1 | 1 (何と比べる？, comparison) | delivery 4808 ms (+677 ms); pre-fix build cancelled |
+  | EMOTION100_054 | (none — clip too quiet for the on-device recognizer at -50 dB) | 0 | 0 | 0 | repertoire grew boundary/invert without cue |
+  | EMOTION100_066 | `時間はあるんだから…` | 1 | 1 | 1 (根拠は？, ground) | boundary trigger `だから`, delivery 4498 ms (+184 ms) |
+  | EMOTION100_072 | `1つには…` | 8 | 0 | 0 | decision model vetoed every boundary (no tagged operations present) |
+  | RECITATION324_001 | `女の子が…` | 1 | 1 | 1 (根拠は？, ground) | delivery 4107 ms (+483 ms) |
+  | RECITATION324_004 | `愛知共和国でトゥーサンルーベルトゥールが…` | 1 | 1 | 1 (根拠は？, ground) | delivery 7220 ms (+456 ms); ASR mis-transcribes but boundary/delivery fires |
+
+  No external headphones are connected on this machine (`system_profiler
+  SPAudioDataType` reports only MacBook Pro Microphone + MacBook Pro
+  Speakers) — these loopback runs are raw speaker→mic with algorithmic
+  suppression only, and `--silent` holds cues so no acoustic effect can
+  leak in via the speaker.
+
+  So the local-LLM decision path now delivers cues on real mic audio end
+  to end across 4 of 6 files — still canned audio with held-silent
+  arms (uptake always 0). CUE (unscripted human response) is untestable
+  without a live speaker. This is a pipeline proof, not an effect result.
 - **A Japanese-software-reasoning speech corpus**: none publicly available
   short of paying for it. The synthetic CUELOOP corpus in
   `experiments/`/`docs/benchmark.md` is the closest substitute.
