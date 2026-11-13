@@ -106,7 +106,12 @@ def session_metrics(report: dict[str, object]) -> dict[str, object]:
 def load_sessions(paths: list[Path]) -> list[tuple[str, dict[str, object]]]:
     sessions: list[tuple[str, dict[str, object]]] = []
     for path in paths:
-        candidates = sorted(path.glob("*.json")) if path.is_dir() else [path]
+        if path.is_dir():
+            # flat layout (reports/*.json) and two-level arm layout
+            # (reports/{cue,silence}/*.json), matching the simulator output.
+            candidates = sorted(path.glob("*.json")) + sorted(path.glob("*/*.json"))
+        else:
+            candidates = [path]
         for candidate in candidates:
             try:
                 payload = json.loads(candidate.read_text(encoding="utf-8"))

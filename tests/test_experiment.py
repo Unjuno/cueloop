@@ -278,6 +278,34 @@ class ExperimentAnalysisTests(unittest.TestCase):
                     json.dumps(payload), encoding="utf-8"
                 )
 
+    def _write_pair_subdirs(self, reports: Path, count: int) -> None:
+        for index in range(count):
+            for condition, target in (("CUE", True), ("SILENCE", False)):
+                sub = reports / condition.lower()
+                sub.mkdir(parents=True, exist_ok=True)
+                payload = _session_report(
+                    condition,
+                    f"subdir-seed{index}-fixture",
+                    f"{condition}-{index}",
+                    target=target,
+                )
+                (sub / f"{condition}-{index}.json").write_text(
+                    json.dumps(payload), encoding="utf-8"
+                )
+
+    def test_analysis_pairs_two_level_arm_layout(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            reports = root / "reports"
+            reports.mkdir()
+            self._write_pair_subdirs(reports, 2)
+            self._run(reports, root / "out.json", root / "out.md")
+            payload = json.loads((root / "out.json").read_text(encoding="utf-8"))
+            self.assertEqual(payload["comparisons"]["rule"]["n_pairs"], 2)
+            self.assertEqual(
+                payload["comparisons"]["rule"]["metrics"]["uptake_rate"]["n_pairs"], 2
+            )
+
     def test_analysis_is_deterministic_and_paired(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

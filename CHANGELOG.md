@@ -3,6 +3,11 @@
 ## Unreleased
 
 ### Added
+- **Analyzer reads simulator output directly**: `scripts/analyze_experiment.py`
+  now discovers report JSONs one directory level deep, so
+  `analyze_experiment.py artifacts/<arm>` works on `<arm>/cue/*.json` +
+  `<arm>/silence/*.json` without manual flattening. Regression test covers
+  the two-level arm layout (140 tests total).
 - **Offline insertion benchmark** (`scripts/benchmark_insertion.py`): measures
   insertion appropriateness of the production path on real Japanese
   transcripts without any live microphone. Two axes per clause boundary:
