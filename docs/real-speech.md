@@ -577,10 +577,11 @@ genuinely spontaneous reasoning audio. Tagged-operation coverage (4.5% of
 utterances) is small but non-zero; that's the same as the Lux and Reazon
 arms — no working corpus has dense announcements.
 
-A local-LLM replay of this corpus is running — results land in
-`artifacts/dialog-llm/` and will be folded in when complete. The replay
-script is `scripts/simulate_dialog_replay.py`. Corpus is
-git-ignored (`data/real-speech/`).
+A local-LLM replay is NOT included here: the corpus is too deeply
+branched for the LLM-arm in reasonable wall-clock bounds — every one of
+its ~300–400 boundary predictions per file is an LLM call (~1–2 s each),
+so one full arm is ~1–2 hours. The constraint is documented in the
+reproduction block; run `--limit 3` if you want a bounded comparison.
 
 ## How to reproduce these numbers
 
