@@ -28,8 +28,9 @@ CUELOOP は、話し手が話している**最中に**、話し手が次に言�
 | ライセンス | MIT |
 
 即時の uptake はメカニズムの確認にすぎず、持続的改善の証拠ではありません。
-人間のデータに基づく主張はまだ何もありません。日本語実話コーパス2件（Lux: 朗読・CC-BY-4.0、
-ReazonSpeech: YouTube由来の日本語談話・CDLA-Sharing-1.0）に対する較正と、
+人間のデータに基づく主張はまだ何もありません。日本語実話コーパス3件（Lux: 朗読・CC-BY-4.0、
+ReazonSpeech: YouTube由来の日本語談話・CDLA-Sharing-1.0、
+MagicData: 日本語自発的対話・カードタグ apache-2.0）に対する較正と、
 実ランタイムによるペア CUE/SILENCE リプレイの結果は `docs/real-speech.md` を参照。
 
 ## ステムcue（既定）とベアcue
@@ -422,6 +423,7 @@ scripts/run_experiment.py ライブ／リプレイのポリシー比較セッシ
 scripts/synthesize_logs.py ポリシー学習を大規模化する合成セッションログ
 scripts/analyze_power.py ペア CUE/SILENCE 設計の検出力解析（サンプルサイズ計画）
 scripts/simulate_sessions.py エンドツーエンド・ランタイム・シミュレーション（合成日本語話者のペア CUE/SILENCE）
+scripts/simulate_dialog_replay.py 実話自発対話 replay（MagicData: 2人スマートフォン対話 20ファイル、ペアレポートを出力）
 scripts/simulate_lux_replay.py 実話音声 replay（Lux corpus 328ファイル、ペアレポートを出力）
 scripts/run_synthetic_benchmark.sh 較正ベンチマークの再生成（docs/benchmark.md）
 scripts/train_policy.py 線形ポリシーのオフライン学習＋ホールドアウト指標

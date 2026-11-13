@@ -530,10 +530,11 @@ PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 \
 
 # full corpus replay, local-LLM backend (may take ~10-30 min per arm; needs Ollama + gemma3)
 PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 \
-  scripts/simulate_dialog_replay.py --output-dir artifacts/dialog-llm \
-  --predictor local --decision local --local-model gemma3:4b-it-qat --source-name dialog-llm
-.venv/bin/python scripts/analyze_experiment.py artifacts/dialog-llm/cue \
-  artifacts/dialog-llm/silence --markdown artifacts/dialog-llm-analysis.md
+  scripts/simulate_dialog_replay.py --output-dir artifacts/dialog-llm-1 \
+  --predictor local --decision local --local-model gemma3:4b-it-qat --source-name dialog-llm \
+  --limit 1
+.venv/bin/python scripts/analyze_experiment.py artifacts/dialog-llm-1/cue \
+  artifacts/dialog-llm-1/silence --markdown artifacts/dialog-llm-1-analysis.md
 
 # corpus acquisition (audio not in git):
 #   huggingface.co/datasets/MagicDataTech/Japanese_Spontaneous_Conversation_Training_Dataset
@@ -577,11 +578,26 @@ genuinely spontaneous reasoning audio. Tagged-operation coverage (4.5% of
 utterances) is small but non-zero; that's the same as the Lux and Reazon
 arms — no working corpus has dense announcements.
 
-A local-LLM replay is NOT included here: the corpus is too deeply
-branched for the LLM-arm in reasonable wall-clock bounds — every one of
-its ~300–400 boundary predictions per file is an LLM call (~1–2 s each),
-so one full arm is ~1–2 hours. The constraint is documented in the
-reproduction block; run `--limit 3` if you want a bounded comparison.
+A local-LLM arm on this corpus is possible but expensive — each of the
+~400 utterances in a file is its own local-LLM call. We ran a single-file
+smoke test to demonstrate the local-LLM end-to-end path on real conversational
+Japanese (not just a simulator):
+
+```text
+file                    A0022_S0003_0_G0029 (two-person smartphone conv)
+predictions              394
+interventions            387
+delivered                387  (boundary → delivery complete, canned audio)
+operations delivered      ground 135, dependency 88, comparison 83,
+                          boundary 71, mechanism 9, conclusion 1
+analyzer (n_pairs=1)     uptake delta −0.003 (insufficient CI);
+                         carryover delta +0.010 (insufficient CI)
+```
+
+Its practical value is proving the live local-LLM path composes on real
+conversation — not any effect measurement. A full arm is available via
+`scripts/simulate_dialog_replay.py --predictor local --decision local` at
+the same cost per utterance.
 
 ## How to reproduce these numbers
 
