@@ -233,6 +233,30 @@ corpus. Uptake is +0.000 (canned). The corpus proves the pipeline works
 end-to-end on a completely unrelated voice/borrowed accent set, not any
 human-transfer.
 
+## JSUT-basic5000 (fifth corpus arm; read prose, single female)
+
+`FluidInference/JSUT-basic5000` — 500 utterances of read Japanese (text
+CC-BY-SA 3.0 / CC-BY-SA 4.0 / CC-BY 2.0 depending on source sentence;
+audio: non-redistribution, research use permitted). Single female
+Japanese voice reading newspaper-length sentences — pure read prose with
+zero operation vocabulary overlap. Replay with the rule backend:
+
+```text
+files                    500 (CUE + SILENCE paired)
+predictions              629
+interventions delivered  477 (378 files with >=1 delivery)
+operations delivered     concretize 376, dependency 58, mechanism 20,
+                            invert 13, conclusion 9, ground 1
+paired delta             +0.000 CI [+0.000, +0.000] every metric
+n_pairs                  500
+median delay ms          0 / n_pairs=378
+repertoire_growth        0.01 both arms
+```
+
+Same story: read-speech Japan of the highest signal-to-noise ratio and
+the largest N (500 pairs) produces high firing but zero uptake — exactly
+as if the corpus were synthetic, because it's in fact canned read text.
+
 ## What was added to CUELOOP from this evaluation
 
 - `scripts/bench_predictors.py` — one-command local-LLM next-span
@@ -560,10 +584,18 @@ PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 \
 .venv/bin/python scripts/analyze_experiment.py artifacts/dialog-llm-1/cue \
   artifacts/dialog-llm-1/silence --markdown artifacts/dialog-llm-1-analysis.md
 
+# JSUT-basic5000, rule backend
+PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 \
+  scripts/simulate_lux_replay.py --corpus data/real-speech/jsut-replay/metadata.csv \
+  --source-name jsut-basic5000 --output-dir artifacts/jsut-replay \
+  --predictor ngram --decision rule
+.venv/bin/python scripts/analyze_experiment.py artifacts/jsut-replay/cue \
+  artifacts/jsut-replay/silence --markdown artifacts/jsut-replay-analysis.md
+
 # corpus acquisition (audio not in git):
 #   huggingface.co/datasets/MagicDataTech/Japanese_Spontaneous_Conversation_Training_Dataset
 #   common voice 8.0 Japanese mirror (ja_asr.common_voice_8_0), CC0
-#   huggingface.co/datasets/FluidInference/JSUT-basic5000 (read prose, JSUT licence)
+#   huggingface.co/datasets/FluidInference/JSUT-basic5000 (audio no redistribution; research use free)
 
 # common voice 8.0 Japanese (120-file sample), rule backend
 PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 \
