@@ -454,6 +454,32 @@ measured here or anywhere in this repo — the canned-audio asymptote.
 The arm matters because it is the largest local-LLM case with a paired
 15-session CI and it does so with a non-rule decision path.
 
+## local-LLM backend on bandad kw-ja-40 (fork of the op-densest corpus)
+
+The only real-speech corpus with >20% op-marker density in next clauses:
+40 clips replayed with `gemma3:4b-it-qat` predictor AND local decision,
+paired CUE/SILENCE:
+
+```text
+llm | CUE      sessions=40  interventions=117  delivered=117  0 cancelled/expired
+llm | SILENCE  sessions=40  interventions=115  held=115 (0 delivered)
+per-op delivered (CUE):  dependency 41, boundary 35, ground 22,
+                         comparison 15, mechanism 3, conclusion 1
+repertoire_growth        0.17 both arms
+paired (CUE-SILENCE):    uptake_rate        +0.000 CI [+0.000, +0.000] n=40
+                         carryover_rate     +0.000 CI [+0.000, +0.000] n=40
+                         novel_uptake_rate  +0.000 CI [+0.000, +0.000] n=40
+                         repertoire_growth  +0.000 CI [+0.000, +0.000] n=40
+                         median latency     +0.000 (n_pairs=25; synchronous)
+```
+
+This is the highest-density op corpus we have — every clip contains
+reasoning markers — and the local-LLM path still delivers zero uptake.
+Combined with JSUT (n=100) and podcast (n=15) local-LLM paired arms,
+the evidence on canned audio stands at n=155 across three corpora/backends:
+every paired CI [+0.000, +0.000]. Therefore: the only remaining
+unmeasured variable is the human speaker's online reaction to a cue.
+
 ## Live paired session (user spoke Japanese reasoning aloud)
 
 Two paired live runs on 2026-11-13 (macOS built-in mic, locale ja-JP,

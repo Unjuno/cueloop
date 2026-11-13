@@ -39,6 +39,12 @@
   mechanism 6, conclusion 2); SILENCE HELD 439/439. Paired n=15: uptake
   −0.002 [−0.006, +0.000] (canned-token coincidence, CI upper-bound zero),
   all other deltas +0.000. No effect measured.
+- **bandad kw-ja local-LLM arm (40 clips, paired)**: CUE delivered
+  117/117 (dependency 41, boundary 35, ground 22, comparison 15,
+  mechanism 3, conclusion 1); SILENCE HELD 115/115. Paired n=40: all
+  deltas +0.000 CI [+0.000, +0.000]. With JSUT (n=100) and podcast
+  (n=15), the canned-audio asymptote on the local-LLM path now stands at
+  **n=155 paired sessions across three corpora — every CI zero**.
 - Real-speech replay across 8 Japanese corpora (see docs/real-speech.md) —
   each replayed on real audio end-to-end with local-LLM and rule backends;
   the 8th (`bandad/asr-testset-kw-ja-v1`) shows the highest op-tag density
