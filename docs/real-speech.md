@@ -257,6 +257,30 @@ Same story: read-speech Japan of the highest signal-to-noise ratio and
 the largest N (500 pairs) produces high firing but zero uptake — exactly
 as if the corpus were synthetic, because it's in fact canned read text.
 
+## Common Voice 17.0 Japanese (sixth corpus arm)
+
+`kotoba-speech/common_voice_17_0` — a newer Japanese mirror of Common
+Voice 17 with cleaner transcriptions and sentence-level segments. Our
+example: 150-file sample replayed under the rule backend; 4 files had no
+usable ASR output (probably near-silent) and were counted as `none`, the
+rest paired by `pair_key`.
+
+```text
+files                    150 (CUE + SILENCE paired)
+predictions              149 (4 files with no usable transcript — counted separately)
+interventions            69
+delivered                69 (45 files with >=1 delivery)
+operations delivered     concretize 47, dependency 13, conclusion 5,
+                            mechanism 2, ground 2
+paired delta             +0.000 CI [+0.000, +0.000] (every metric, on the 146 paired rule arm)
+n_pairs                  146
+median delay ms          0
+```
+
+Same verdict: canned audio signaled over the entire test set. This arm
+adds yet another voices corpus; across all six Japanese corpora the same
+result surfaces, which rules out an unlucky single-corpus artifact.
+
 ## What was added to CUELOOP from this evaluation
 
 - `scripts/bench_predictors.py` — one-command local-LLM next-span
@@ -595,7 +619,16 @@ PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 \
 # corpus acquisition (audio not in git):
 #   huggingface.co/datasets/MagicDataTech/Japanese_Spontaneous_Conversation_Training_Dataset
 #   common voice 8.0 Japanese mirror (ja_asr.common_voice_8_0), CC0
+#   kotoba-speech/common_voice_17_0 (mirror of the CC0 Common Voice 17 ja test set)
 #   huggingface.co/datasets/FluidInference/JSUT-basic5000 (audio no redistribution; research use free)
+
+# common voice 17.0 Japanese (150-file sample), rule backend
+PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 \
+  scripts/simulate_lux_replay.py --corpus data/real-speech/cv17-ja/cleaned-metadata.csv \
+  --source-name commonvoice17-ja --output-dir artifacts/cv17-replay \
+  --predictor ngram --decision rule
+.venv/bin/python scripts/analyze_experiment.py artifacts/cv17-replay/cue \
+  artifacts/cv17-replay/silence --markdown artifacts/cv17-replay-analysis.md
 
 # common voice 8.0 Japanese (120-file sample), rule backend
 PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 \

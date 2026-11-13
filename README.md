@@ -36,7 +36,8 @@ improvement. No claim here is supported by human data yet. See
 corpora: Lux (read prose, CC-BY-4.0), ReazonSpeech (YouTube-derived
 discourse Japanese, CDLA-Sharing-1.0), MagicData (spontaneous 2-speaker
 smartphone dialogue, HF tag Apache-2.0), JSUT-basic5000 (read prose,
-NIICT/JSUT licence), and Common Voice 8.0 Japanese (4,483 CC0 clips) — paired CUE/SILENCE
+NIICT/JSUT licence), Common Voice 8.0 Japanese (4,483 CC0 clips), and
+Common Voice 17.0 Japanese (kotoba mirror, CC0) — paired CUE/SILENCE
 replays through the real runtime.
 
 ## Stem cues (default) and bare cues
