@@ -482,19 +482,22 @@ are committed and pushed.
   lux             boundaries=215 sel_truth_next= 8 ranking 12.5%  extend-first  0.0%  PRIORITY 0.0%  oracle 100.0%
   reazon-200      boundaries=273 sel_truth_next=13 ranking 23.1%  extend-first  7.7%  PRIORITY 0.0%  oracle 76.9%
   jsut-replay     boundaries=429 sel_truth_next= 6 ranking  0.0%  extend-first  0.0%  PRIORITY 0.0%  oracle 66.7%
+  bandad-kw       boundaries=2695 sel_truth_next=106 ranking 18.9% extend-first  5.7%  PRIORITY 1.9%  oracle 78.3%
   ```
 
   Interpretation: the missing-op candidate set contains the human's next
   move 67-100% of the time — the mechanism *can* select a relevant
-  operation — but context-fit scoring only lands it 12-24% of the time.
+  operation — but context-fit scoring only lands it 0-24% of the time.
   The deterministic adjacency chain (extend the last move through
   CONTEXT_LINKS) lands it 0-7.7%, and the context-blind PRIORITY order
-  lands it 0.000 everywhere: the weighting in
-  `PolicyObservation.ranked_missing_operations` is carrying real signal,
-  not ordering luck. Op-token density is low across these corpora (only
-  1.6-13.8% of next clauses carry any marker), so these absolute numbers
-  are floors, not ceilings. Insertion appropriateness ≠ uptake: H1/H2
-  still requires paired live sessions (issue #6).
+  lands it 0-1.9%: the weighting in
+  `PolicyObservation.ranked_missing_operations` beats both baselines on
+  every corpus where any next-clause op was tagged, confirming the
+  scoring carries the signal rather than ordering luck. Op-token density
+  is low across these corpora (only 1.6-13.8% of next clauses carry any
+  marker), so these absolute numbers are floors, not ceilings. Insertion
+  appropriateness ≠ uptake: H1/H2 still requires paired live sessions
+  (issue #6).
 - `scripts/bench_predictors.py` — one-command local-LLM next-span
   benchmark on any compatible corpus; covers exact-prefix rate, average
   longest-common-prefix, operation-tag hit rate, and parse failures
