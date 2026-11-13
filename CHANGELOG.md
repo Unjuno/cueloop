@@ -3,6 +3,17 @@
 ## Unreleased
 
 ### Added
+- **Offline insertion benchmark** (`scripts/benchmark_insertion.py`): measures
+  insertion appropriateness of the production path on real Japanese
+  transcripts without any live microphone. Two axes per clause boundary:
+  (a) prediction axis — ngram(3) span op tags vs the human's next-op;
+  (b) selection axis — the production missing-op ranking
+  (`PolicyObservation.ranked_missing_operations`, the rule decision) vs the
+  op actually present in the human's next clause. On lux / reazon-200 /
+  podcast-replay / jsut-replay: context-fit ranking picks the human's next
+  op 12.5%–24.1% of the time; PRIORITY (context-blind) picks it 0.000
+  everywhere; an oracle inside the missing set covers it 66.7–100%. H1/H2
+  remains untested — issue #6 stays open; insertion ≠ uptake.
 - Real-speech replay across 8 Japanese corpora (see docs/real-speech.md) —
   each replayed on real audio end-to-end with local-LLM and rule backends;
   the 8th (`bandad/asr-testset-kw-ja-v1`) shows the highest op-tag density

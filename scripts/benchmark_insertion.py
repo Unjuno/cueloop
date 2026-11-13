@@ -1,0 +1,255 @@
+#!/usr/bin/env python3
+"""Offline insertion benchmark on human Japanese reasoning transcripts.
+
+Answers, without any live microphone:
+
+* Prediction axis — when CUELOOP's production predictor (ngram(3), the
+  default path) predicts a next span at a clause boundary in real Japanese
+  text, do the operation tags in that span match the operation the human
+  uses next?  (`op_hit_*` fields)
+* Selection axis — when the production missing-operation machinery
+  (`PolicyObservation.ranked_missing_operations`, used by the rule decision)
+  picks the operation to insert at a boundary, does the human continuation
+  actually carry it?  (`sel_hit_*` fields)
+
+This is the *insertion-appropriateness* axis: it does not measure whether a
+live cue changes a speaker's real-time reasoning (that needs paired live
+sessions, see docs/self-experiment.md); it measures whether insertion alone,
+in isolation from feedback, lands where humans actually go next — offline,
+deterministically, on closed data.
+
+Usage:
+  scripts/benchmark_insertion.py \\
+      --corpus data/real-speech/lux/metadata.csv \\
+      --corpus data/real-speech/reazon/metadata-sample-200.csv \\
+      --json artifacts/insertion-benchmark.json
+"""
+
+from __future__ import annotations
+
+import argparse
+import csv
+import json
+import sys
+from collections import Counter, deque
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+
+from cueloop.sync.policy_model import PolicyObservation
+from cueloop.sync.predictors import NgramPredictor
+from cueloop.sync.synchronizer import longest_common_prefix
+from cueloop.sync.vocabulary import tag_operations
+
+CLAUSE_LIMIT = 3  # rolling window of prior clauses used for `recent_operations`
+
+
+def truth_ops_next_clause(
+    text: str, boundary_index: int, truth_window: int
+) -> list[str]:
+    """Operations tagged in the clause starting after `boundary_index`.
+
+    Only the text up to the next clause boundary (or `truth_window` chars) is
+    considered: that is the exact span CUELOOP would try to influence next.
+    """
+    rest = text[boundary_index + 1 : boundary_index + 1 + truth_window]
+    for cut, ch in enumerate(rest):
+        if ch in "。、，．！？!?":
+            rest = rest[:cut]
+            break
+    return tag_operations(rest)
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument(
+        "--corpus",
+        type=Path,
+        action="append",
+        required=True,
+        help="CSV with a `transcript` column; repeat for each corpus",
+    )
+    parser.add_argument(
+        "--truth-window",
+        type=int,
+        default=40,
+        help="characters after the boundary used to tag truth operations",
+    )
+    parser.add_argument(
+        "--max-boundaries-per-file",
+        type=int,
+        default=0,
+        help="cap boundaries per transcript (0 = all)",
+    )
+    parser.add_argument(
+        "--json", type=Path, default=None, help="write machine-readable summary"
+    )
+    args = parser.parse_args()
+
+    predictor = NgramPredictor.default()
+
+    summary: dict[str, dict[str, object]] = {}
+    for corpus_path in args.corpus:
+        rows = list(csv.DictReader(corpus_path.open(encoding="utf-8")))
+        boundaries = 0
+        predicted = 0
+        offered = 0
+        hits = 0
+        truth_ops_present = 0
+        lcp_total = 0
+        conf_total = 0.0
+        op_offers: Counter[str] = Counter()
+        op_hits: Counter[str] = Counter()
+
+        sel_boundaries = 0
+        sel_truth_present = 0
+        sel_hit_ranked = 0
+        sel_hit_priority = 0
+        sel_oracle = 0
+        sel_missing_total = 0
+
+        for row in rows:
+            text = (row.get("transcript") or "").strip()
+            if not text:
+                continue
+            file_boundaries = 0
+            clause_start = 0
+            recent_clauses: deque[str] = deque(maxlen=CLAUSE_LIMIT)
+            for index, ch in enumerate(text):
+                if ch not in "。、，．！？!?":
+                    continue
+                if index < 3 or len(text) - index - 1 < 6:
+                    continue
+                if (
+                    args.max_boundaries_per_file
+                    and file_boundaries >= args.max_boundaries_per_file
+                ):
+                    break
+                prefix, truth = (
+                    text[: index + 1],
+                    text[index + 1 : index + 1 + args.truth_window],
+                )
+                clause_text = text[clause_start : index + 1]
+                clause_start = index + 1
+                file_boundaries += 1
+                boundaries += 1
+
+                prediction = predictor.predict(text=prefix, context=(), now_ms=0)
+
+                # --- prediction (span-op) axis ---
+                if prediction is not None:
+                    predicted += 1
+                    lcp_total += longest_common_prefix(truth, prediction.span)
+                    conf_total += prediction.confidence
+                    pred_ops = tuple(dict.fromkeys(prediction.operations))
+                    if pred_ops:
+                        offered += 1
+                        truth_ops = set(tag_operations(truth))
+                        if truth_ops:
+                            truth_ops_present += 1
+                        per_op_hit = False
+                        for op in pred_ops:
+                            op_offers[op] += 1
+                            if op in truth_ops:
+                                op_hits[op] += 1
+                                per_op_hit = True
+                        if per_op_hit:
+                            hits += 1
+
+                # --- selection (missing-op) axis ---
+                next_clause_ops = frozenset(
+                    truth_ops_next_clause(text, index, args.truth_window)
+                )
+                clause_ops = frozenset(tag_operations(clause_text))
+                recent_ops = frozenset(
+                    op for prior in recent_clauses for op in tag_operations(prior)
+                )
+                pred_ops_frozen = (
+                    frozenset(prediction.operations) if prediction else frozenset()
+                )
+                pred_conf = prediction.confidence if prediction else 0.0
+                pred_len = len(prediction.span) if prediction else 0
+                obs = PolicyObservation(
+                    text_length=len(prefix),
+                    context_turns=len(recent_clauses),
+                    chars_per_second=1.0,
+                    prediction_confidence=pred_conf,
+                    prediction_length=pred_len,
+                    prediction_operations=pred_ops_frozen,
+                    clause_operations=clause_ops,
+                    recent_operations=recent_ops,
+                    at_boundary=True,
+                    diverged=False,
+                )
+                missing = obs.missing_operations()
+                if missing:
+                    sel_boundaries += 1
+                    sel_missing_total += len(missing)
+                    ranked = obs.ranked_missing_operations()
+                    if next_clause_ops:
+                        sel_truth_present += 1
+                        if ranked[0] in next_clause_ops:
+                            sel_hit_ranked += 1
+                        if missing[0] in next_clause_ops:
+                            sel_hit_priority += 1
+                        if any(op in next_clause_ops for op in missing):
+                            sel_oracle += 1
+
+                recent_clauses.append(clause_text)
+
+        denom = offered or 1
+        sel_denom = sel_truth_present or 1
+        summary[corpus_path.name] = {
+            "corpus": str(corpus_path),
+            "rows": len(rows),
+            "boundaries": boundaries,
+            "predictions": predicted,
+            "prediction_rate": predicted / boundaries if boundaries else 0.0,
+            "offered": offered,
+            "offer_rate": offered / predicted if predicted else 0.0,
+            "op_hits": hits,
+            "op_hit_rate_offered": hits / denom,
+            "op_hit_rate_boundaries": hits / boundaries if boundaries else 0.0,
+            "truth_op_boundaries": truth_ops_present,
+            "op_hit_rate_given_truth_op": hits / truth_ops_present
+            if truth_ops_present
+            else None,
+            "avg_lcp": lcp_total / predicted if predicted else 0.0,
+            "avg_confidence": conf_total / predicted if predicted else 0.0,
+            "op_offers": dict(op_offers),
+            "op_hits_by_op": dict(op_hits),
+            "sel_boundaries": sel_boundaries,
+            "sel_avg_missing": sel_missing_total / sel_boundaries
+            if sel_boundaries
+            else 0.0,
+            "sel_truth_present": sel_truth_present,
+            "sel_hit_ranked": sel_hit_ranked,
+            "sel_hit_priority": sel_hit_priority,
+            "sel_hit_rate_ranked": sel_hit_ranked / sel_denom,
+            "sel_hit_rate_priority": sel_hit_priority / sel_denom,
+            "sel_oracle": sel_oracle,
+            "sel_oracle_rate": sel_oracle / sel_denom,
+        }
+        stats = summary[corpus_path.name]
+        print(
+            f"{corpus_path.name}: boundaries={boundaries} "
+            f"pred_hit@truth_op={stats['op_hit_rate_given_truth_op']} "
+            f"sel_truth_next={sel_truth_present} "
+            f"sel_rate_ranked={stats['sel_hit_rate_ranked']:.3f} "
+            f"sel_rate_priority={stats['sel_hit_rate_priority']:.3f} "
+            f"sel_oracle={stats['sel_oracle_rate']:.3f} "
+            f"avg_missing={stats['sel_avg_missing']:.2f}"
+        )
+
+    if args.json:
+        args.json.parent.mkdir(parents=True, exist_ok=True)
+        args.json.write_text(
+            json.dumps(summary, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+        )
+        print(f"wrote {args.json}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

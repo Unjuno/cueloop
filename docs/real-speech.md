@@ -468,6 +468,30 @@ are committed and pushed.
 
 ## What was added to CUELOOP from this evaluation
 
+- `scripts/benchmark_insertion.py` — offline insertion-appropriateness
+  benchmark that answers "can insertion land where humans actually go
+  next?" with zero live recording: it replays every clause boundary of any
+  `transcript`-column CSV through the production ngram predictor and the
+  production missing-op selection (`PolicyObservation.ranked_-
+  missing_operations`) and compares with the operations tagged in the
+  human's next clause. Results (all corpora `transcript`, clause split on
+  `。、，．！？!?`, truth window 40 chars):
+
+  ```text
+  podcast-replay  boundaries=549 sel_truth_next=29 ranking 24.1%  PRIORITY 0.0%  oracle 93.1%
+  lux             boundaries=215 sel_truth_next= 8 ranking 12.5%  PRIORITY 0.0%  oracle 100.0%
+  reazon-200      boundaries=273 sel_truth_next=13 ranking 23.1%  PRIORITY 0.0%  oracle 76.9%
+  jsut-replay     boundaries=429 sel_truth_next= 6 ranking  0.0%  PRIORITY 0.0%  oracle 66.7%
+  ```
+
+  Interpretation: the missing-op candidate set contains the human's next
+  move 67-100% of the time — the mechanism *can* select a relevant
+  operation — but context-fit ranking only lands it 12-24% of the time and
+  the context-blind PRIORITY order lands it 0.000 everywhere. Op-token
+  density is low across these corpora (only 1.6-13.8% of next clauses carry
+  any marker), so these absolute numbers are floors, not ceilings.
+  Insertion appropriateness ≠ uptake: H1/H2 still requires paired live
+  sessions (issue #6).
 - `scripts/bench_predictors.py` — one-command local-LLM next-span
   benchmark on any compatible corpus; covers exact-prefix rate, average
   longest-common-prefix, operation-tag hit rate, and parse failures
