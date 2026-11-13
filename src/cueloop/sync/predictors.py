@@ -7,6 +7,7 @@ to say and how confident it is. It does not decide whether to intervene.
 from __future__ import annotations
 
 import json
+import re
 import threading
 import time
 import urllib.request
@@ -346,6 +347,30 @@ class NgramPredictor:
         return Counter()
 
 
+def _extract_json_object(content: str) -> str:
+    """Unwrap a model response to its JSON object.
+
+    Reasoner-style models often wrap the object in markdown fences
+    (```json ... ```) or add a short preamble. Searching for the first
+    '{' handles those without removing anything else, since there is no
+    legitimate braces in explanatory text of our outputs anyway.
+    """
+    fence = re.search(r"```(?:[a-zA-Z]*)?\s*(\{.*?\})\s*```", content, re.DOTALL)
+    if fence:
+        return fence.group(1)
+    return content
+
+
+_SPAN_KEYS = (
+    "span",
+    "next_segment",
+    "next_sentence",
+    "continuation",
+    "next_text",
+    "next",
+)
+
+
 def parse_prediction_payload(
     content: str,
     *,
@@ -359,13 +384,18 @@ def parse_prediction_payload(
     if start < 0 or end <= start:
         raise ValueError("prediction response did not contain a JSON object")
     try:
-        payload = json.loads(content[start : end + 1])
+        payload = json.loads(_extract_json_object(content[start : end + 1]))
     except json.JSONDecodeError as exc:
         raise ValueError("prediction response JSON is invalid") from exc
     if not isinstance(payload, dict):
         raise TypeError("prediction response must be a JSON object")
-    span = payload.get("span")
-    if not isinstance(span, str) or not span.strip():
+    span = None
+    for key in _SPAN_KEYS:
+        candidate = payload.get(key)
+        if isinstance(candidate, str) and candidate.strip():
+            span = candidate.strip()
+            break
+    if span is None or not span:
         raise ValueError("prediction response requires a non-empty span")
     raw_operations = payload.get("operations", [])
     if not isinstance(raw_operations, list) or not all(

@@ -214,6 +214,29 @@ class PredictorTests(unittest.TestCase):
                 '{"confidence": 0.8}', text="x", now_ms=0, source="t"
             )
 
+    def test_parse_prediction_accepts_synonym_span_keys(self) -> None:
+        for payload in (
+            '{"next_segment": "依存を切り離す。", "confidence": 0.7}',
+            '{"next_sentence": "根拠を測る。", "confidence": 0.6}',
+            '{"continuation": "逆に考える。", "confidence": 0.8}',
+            '{"next_text": "具体例を挙げる。", "confidence": 0.5}',
+            '{"next": "結論は後で。", "confidence": 0.5}',
+        ):
+            prediction = parse_prediction_payload(
+                payload, text="この設計は", now_ms=0, source="test"
+            )
+            self.assertTrue(prediction.span)
+
+    def test_parse_prediction_unwraps_markdown_fence(self) -> None:
+        prediction = parse_prediction_payload(
+            '```json\n{\n  "next_segment": "ことで、変更の影響範囲を限定します。",\n  "operations": ["boundary"],\n  "confidence": 0.8\n}\n```',
+            text="この設計は",
+            now_ms=0,
+            source="test",
+        )
+        self.assertEqual(prediction.span, "ことで、変更の影響範囲を限定します。")
+        self.assertEqual(prediction.operations, ("boundary",))
+
 
 class _SlowPredictor:
     label = "slow"

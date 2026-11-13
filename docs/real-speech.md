@@ -129,8 +129,45 @@ The signal we can draw here is narrower than it first appears:
   short of paying for it. The synthetic CUELOOP corpus in
   `experiments/`/`docs/benchmark.md` is the closest substitute.
 
+## Predictor capacity on the Reazon sample (and what it buys)
+
+We benchmarked the production local-LLM predictor (`LocalLLMPredictor`) on
+the 24-sentence slice used by `scripts/bench_predictors.py`:
+
+```text
+model                   exact-prefix  avg longest-common-prefix  op-match  failures
+gemma3:4b-it-qat        0/24          0.08                       0/24      0
+qwen2.5:7b-instruct     0/24          0.08                       0/24      0
+qwen2.5-coder:7b        0/24          0.21                       1/24      0
+qwen3:8b (max_tokens=2000)  0/24     0.00                       0/24      0
+```
+
+No local model we tested can reproduce the *verbatim* next character of
+real Japanese discourse — as expected. The token-level predictability that
+the live path actually needs (`prediction_match`) is what the rule backend
+already gets for free from the n-gram predictor's memorisation of the
+embedded corpus; the local LLM's apparent advantage there did not hold on
+this corpus either.
+
+**Parser compatibility fix.** While running the benchmark we found the
+shipped parser rejected legal Ollama responses that non-standard models
+produce (`next_segment`, `next_sentence`, `continuation`, `next_text`,
+`next` in place of `span`, or markdown-fenced JSON). `parse_prediction_payload`
+now unwraps markdown fences and accepts those synonym spans; regression
+tests cover both paths (`tests/test_sync_core.py`). This does not change
+what models predict — it lets them answer at all.
+
+`qwen3:8b` returned an empty string at `max_tokens=400` (its thinking
+preamble consumed the budget); at `max_tokens=2000` it answered but scored
+identically to the other models. Stand-ins did not buy predictive power.
+
 ## What was added to CUELOOP from this evaluation
 
+- `scripts/bench_predictors.py` — one-command local-LLM next-span
+  benchmark on any compatible corpus; covers exact-prefix rate, average
+  longest-common-prefix, operation-tag hit rate, and parse failures
+  (tested at 24-token default; qwen3 reasoner needs `max_tokens ≥ 400`
+  or it returns an empty string).
 - `scripts/tune_ngram.py` — offline n-gram evaluation/tuning harness on any
   `metadata.csv`. Useful once a proper corpus appears for the target domain.
 - `tools/file_asr.swift` — Swift one-shot recognizer per Lux-style file,

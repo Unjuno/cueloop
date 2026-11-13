@@ -3,6 +3,12 @@
 ## Unreleased
 
 ### Fixed
+- **Prediction parser accepts non-standard model outputs**: markdown-fenced
+  JSON (```json ... ```) and synonym span keys (`next_segment`,
+  `next_sentence`, `continuation`, `next_text`, `next`) are now parsed
+  instead of failing as "prediction response did not contain a JSON
+  object". Regression tests cover both paths. This lets reasoner models
+  answer at all; it does not change what they predict.
 - **Runtime delivery clamp**: synchronous backends (fresh prediction created
   in the same event) no longer have their intervention pushed out by
   prediction+decision wall latency. Before, the shift landed the cue into an
@@ -29,6 +35,13 @@
   Fixes a whisper-cache subset bug (warm cache used to return the whole
   file regardless of the requested corpus) and a relative-path corpus
   resolution bug that created duplicate caches; both covered by tests.
+- `scripts/bench_predictors.py`: one-command benchmark of local-LLM next-span
+  agreement on any compatible `(metadata.csv + whisper-cache)` corpus;
+  reports exact-prefix rate, average longest-common-prefix, operation-tag
+  hit rate, and parse failures per model. On the Reazon sample every
+  model tested scores 0 exact-prefix; operation-token hit rate is ~0 for
+  every tested model. This measures what the local LLM can do on real
+  discourse, not whether cues change reasoning.
 - Real-speech replay completed end-to-end on the Lux and Reazon corpora for
   the local-LLM decision path, pre-fix and post-fix; post-fix measurements
   now dominate the docs (pre-fix numbers retained for transparency, clearly
