@@ -97,21 +97,16 @@ and the null arm is exactly zero:
 This validates that `cue_style` is only a presentation knob — the
 intervention assignment (when, what operation) is unchanged.
 
-## Real-speech replay (Lux corpus, ReazonSpeech, MagicData, JSUT-basic5000, Common Voice 8.0)
+## Real-speech replay (Lux, Reazon, MagicData, JSUT, Common Voice 8.0/17.0, PlayMaker13 podcast, bandad/kw-ja)
 
 `scripts/simulate_lux_replay.py` replays real Japanese audio through the
 actual `SyncRuntime` with per-word `transcript_partial` timestamps produced
 by `whisper-base-mlx`. Each file is one session, paired with itself under
-CUE and SILENCE. Five corpora are covered — the Lux read corpus (this
-section) plus ReazonSpeech, MagicData, JSUT-basic5000, and Common Voice 8.0
-in `docs/real-speech.md`: the rule backend delivered 455 cues on Reazon
-and on JSUT shot 477/500 cue deliveries, and the local-LLM backends deliver
-too once the runtime latency-clamp was fixed (see real-speech.md and
-CHANGELOG): 668/668 on the gemma3:4b-it-qat full arm, 324/324 on Lux 328
-with gemma3:4b-it-qat, 327/327 on the qwen2.5:1.5b-instruct full sample,
-and 138/138 on the operation-tagged 30-file subset — previously-measured
-pre-fix results (0 delivered everywhere) are documented there as well. The
-Lux replay:
+CUE and SILENCE. Eight corpora are covered — the Lux read corpus (this
+section) plus ReazonSpeech, MagicData, JSUT-basic5000, Common Voice
+8.0/17.0, PlayMaker13 podcast, and bandad/asr-testset-kw-ja-v1; see
+`docs/real-speech.md` for the full arms; the previously-measured pre-fix
+local-LLM results are documented there too. The Lux replay:
 
 Speaker output is held; outcome scoring, boundary detection, and analyzer
 pairing all run end-to-end.

@@ -28,13 +28,14 @@ CUELOOP は、話し手が話している**最中に**、話し手が次に言�
 | ライセンス | MIT |
 
 即時の uptake はメカニズムの確認にすぎず、持続的改善の証拠ではありません。
-人間のデータに基づく主張はまだ何もありません。日本語実話コーパス7件（Lux: 朗読・CC-BY-4.0、
+人間のデータに基づく主張はまだ何もありません。日本語実話コーパス8件（Lux: 朗読・CC-BY-4.0、
 ReazonSpeech: YouTube由来の日本語談話・CDLA-Sharing-1.0、
 MagicData: 日本語自発的対話・カードタグ apache-2.0、
 JSUT-basic5000: 単一話者朗読・JSUT licence、
 Common Voice 8.0 日本語 (CC0)、
 Common Voice 17.0 日本語 (kotoba mirror; CC0)、
-PlayMaker13/japanese-podcast: 日本人 YouTuber の podcast 日記風独白）に対する較正と、
+PlayMaker13/japanese-podcast: ネイティブ独白 podcast、
+bandad/asr-testset-kw-ja-v1: YouTube アノテーション付き）に対する較正と、
 実ランタイムによるペア CUE/SILENCE リプレイの結果は `docs/real-speech.md` を参照。
 
 ## ステムcue（既定）とベアcue

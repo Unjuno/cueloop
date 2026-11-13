@@ -32,13 +32,15 @@ writing or reasoning improvement require a delayed, unassisted task.
 
 Immediate uptake is only a mechanism check; it is not evidence of durable
 improvement. No claim here is supported by human data yet. See
-`docs/real-speech.md` for calibration against three real Japanese speech
+`docs/real-speech.md` for calibration against eight real Japanese speech
 corpora: Lux (read prose, CC-BY-4.0), ReazonSpeech (YouTube-derived
 discourse Japanese, CDLA-Sharing-1.0), MagicData (spontaneous 2-speaker
 smartphone dialogue, HF tag Apache-2.0), JSUT-basic5000 (read prose,
-NIICT/JSUT licence), Common Voice 8.0 Japanese (4,483 CC0 clips), and
-Common Voice 17.0 Japanese (kotoba mirror, CC0) — paired CUE/SILENCE
-replays through the real runtime.
+NIICT/JSUT licence), Common Voice 8.0 Japanese (4,483 CC0 clips), Common
+Voice 17.0 Japanese (kotoba mirror, CC0), PlayMaker13/japanese-podcast
+(native monologue podcast), and bandad/asr-testset-kw-ja-v1 (Japanese
+YouTube speech, human-annotated) — paired CUE/SILENCE replays through the
+real runtime.
 
 ## Stem cues (default) and bare cues
 

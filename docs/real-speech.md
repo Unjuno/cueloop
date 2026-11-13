@@ -56,6 +56,35 @@ The local-LLM backend is consistent: it produces downstream-acceptable
 predictions, but on all six real Japanese corpora the paired analyzer
 finds no measurable uptake. This is structural: replay is canned speech.
 
+## bandad/asr-testset-kw-ja-v1 (eighth corpus arm; closest to Japanese public oral reasoning)
+
+`bandad/asr-testset-kw-ja-v1` — 540 clips of real Japanese YouTube speech,
+human-transcribed and human-confirmed (lawyers, sales presentations,
+cooking, antique dealers, students, wedding speeches, electrical
+contractors). After filtering out excluded / unconfirmed segments, 510
+clips remain. This is the richest Japanese oral corpus in our sweep for
+operation-tag coverage (21.8% of clips tag at least one op).
+
+```text
+clips with JP content        510
+clips with tagged ops        111 (21.8%)
+op counts: conclusion 48, concretize 31, comparison 13, boundary 10,
+           mechanism 10, invert 8, dependency 5, ground 4
+files             510 / CUE+SILENCE paired
+predictions       1638
+interventions    998
+delivered        998
+operations delivered  concretize 425, dependency 276, conclusion 159,
+                       mechanism 47, ground 45, invert 42, comparison 4
+paired delta     +0.000 CI [+0.000, +0.000] (every metric)
+n_pairs          510
+```
+
+CUE vs SILENCE outcome is +0.000 — same as everywhere else. The point is
+that this corpus is rich enough to fire cues emphatically (1638
+predictions across 510 clips, each clip averaging ~3 predictions and ~2
+interventions).
+
 ## What was measured
 
 ### 1. ASR quality on the corpus (whisper-base-mlx, not the production path)
@@ -688,6 +717,8 @@ PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 \
 #   common voice 8.0 Japanese mirror (ja_asr.common_voice_8_0), CC0
 #   kotoba-speech/common_voice_17_0 (mirror of the CC0 Common Voice 17 ja test set)
 #   huggingface.co/datasets/FluidInference/JSUT-basic5000 (audio no redistribution; research use free)
+#   bandad/asr-testset-kw-ja-v1 (license unspecified in card data; used for internal eval only)
+#   PlayMaker13/japanese-podcast (license unspecified in card data; public permissive "listen to anyone" podcast)
 
 # common voice 17.0 Japanese (150-file sample), rule backend
 PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 \
