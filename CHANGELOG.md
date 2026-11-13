@@ -3,20 +3,15 @@
 ## Unreleased
 
 ### Added
-- Real-speech replay across 8 Japanese corpora (see docs/real-speech.md):
-  the 7th (`PlayMaker13/japanese-podcast`) and 8th (`bandad/asr-testset-kw-ja-v1`)
-  arms added; the latter has 21.8% clips tag ≥ 1 operation — the highest
-  in the sweep — and 1638 predictions with 998 delivered cues in 510 paired
-  sessions. docs/benchmark.md gets a podcaster-local-LLM arm summary, and
-  the reproduction blocks are unified.
-
-### Added
-- Real-speech calibration across seven Japanese corpora (see docs/real-speech.md):
-  the 7th arm (`PlayMaker13/japanese-podcast`, 20 paired CUE/SILENCE sessions,
-  905 predictions / 474 deliveries, every operation tagged at least once)
-  confirms the measurement path scales beyond the four earlier
-  more-or-less homogeneous speech sources. human transfer (H1/H2) remains
-  untested — issue #6 is open.
+- Real-speech replay across 8 Japanese corpora (see docs/real-speech.md) —
+  each replayed on real audio end-to-end with local-LLM and rule backends;
+  the 8th (`bandad/asr-testset-kw-ja-v1`) shows the highest op-tag density
+  of any corpus measured (21.8% of 510 clips tag ≥ 1 operation; 1638 predictions,
+  998 delivered cues). The 7th arm, `PlayMaker13/japanese-podcast`, contains
+  conclusion-heavy native podcast monologues (20 paired sessions, 474
+  delivered, uniform operation distribution). benchmarks+docs updated with
+  the local-LLM arm results and reproduction blocks. Human transfer (H1/H2)
+  remains untested — issue #6 is open.
 
 ### Fixed
 - **Prediction parser accepts non-standard model outputs**: markdown-fenced
