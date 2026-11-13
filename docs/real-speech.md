@@ -209,6 +209,30 @@ it means no offline corpus substituting for human Japanese reasoning exists
 that would make a ppm-matching predictor possible, so predictor quality
 cannot be bought for this domain without collecting real sessions.
 
+## Common Voice 8.0 Japanese (fourth corpus arm)
+
+`japanese-asr/ja_asr.common_voice_8_0` — 4,483 Japanese utterances from
+many native speakers reading short sentences (CC0 source; the
+`japanese-asr` mirror inherits the public license). We ran a 120-file
+sample under the rule backend:
+
+```text
+files                    120 (CUE + SILENCE paired)
+deliveries CUE           84 / 120 (63 files with >=1 delivery)
+predicted+intervened     117 / 84 / 0 cancelled
+operations delivered     concretize 62, dependency 11, mechanism 6,
+                            invert 4, conclusion 1
+paired delta             +0.000 CI [+0.000, +0.000] every metric
+n_pairs                  120
+```
+
+Common Voice is read speech (as is JSUT and Lux), so its boundaries are
+sentence-aligned and saturated with punctuation — the trigger-firing
+behavior is dominated by the same `concretize` heuristic from the embedded
+corpus. Uptake is +0.000 (canned). The corpus proves the pipeline works
+end-to-end on a completely unrelated voice/borrowed accent set, not any
+human-transfer.
+
 ## What was added to CUELOOP from this evaluation
 
 - `scripts/bench_predictors.py` — one-command local-LLM next-span
@@ -538,7 +562,16 @@ PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 \
 
 # corpus acquisition (audio not in git):
 #   huggingface.co/datasets/MagicDataTech/Japanese_Spontaneous_Conversation_Training_Dataset
-#   HF card license: apache-2.0
+#   common voice 8.0 Japanese mirror (ja_asr.common_voice_8_0), CC0
+#   huggingface.co/datasets/FluidInference/JSUT-basic5000 (read prose, JSUT licence)
+
+# common voice 8.0 Japanese (120-file sample), rule backend
+PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 \
+  scripts/simulate_lux_replay.py --corpus data/real-speech/common_voice_sample_replay/metadata.csv \
+  --source-name commonvoice8-ja --output-dir artifacts/commonvoice-ja-replay \
+  --predictor ngram --decision rule
+.venv/bin/python scripts/analyze_experiment.py artifacts/commonvoice-ja-replay/cue \
+  artifacts/commonvoice-ja-replay/silence --markdown artifacts/commonvoice-ja-replay-analysis.md
 ```
 
 ## MagicData Japanese spontaneous dialogue (third corpus arm)
