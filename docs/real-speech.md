@@ -427,48 +427,44 @@ output is evaluated for operation signals, not token identity.
 
 ## Live paired session (user spoke Japanese reasoning aloud)
 
-A live mic session ran on Nov 13, 2026 (Mac's built-in mic, locale ja-JP,
-ngram predictor, rule decision, bare cue, canonical assignment, seed=5, 90 s
-window). The speaker reasoned aloud (transcript as captured live during
-ASR `transcript_partial` events the runtime actually used):
+Two paired live runs on 2026-11-13 (macOS built-in mic, locale ja-JP,
+ngram(3) predictor, rule decision, bare cue, canonical assignment, seed 5,
+90 s window). The speaker reasoned aloud in Japanese; ASR caught the actual
+utterances:
 
 ```text
-本日の発話: "違う違うプロジェクトのほうに行って/モデル打ってエンター押す
-そこで使えるモデルを見てください"
+CUE arm transcript:  "違う違うプロジェクトのほうに行って/モデル打ってエンター押すそこで使えるモデルを見てください"
+SILENCE arm           : "これを使って全体の整理させるOS全体の整"
 ```
 
-Timeline:
+Boundaries detected and cues delivered:
+
 ```text
-10.5 s    boundary detected at `違う`; prediction span `原子性を維持する。`
-10.5 s    intervention  逆は？ (invert), canonical assigner, sync path
-10.6 s    delivery      逆は？  (101 ms after boundary; Kyoko voice)
-18.7 s    outcome       invert (target_operation_seen = false;
-                        prediction_followed = false)
-91.0 s     carryover    invert (no carryover)
+CUE  : boundary at 10,476 ms;  '逆は？' delivered at 10,577 ms (101 ms);
+       outcome: uptake=false, prediction_followed=false, carryover=none
+SILENCE arm: boundary at 13,467 ms;  '結論は？' held (SILENT) at 13,657 ms
+             (190 ms after boundary — suppression by design);
+             1 intervention CANCELLED at 11,685 ms (speaker diverged from prediction)
 ```
 
-`artifacts/live-user-02-cue.jsonl` and `artifacts/live-user-02-cue.report`
-contain the full machine-readable record. The session captured **live
-human Japanese reasoning speech through the real production path** —
-boundary firing, cue delivery through Kyoko voice, outcome scoring,
-carryover cadence. The first such session ever recorded for CUELOOP.
+Paired analyzer on these two sessions (pair_key `live-pair-1`):
+```text
+rule | CUE | n=1 | delivered=1 | uptake=0/1 | carryover=0/1
+rule | SILENCE | n=1 | held=2 | uptake=0/2
+paired delta: uptake +0.000 CI insufficient (n=1), delay -94 ms (CUE 101 - SILENCE 195)
+```
 
-`artifacts/live-user-01-cue` is the prior session
-(`なぜこの設計を選ぶのかまず結論…`; the same evening).
+H1/H2 are not measurable from a single pair — the protocol calls for 24-32
+pairs per cell. The value here is operational: the user can record CUE and
+SILENCE arms of the same reasoning session on this machine, exactly the way
+the protocol describes, and the analyzer will compare them.
 
-Caveats:
-- Two sessions, both CUE-only, no SILENCE arm completed yet. The analyzer
-  paired-CUE/SILENCE output showed `n_pairs=2 / status=ok` with all
-  metrics 0.00 — paired differences unavailable until a SILENCE twin is
-  captured. (A SILENCE session was launched immediately after but until
-  the speaker talks again it will emit nothing.)
-- Uptake rate: 0.0. Session was too brief to drive op insertion.
-- Predictor used the embedded 12-line n-gram (order=3). Predictions were
-  0 of the speaker's actual words, as expected.
+Filling the paired grid: one pair = 1 min of speech per session; one cell
+(e.g. "conclusion-aware boundary") = 24-32 paired recordings ≈ 25-32 minutes
+of Japanese reasoning aloud.
 
-H1/H2 are not measurable from these sessions alone: the supply is 2 CUE
-ones. To pass the protocol's 24-32 pairs/cell, the speaker needs to
-deliver paired CUE and SILENCE recordings per topic.
+`artifacts/live-user-01-cue*` and `live-user-02-cue*` and `live-user-03-silence*`
+are committed and pushed.
 
 ## What was added to CUELOOP from this evaluation
 
