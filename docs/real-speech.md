@@ -377,6 +377,25 @@ everywhere, because the speaker is canned. What differs here is that the
 corpus engages the predictor heavily: each whisper segment looks like
 real reasoning discourse, not idiomatic or read prose.
 
+## local-LLM backend on the PlayMaker13 podcast subset (3 clips)
+
+The same corpus was re-run under `--predictor local --decision local` with
+`gemma3:4b-it-qat` on the first 3 clips, paired CUE/SILENCE:
+
+```text
+files                3 (podcast_000/001/002)
+predictions          83
+interventions delivered  83
+operations delivered  comparison 30, ground 19, boundary 18, dependency 16
+analyzer n_pairs=3, uptake/carryover delta +0.000 (canned audio)
+```
+
+Same story: every CUE cue delivered, uptake still +0.000 because audio
+is canned. What's new here is that even the language model which
+correctly fails at next-token prediction textually (exact-prefix=0
+throughout) produces downstream-usable cue events — the predictor's
+output is evaluated for operation signals, not token identity.
+
 ## What was added to CUELOOP from this evaluation
 
 - `scripts/bench_predictors.py` — one-command local-LLM next-span
@@ -719,6 +738,12 @@ PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 \
 #   huggingface.co/datasets/FluidInference/JSUT-basic5000 (audio no redistribution; research use free)
 #   bandad/asr-testset-kw-ja-v1 (license unspecified in card data; used for internal eval only)
 #   PlayMaker13/japanese-podcast (license unspecified in card data; public permissive "listen to anyone" podcast)
+
+# podcast 3-clip local-LLM arm (~10 min, needs Ollama + gemma3:4b-it-qat)
+PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 \
+  scripts/simulate_lux_replay.py --corpus data/real-speech/podcast-replay/metadata.csv \
+  --source-name podcast-llm --output-dir artifacts/podcast-llm-3 \
+  --predictor local --decision local --local-model gemma3:4b-it-qat --limit 3
 
 # common voice 17.0 Japanese (150-file sample), rule backend
 PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 \

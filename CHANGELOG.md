@@ -3,6 +3,14 @@
 ## Unreleased
 
 ### Added
+- Real-speech replay across 8 Japanese corpora (see docs/real-speech.md):
+  the 7th (`PlayMaker13/japanese-podcast`) and 8th (`bandad/asr-testset-kw-ja-v1`)
+  arms added; the latter has 21.8% clips tag ≥ 1 operation — the highest
+  in the sweep — and 1638 predictions with 998 delivered cues in 510 paired
+  sessions. docs/benchmark.md gets a podcaster-local-LLM arm summary, and
+  the reproduction blocks are unified.
+
+### Added
 - Real-speech calibration across seven Japanese corpora (see docs/real-speech.md):
   the 7th arm (`PlayMaker13/japanese-podcast`, 20 paired CUE/SILENCE sessions,
   905 predictions / 474 deliveries, every operation tagged at least once)

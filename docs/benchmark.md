@@ -119,7 +119,16 @@ Full run live at `artifacts/lux-rule-328/` (328 CUE / 328 SILENCE reports):
 | SILENCE | 328 | 0 | 276 | 0.00 | 0.00 | 0.04 | 0 |
 | delta | — | — | — | +0.000 | +0.000 | +0.000 | +0.000 |
 
-405 boundary\_predictions fired across the 328 files (1.23 per file).
+## Real-speech replay: podcast (both backends)
+
+`simulate_lux_replay.py --predictor ngram` on the PlayMaker13 podcast
+corpus: 20 paired sessions, 474 cues delivered, every file fires ≥1 cue,
+with 8 operations appearing in delivery spans. `--predictor local
+--decision local --limit 3` (gemma3:4b-it-qat): 3 paired files, 83/83
+predictions → 83/83 delivered (analyzer n_pairs=3; uptake/carryover delta
++0.000 canned). Both confirm the runtime is reachable end-to-end on
+real Japanese monologue without needing synthetic speakers.
+
 Operations chosen by rule (after fatigue tuning): concretize 194, dependency 50,
 mechanism 13, conclusion 8, invert 6, ground 4, comparison 1 — cues used:
 `具体は？` 194×, `何に？` 50×, `仕組みは？` 13×, `結論は？` 8×, `逆は？` 6×,
