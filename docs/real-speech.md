@@ -39,7 +39,7 @@ common voice 17.0 ja                0.0 / 0.0 / 0.0
 jsut-basic5000                      0.0 / 0.0 / 0.0
 ```
 
-Local-LLM delivery counts, expanded across six corpora:
+Local-LLM delivery counts, expanded across eight corpora:
 
 ```text
 jsut local-LLM (50 files): 78 predictions, 75 interventions, 75 delivered
@@ -47,14 +47,24 @@ jsut local-LLM (50 files): 78 predictions, 75 interventions, 75 delivered
   files with >=1 delivery: 41/50
   analyzer n_pairs=50, all deltas +0.000 CI [+0.000, +0.000]
 
+jsut local-LLM (30 files, extended): 49 predictions, 48 interventions, 48 delivered
+  (ops: dependency 21, boundary 13, comparison 6, ground 6, invert 1, mechanism 1)
+  files with >=1 delivery: 25/30; analyzer n_pairs=30, all +0.000 CI [+0.000, +0.000]
+
+bandad/asr-testset-kw-ja-v1 local-LLM (10 files): 29 predictions, 28 interventions, 28 delivered
+  (ops: dependency 10, ground 7, comparison 7, boundary 4)
+  files with >=1 delivery: 5/10; analyzer n_pairs=10, all +0.000 CI [+0.000, +0.000]
+
 lux local-LLM (post-fix): 324 / 324 delivered, all metrics +0.000 CI
 reazon local-LLM (full 200): 668 / 668 delivered, all metrics +0.000 CI
 dialog (A0022_S0003_0_G0029): 387 / 387 delivered
+kw-ja 510-clip arm: 998 delivered (rule backend)
 ```
 
 The local-LLM backend is consistent: it produces downstream-acceptable
-predictions, but on all six real Japanese corpora the paired analyzer
+predictions, but on all eight real Japanese corpora the paired analyzer
 finds no measurable uptake. This is structural: replay is canned speech.
+The only path to uptake evidence is a human speaker (issue #6).
 
 ## bandad/asr-testset-kw-ja-v1 (eighth corpus arm; closest to Japanese public oral reasoning)
 
@@ -744,6 +754,18 @@ PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 \
   scripts/simulate_lux_replay.py --corpus data/real-speech/podcast-replay/metadata.csv \
   --source-name podcast-llm --output-dir artifacts/podcast-llm-3 \
   --predictor local --decision local --local-model gemma3:4b-it-qat --limit 3
+
+# extended 30-file JSUT local-LLM arm
+PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 \
+  scripts/simulate_lux_replay.py --corpus data/real-speech/jsut-replay/metadata.csv \
+  --source-name jsut-llm-30 --output-dir artifacts/jsut-llm-30 \
+  --predictor local --decision local --local-model gemma3:4b-it-qat --limit 30
+
+# kw-ja 10-file local-LLM arm
+PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 \
+  scripts/simulate_lux_replay.py --corpus data/real-speech/bandad-kw/metadata.csv \
+  --source-name bandad-llm --output-dir artifacts/bandad-llm-10 \
+  --predictor local --decision local --local-model gemma3:4b-it-qat --limit 10
 
 # common voice 17.0 Japanese (150-file sample), rule backend
 PYTHONPATH=.venv/lib/python3.12/site-packages /opt/homebrew/bin/python3 \
