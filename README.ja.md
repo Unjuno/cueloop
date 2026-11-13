@@ -28,11 +28,13 @@ CUELOOP は、話し手が話している**最中に**、話し手が次に言�
 | ライセンス | MIT |
 
 即時の uptake はメカニズムの確認にすぎず、持続的改善の証拠ではありません。
-人間のデータに基づく主張はまだ何もありません。日本語実話コーパス6件（Lux: 朗読・CC-BY-4.0、
+人間のデータに基づく主張はまだ何もありません。日本語実話コーパス7件（Lux: 朗読・CC-BY-4.0、
 ReazonSpeech: YouTube由来の日本語談話・CDLA-Sharing-1.0、
 MagicData: 日本語自発的対話・カードタグ apache-2.0、
 JSUT-basic5000: 単一話者朗読・JSUT licence、
-Common Voice 8.0 日本語 (CC0)、Common Voice 17.0 日本語 (CC0)）に対する較正と、
+Common Voice 8.0 日本語 (CC0)、
+Common Voice 17.0 日本語 (kotoba mirror; CC0)、
+PlayMaker13/japanese-podcast: 日本人 YouTuber の podcast 日記風独白）に対する較正と、
 実ランタイムによるペア CUE/SILENCE リプレイの結果は `docs/real-speech.md` を参照。
 
 ## ステムcue（既定）とベアcue
@@ -426,7 +428,7 @@ scripts/synthesize_logs.py ポリシー学習を大規模化する合成セッ�
 scripts/analyze_power.py ペア CUE/SILENCE 設計の検出力解析（サンプルサイズ計画）
 scripts/simulate_sessions.py エンドツーエンド・ランタイム・シミュレーション（合成日本語話者のペア CUE/SILENCE）
 scripts/simulate_dialog_replay.py 実話自発対話 replay（MagicData: 2人スマートフォン対話 20ファイル、ペアレポートを出力）
-scripts/simulate_lux_replay.py 実話音声 replay（Lux corpus 328ファイル、ペアレポートを出力；サマリ再現にはiOS Common Voice 8.0日本語CC0コーパス120ファイルの場合も同コマンド使用可能）
+scripts/simulate_lux_replay.py 実話音声 replay（Lux corpus 328ファイル、ペアレポートを出力；Common Voice 8.0 / JSUT-basic5000 / PlayMaker13 podcast も --corpus で再現可能）
 scripts/run_synthetic_benchmark.sh 較正ベンチマークの再生成（docs/benchmark.md）
 scripts/train_policy.py 線形ポリシーのオフライン学習＋ホールドアウト指標
 scripts/evaluate_policy.py 保存済みポリシーをログで採点

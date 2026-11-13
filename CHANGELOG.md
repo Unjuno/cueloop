@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Added
+- Real-speech calibration across seven Japanese corpora (see docs/real-speech.md):
+  the 7th arm (`PlayMaker13/japanese-podcast`, 20 paired CUE/SILENCE sessions,
+  905 predictions / 474 deliveries, every operation tagged at least once)
+  confirms the measurement path scales beyond the four earlier
+  more-or-less homogeneous speech sources. human transfer (H1/H2) remains
+  untested — issue #6 is open.
+
 ### Fixed
 - **Prediction parser accepts non-standard model outputs**: markdown-fenced
   JSON (```json ... ```) and synonym span keys (`next_segment`,

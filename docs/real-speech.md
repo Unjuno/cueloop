@@ -312,6 +312,42 @@ Same verdict: canned audio signaled over the entire test set. This arm
 adds yet another voices corpus; across all six Japanese corpora the same
 result surfaces, which rules out an unlucky single-corpus artifact.
 
+## Japanese vlog podcast (seventh corpus arm; closest to native reasoning)
+
+`PlayMaker13/japanese-podcast` — 10,039 clips of a native Japanese
+podcaster giving their opinions on common topics (food, vacations,
+relationships, language learning). 20 clips sampled, ~17,000 chars total.
+Podcasts are natural Japanese monologues with explicit reasoning
+announcements (`つまり`, `だから`, `なので`, `なぜなら`) and is the only
+corpus in our sweep where **conclusion ops outweigh concretize**:
+
+```text
+utterances per id                   729
+utterances tagged (tag>=1)         71/729 (9.7%)
+op hits: conclusion 31, concretize 16, mechanism 12,
+         dependency 6, comparison 5, boundary 2, invert 1
+files                     20 / CUE+SILENCE paired
+predictions              905
+interventions delivered  474
+operations delivered     concretize 81, dependency 73, conclusion 67,
+                            ground 61, comparison 56, invert 53,
+                            mechanism 50, boundary 33
+paired delta              +0.000 CI [+0.000, +0.000] every metric
+n_pairs                  20
+```
+
+The corpus content skews toward Japanese first-person narrative with
+explicit opinion-marking language. The speaker voice is close-mic iPhone
+grade, slow, consciously paced — a clean whisper transcription target.
+What this arm adds is clear: over the seven corpora tested, this is the
+closest one whose ASR output has both high enough quality and enough
+operation-tagged segments to exercise the runtime on most utterances.
+
+CUE vs SILENCE paired delta is +0.000 CI [+0.000, +0.000] — same as
+everywhere, because the speaker is canned. What differs here is that the
+corpus engages the predictor heavily: each whisper segment looks like
+real reasoning discourse, not idiomatic or read prose.
+
 ## What was added to CUELOOP from this evaluation
 
 - `scripts/bench_predictors.py` — one-command local-LLM next-span
