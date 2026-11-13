@@ -136,9 +136,22 @@ The signal we can draw here is narrower than it first appears:
   leak in via the speaker.
 
   So the local-LLM decision path now delivers cues on real mic audio end
-  to end across 4 of 6 files — still canned audio with held-silent
-  arms (uptake always 0). CUE (unscripted human response) is untestable
-  without a live speaker. This is a pipeline proof, not an effect result.
+  to end, and the rule backend is complementary — same battery, alternating
+  coverage:
+
+  | file | backend | predictions | interventions | delivered |
+  | --- | --- | --- | --- | --- |
+  | EMOTION100_011 | local-llm | 4 | 1 | 1 (何と比べる？, comparison) |
+  | EMOTION100_066 | local-llm | 1 | 1 | 1 (根拠は？, ground) |
+  | EMOTION100_072 | rule | 4 | 1 | 1 (具体は？, concretize) |
+  | EMOTION100_072 | local-llm | 8 | 0 | 0 (decision model vetoed) |
+  | RECITATION324_001 | rule | 5 | 0 | 0 (no boundary matched) |
+  | RECITATION324_001 | local-llm | 1 | 1 | 1 (根拠は？, ground) |
+  | RECITATION324_004 | local-llm | 1 | 1 | 1 (根拠は？, ground) |
+
+  All arms held silent with `--silent`, so these are mechanism-completion
+  proofs, not uptake evidence. CUE (unscripted human response) is impossible
+  on canned audio.
 - **A Japanese-software-reasoning speech corpus**: none publicly available
   short of paying for it. The synthetic CUELOOP corpus in
   `experiments/`/`docs/benchmark.md` is the closest substitute.
