@@ -521,6 +521,19 @@ of Japanese reasoning aloud.
 `artifacts/live-user-01-cue*` and `live-user-02-cue*` and `live-user-03-silence*`
 are committed and pushed.
 
+**2026-11-14 design-choice attempt (self-pair recorder):** CUE arm
+(20:01) captured two fragments of Japanese speech text inside prediction
+clauses ("幻聴はどうですかどの程度やってんの" / "余計なことし…してない")
+— SFSpeechRecognizer *was* alive — but the rule decision delivered
+0 cues (no operation tags in the continuations), and the SILENCE arm
+(20:02) produced nothing. End-to-end pipeline fine; the
+session contained too little continuous reasoning speech to be pairable.
+`logs/self/design-choice-{cue,silence}.jsonl|.report` staged to
+`logs/self-design-choice-paired/`; analyzer ran end-to-end (n_pairs=1,
+all deltas +0.000, CI insufficient). The recording must be longer,
+continuous, and spoken *at* the microphone by the user to fill the
+24-32 pairs per cell requirement (issue #6).
+
 ## What was added to CUELOOP from this evaluation
 
 - `scripts/benchmark_insertion.py` — offline insertion-appropriateness
