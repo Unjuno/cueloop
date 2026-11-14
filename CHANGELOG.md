@@ -73,8 +73,11 @@
   into a target ending in `.jsonl`, crashing every paired run at the last
   step ("Not a directory"). Now writes `cue/silence` with distinct basenames
   in a paired dir, tolerates a totally silent arm (missing log file), and
-  prints an explicit WARNING when SFSpeechRecognizer produced no transcript
-  event at all — an empty "success" can no longer masquerade as paired data.
+  prints an explicit WARNING when SFSpeechRecognizer produced no clause
+  text at all — empty "success" can no longer masquerade as paired data.
+  (First cut of the WARNING matched the wrong signature — separate
+  transcript events — and false-tripped on a genuinely spoken CUE session;
+  it now scans `.jsonl` `"clause"` fields, verified on three live files.)
 - **Prediction parser accepts non-standard model outputs**: markdown-fenced
   JSON (```json ... ```) and synonym span keys (`next_segment`,
   `next_sentence`, `continuation`, `next_text`, `next`) are now parsed

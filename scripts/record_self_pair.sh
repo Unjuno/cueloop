@@ -8,14 +8,16 @@
 set -euo pipefail
 
 warn_if_silent() {
-  # a session where SFSpeechRecognizer never produced even a transcript
-  # partial means the speaker did not talk into the mic; say so loudly
-  # instead of letting an empty "success" be mistaken for data.
+  # a session where SFSpeechRecognizer never produced a single character of
+  # text is empty from an experiment standpoint; say so loudly instead of
+  # letting an empty "success" be mistaken for data. The .jsonl prediction
+  # lines carry the recognized clause text in a `"clause"` field (there are
+  # no separate transcript events), so we scan for non-empty clause text.
   local arm_log="$1"
-  if ! grep -q '"transcript_partial"\|"transcript_final"' "$arm_log" 2>/dev/null; then
+  if ! grep -qE '"clause":[[:space:]]*"[^"]*[^"[:space:]][^"]*"' "$arm_log" 2>/dev/null; then
     echo ""
-    echo "WARNING: this arm captured NO speech from the microphone."
-    echo "         (SFSpeechRecognizer produced no transcript event.)"
+    echo "WARNING: this arm captured NO recognizable speech from the microphone."
+    echo "         (no prediction carried any Japanese clause text.)"
     echo "         The paired data is empty; speak at the mic and rerun."
     echo ""
   fi

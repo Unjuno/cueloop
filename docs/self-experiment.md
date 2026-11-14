@@ -48,7 +48,12 @@ scripts/record_self_pair.sh design-choice 60
 That opens the mic for 60 s of CUE (cues spoken in Japanese via Kyoko) then
 60 s of SILENCE (no voice), using the same `pair_key`, and writes
 `logs/self/design-choice-{cue,silence}.jsonl` plus matching reports under
-`logs/self-design-choice-paired/`. It fails loud if the adapter is missing.
+`logs/self-design-choice-paired/`. It fails loud if the adapter is missing,
+and warns explicitly when an arm captured **no recognizable speech at
+all** (a zero-prediction arm). Detection scans the prediction clause
+text inside `.jsonl` (this pipeline never writes separate transcript
+events), verified against three live files: spoken CUE sessions show
+non-empty clauses; a silent SILENCE session does not.
 
 To pair them manually:
 
