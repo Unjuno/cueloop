@@ -3,12 +3,12 @@
 ## Unreleased
 
 ### Added
-- **2026-11-15 absolute live-pair count 27 (203424 — fourth consecutive
-  empty)**: utterances CUE=15 SILENCE=37, zero Japanese clause text.
-  Aggregated 27 pairs: uptake +0.047 CI [-0.027, +0.141] (includes zero).
-  4 consecutive silent pairs signal owner reliably absent; live H1/H2
-  cannot advance without their return. No more empty-pair recordings will
-  be created this turn. See issue #6.
+- **2026-11-15 absolute live-pair count 28 (204315 — fifth consecutive
+  empty)**: utterances CUE=19 SILENCE=1, zero Japanese clause text.
+  Aggregated 28 pairs: uptake +0.045 CI [-0.027, +0.132] (includes zero).
+  5 consecutive silent pairs confirm owner absent; live H1/H2 cannot
+  advance without their return. No more empty pairs will be recorded.
+  See issue #6.
 - **2026-11-15 17:09 design-choice attempt 4 (genuinely live)**: pair 3
   of the corpus's live history. CUE arm: utterances=1, predictions=23,
   4 deliveries (concretize/mech/ground/conclusion) — mechanism outcome

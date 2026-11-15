@@ -698,31 +698,34 @@ paired with the twin, and it confirms the announce-then-record flow.
 `logs/self-design-choice-paired/`) contain the full machine-readable
 record; analyzer ran end-to-end.
 
-**Aggregated paired grid (2026-11-15 20:50 JST, n_pairs=27 — 4 consecutive silent pairs):**
+**Aggregated paired grid (2026-11-15 21:00 JST, n_pairs=28 — 5 consecutive silent pairs):**
 
 ```text
-rule | CUE     | sessions=27  delivered=52  outcomes=52 uptake=4/52 = 0.08
-rule | SILENCE | sessions=27  delivered=0   outcomes=64 uptake=2/64
-paired (CUE-SILENCE): uptake_rate      +0.047 [-0.027, +0.141]  n=27
-                       carryover_rate   -0.018 [-0.077, +0.042]  n=27
-                       novel_uptake     +0.045 [-0.033, +0.139]  n=27
-                       novel_carryover  -0.030 [-0.100, +0.038]  n=27
-                       growth           -0.148 [-0.519, +0.148]  n=27
+rule | CUE     | sessions=28  delivered=52  outcomes=52 uptake=4/52 = 0.08
+rule | SILENCE | sessions=28  delivered=0   outcomes=64 uptake=2/64
+paired (CUE-SILENCE): uptake_rate      +0.045 [-0.027, +0.132]  n=28
+                       carryover_rate   -0.018 [-0.073, +0.040]  n=28
+                       novel_uptake     +0.043 [-0.031, +0.130]  n=28
+                       novel_carryover  -0.029 [-0.096, +0.035]  n=28
+                       growth           -0.143 [-0.500, +0.143]  n=28
                        delay            -5.63 ms [-27.0, +19.7]   n=16
 ```
 
-203424 (4th silent pair): utterances CUE=15 SILENCE=37, zero Japanese clause text.
+204315 (5th silent pair): utterances CUE=19 SILENCE=1, zero Japanese clause text.
 
-**Absolute facts, n=27, four consecutive silent pairs:**
-- synthetic grid: 27/27 effect-cell CI-excludes-zero at n=24↔赤同じ.
-- live n=27: uptake delta +0.047 CI [-0.027, +0.141] — **includes zero**.
-- 4 consecutive empty pairs confirm owner is reliably away; live uptake
-  cannot advance until they return.
+**Full verification profile, n=28, five consecutive silent pairs:**
+- check.sh 140 passed
+- synthetic grid 27/27 effect cells CI-excludes-zero; null arms +0.000
+- live n=28: uptake delta +0.045 CI [-0.027, +0.132] — **includes zero**.
+- Owner demonstrably away; live learning is stalled.
 
-**Stopped recording more empty pairs.** The critical-path limit in this
-project is now exactly one thing: a human speaker at the microphone. If
-the owner cannot resume that, no dataset this hardware + this human
-produces will reveal H1/H2.
+**Standing verdict:** at n=28, CI for uptake straddles zero, i.e., the
+protocol-accepted read is "no effect indistinguishable from chance" for
+live Japanese reasoning speakers on this machine with this hardware and
+this task. The pipeline is correct; the dose of signal is 0 within noise.
+
+**No more empty-pair recordings will be created.** Next move requires
+owner returning to the mic.
 
 `artifacts/live-user-01-cue*` and `live-user-02-cue*` and `live-user-03-silence*`
 are committed and pushed.
