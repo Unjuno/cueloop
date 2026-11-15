@@ -557,10 +557,14 @@ in production.
 
 ## Agent-live pair protocol (GPT Live indirection, 2026-11-16)
 
-A parallel, owner-independent configuration where the production ASR adapter
-ingests synthesized Japanese reasoning monologue audio produced by a local
-LLM. It is NOT human data; it does NOT test H1/H2 human-transfer. It exists
-only to keep the pipeline exercised while the owner cannot speak.
+**Paused 2026-11-16 01:08 JST at owner's request** ("俺、ちょっとやり
+すぎだ。ずっと喋ってるぞ、勝手に"). The scripts remain in the repo for
+opt-in use only; nothing here runs without an explicit command line
+invocation. Expressed option is gone — no automatic cycles.
+
+Historical status: two completed agent-live pairs (2026-11-16 00:52,
+00:57 JST) with CUE delivered 4 and 3 respectively, zero uptake on each.
+Design, if ever re-enabled:
 
 ```text
 model stack: qwen2.5:7b-instruct (Ollama, port 11434) generating a
@@ -570,24 +574,14 @@ voice: Kyoko (macOS built-in Japanese TTS); SFSpeechRecognizer (ja-JP
        built-in mic) catches the speakers' output
 files: logs/agent-live/<topic>-prompt-<stamp>.txt (generated monologue)
 script: scripts/run_agent_live_pair.sh TOPIC [DURATION]
+paired logs: logs/agent-live-<topic>-paired-<stamp>/
 ```
 
-Pair completed 2026-11-16 00:52 JST:
-
-```text
-Logs: logs/agent-live-なぜdesign-choiceを選ぶのか-paired-20261116-005151/
-CUE arm: utterances=1 predictions=18 delivered=4 (invert 5.3 s / mechanism
-         23.7 s / conclusion 64.7 s / concretize 105.8 s; all +101..+185 ms)
-         uptake=0 on each delivered cue
-SILENCE arm: utterances=2 predictions=24 delivered=0 (all suppressed)
-paired analyzer: ran end-to-end; n_pairs=1; uptake delta +0.000 CI insufficient
-```
-
-Not H1/H2 evidence. Uptake unproven; identical-type engine verification only.
-
-To plug GPT Live as the real interactive agent: `scripts/record_gpt_live_pair.sh`
-(announces then runs a matched CUE/SILENT pair when you physically speak via
-the ChatGPT app).
+**Agent-side is canned equivalence for H1/H2 purposes.** The local LLM
+cannot hear CUELOOP's cues, so uptake is structurally 0 — never useful
+for H1/H2. It exists only so the pipeline can be exercised without an
+owner present, and not even that is wanted now. To speak yourself, use
+scripts/record_self_pair.sh TOPIC.
 
 ## Live paired session (playback, reclassified 2026-11-15)
 
