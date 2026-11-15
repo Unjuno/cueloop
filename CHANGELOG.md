@@ -8,6 +8,10 @@
   on TICK-bearing input. On Lux replay (segment feeds without TICKs)
   0 vs 300 produces 30/30 identical sessions; knob exists for future
   TICK-driven studies. Production default unchanged.
+- **Lux pause_ms sensitivity sweep (200/350/500/750)**: predictions=36,
+  delivered=25 identical at all settings — replay boundaries bind on
+  clause-ender punctuation, not on millisecond gaps; pause_ms is a
+  live-path-only knob.
 - **2026-11-15 playback reclassification (docs/real-speech.md)**: every
   "live" paired capture in this repository is replay of the owner's own
   pre-recorded Japanese monologue into the mic (user-confirmed).

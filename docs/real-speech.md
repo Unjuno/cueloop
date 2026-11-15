@@ -536,6 +536,12 @@ Mechanical answer (code-path truth, file:line):
   results for 0 and 300 — sessions 30/30 matched, delivery-identical
   (`artifacts/lux-lead0` vs `artifacts/lux-lead300`).
 
+**pause_ms sensitivity sweep** (Lux, 30 files, rule backend):
+predictions=36 and delivered=25 at every setting from 200 to 750 ms —
+the replay boundaries are driven by clause-ender punctuation present in
+the whisper segments, so the millisecond pause threshold never binds on
+this input path. `pause_ms` is live-runtime-only on TICK-driven input.
+
 Practical consequences of today's reality:
 - Cues land at clause boundaries ≈ pause>=350 ms delimiter or
   clause-ender punctuation — mid-speaker, not end-of-turn.
