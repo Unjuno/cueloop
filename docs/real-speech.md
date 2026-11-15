@@ -597,6 +597,42 @@ of Japanese reasoning aloud.
 pre-recorded monologue; not live human verification.** See the
 "Playback reclassification" section.
 
+**2026-11-15 17:09 (design-choice attempt 4, live):**
+
+```text
+CUE arm (17:09–17:12 JST):
+  utterances=1  predictions=23  deliveries=4 (no cancellations)
+  DELIVERED @ 47.3 s  '具体は？' (concretize)  +100 ms   uptake=false
+  DELIVERED @ 90.2 s  '仕組みは？' (mechanism)  +162 ms   outcome@98,194 ms
+                       continuation: '同一方向に改善する仕組み'
+                       target_operation_seen=True            (uptake=1)
+  DELIVERED @ 92.9 s  '根拠は？'   (ground)     +160 ms   uptake=false
+  DELIVERED @114.5 s  '結論は？'   (conclusion) +161 ms   uptake=false
+
+SILENCE arm (silent twin):
+  utterances=1  predictions=21  12 held interventions  0 delivered (by design)
+  outcomes=5 uptake=0 carryover=2/5 (conclusion + 2 concretize seen in window)
+               repertoire_growth=conclusion — carryovers seen w/o cues
+  ASR transcript surface: "入れ替えられる入れ替えることができるものを探す" /
+  "メモリ管理を行うものに対して…" (the speaker's own LoRA/adapter swap research)
+
+analyzer paired n_pairs=1: uptake +0.250 [CI insufficient]
+  (CUE 0.25, SILENCE 0.00; growth -1.000 favors SILENCE this pair;
+   carryover delta -0.400 favors SILENCE this pair)
+```
+
+Live evidence: clause texts unique to this session, MD5-verifiable, the
+reasoning is about the speaker's own system — unmistakably a live human.
+Across the two live pairs on 2026-11-15 (n_pairs=2 in total):
+  CUE uptake 2/6 (both mechanism deliveries took effect)
+  SILENCE uptake 0/5
+  carryover CUE 0, SILENCE 0.40
+These are 2 sessions and are labelled as such; they do not support any
+conclusion — only that the loop now produces repeatable live data.
+
+`logs/self/design-choice-{cue,silence}-<STAMP>.jsonl|.report` (unique
+per session; preserved from now on). Analyzer ran end-to-end.
+
 **2026-11-15 17:00 (design-choice attempt 3, genuinely live):**
 rebuilt after the reclassification fix. Personal live speech captured
 end-to-end:

@@ -3,6 +3,14 @@
 ## Unreleased
 
 ### Added
+- **2026-11-15 17:09 design-choice attempt 4 (genuinely live)**: pair 3
+  of the corpus's live history. CUE arm: utterances=1, predictions=23,
+  4 deliveries (concretize/mech/ground/conclusion) — mechanism outcome
+  target_operation_seen=True (continuation "同一方向に改善する仕組み"),
+  2/6 delivered-ops across live pairs. SILENCE twin: 12 interventions
+  HELD by design; carryover seen 2/5 with zero cues. Analyzer n_pairs=1
+  per pair, growth/carryover favour SILENCE — CI insufficient; n_pairs=2
+  total; not H1/H2 evidence.
 - **2026-11-15T17:00 design-choice attempt 3 (genuinely live)**: after
   the playback reclassification, a truly live run captured the owner
   speaking Japanese reasoning through the mic — utterances=1,
