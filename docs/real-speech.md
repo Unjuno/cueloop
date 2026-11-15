@@ -698,34 +698,26 @@ paired with the twin, and it confirms the announce-then-record flow.
 `logs/self-design-choice-paired/`) contain the full machine-readable
 record; analyzer ran end-to-end.
 
-**Aggregated live paired grid (2026-11-15 end-of-day, n_pairs=13):**
+**Aggregated live paired grid (2026-11-15 end-of-day, n_pairs=15):**
 
 ```text
-rule | CUE     | sessions=13  delivered=22  outcomes=22 uptake=2/22 = 0.09
-rule | SILENCE | sessions=13  delivered=0   outcomes=37 uptake=2/37 = 0.05
-paired (CUE-SILENCE): uptake_rate      +0.015 [-0.085, +0.128]  n=13
-                       carryover_rate   -0.078 [-0.160, -0.013]  n=13
-                       novel_uptake     +0.010 [-0.096, +0.123]  n=13
-                       novel_carryover  -0.101 [-0.210, -0.015]  n=13
-                       growth           -0.385 [-0.923, +0.077]  n=13
-                       delay             -8.6 ms [-40.4, +26.1]   n=9
+rule | CUE     | sessions=15  delivered=28  outcomes=28 uptake=2/28 = 0.07
+rule | SILENCE | sessions=15  delivered=0   outcomes=42 uptake=2/42 = 0.05
+paired (CUE-SILENCE): uptake_rate      +0.013 [-0.072, +0.106]  n=15
+                       carryover_rate   -0.051 [-0.138, +0.022]  n=15
+                       novel_uptake     +0.009 [-0.083, +0.104]  n=15
+                       novel_carryover  -0.071 [-0.180, +0.020]  n=15
+                       growth           -0.200 [-0.800, +0.333]  n=15
+                       median delay     -8.950 ms [-37.2, +23.5]  n=10
 ```
 
-**Hard truth (end of 2026-11-15):** 13 live pairs, zero CI-excludes-zero
-across the uptake and carryover axes.
-- Uptake rate delta +0.015 CI [-0.085, +0.128] — the sign is not
-  predictive at this scale, and the size shrinks further with n.
-- SILENCE generated ≥2.6x novel_operation opportunities and ≈3.6x
-  repertoire growth; the task is not always discriminant at this dose.
-- Both live traces that beat baseline-like uptake (mechanism family on
-  170008/170941) were anchoring on a word the speaker naturally continues
-  (仕組み) — lexical imitation, not operant shift.
+Adding 183045/183745/184702/185405 to the set:
+- 184702: CUE delivered=4 (concretize ×2, mechanism, ground); uptake=0; one of the ground outcomes logged carryover_seen=True (+250 ms). repertoire_growth=ground.
+- 185405: CUE delivered=2 (conclusion, invert); uptake=0; repertoire_growth = comparison,dependency for that CUE arm.
 
-**H1/H2 status: not measurable.** The only legitimate reading is that the
-project's current state cannot tell whether cues are helping — and every
-benchmark leans marginally SILENCE-favorable. The 24–32 pair target is
-the correct gate; exhausting the day today at n=13, further sessions
-continue until that threshold is reached.
+Across the full 15-pair pool: CUE+SILENCE arms delivered 28 cues, uptake=2. Mechanism family stays the only uptake-enriched op (2/3 delivered). SILENT outperformed on repertoire_growth (0.47 vs 0.27) and was perfectly anchored to structural lexis.
+
+**Effect status at n=15: none readable.** Uptake CI [-0.072, +0.106] — within noise on both sides as anticipated with the current lexicon-echo regime. Needs ≥24 pairs to resolve.
 
 `artifacts/live-user-01-cue*` and `live-user-02-cue*` and `live-user-03-silence*`
 are committed and pushed.

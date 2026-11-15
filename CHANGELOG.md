@@ -3,14 +3,11 @@
 ## Unreleased
 
 ### Added
-- **2026-11-15 live 13 absolute pairs (final)**: 183045 and 183745 added;
-  aggregated across 13 genuinely-live pairs: CUE delivered=22 uptake=2/22;
-  SILENCE delivered=0 uptake=2/37. Paired n_pairs=13: uptake +0.015 CI
-  [-0.085, +0.128]; carryover −0.078; novel_carryover −0.101. Zero
-  CI-excludes-zero for every uptake-like metric — at this dose the
-  signal shrinks further, and SILENT "natural" op-token production
-  (payload for repertoire_growth) exceeds CUE arm's. No effect readable
-  until n=24. See issue #6.
+- **2026-11-15 absolute live-pair total 15 (183045/183745/184702/185405)**:
+  aggregated across 15 genuinely-live pairs: CUE delivered=28 uptake=2/28
+  (mechanism×2); SILENCE delivered=0 uptake=2/42 (natural op tokens);
+  paired n_pairs=15: uptake +0.013 CI [-0.072, +0.106]. No CI excludes
+  zero for any metric. Not H1/H2 evidence — 24-32 pairs. See issue #6.
 - **2026-11-15 17:09 design-choice attempt 4 (genuinely live)**: pair 3
   of the corpus's live history. CUE arm: utterances=1, predictions=23,
   4 deliveries (concretize/mech/ground/conclusion) — mechanism outcome
