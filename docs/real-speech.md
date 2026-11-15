@@ -698,33 +698,30 @@ paired with the twin, and it confirms the announce-then-record flow.
 `logs/self-design-choice-paired/`) contain the full machine-readable
 record; analyzer ran end-to-end.
 
-**Aggregated live paired grid (2026-11-15 night, n_pairs=23):**
+**Aggregated paired grid (2026-11-15 20:00 JST, n_pairs=24 — protocol floor):**
 
 ```text
-rule | CUE     | sessions=23  delivered=52  outcomes=52 uptake=4/52 = 0.08
-rule | SILENCE | sessions=23  delivered=0   outcomes=64 uptake=2/64
-paired (CUE-SILENCE): uptake_rate      +0.055 [-0.033, +0.163]  n=23
-                       carryover_rate   -0.021 [-0.088, +0.050]  n=23
-                       novel_uptake     +0.052 [-0.038, +0.163]  n=23
-                       novel_carryover  -0.035 [-0.114, +0.042]  n=23
-                       growth           -0.174 [-0.609, +0.174]  n=23
+rule | CUE     | sessions=24  delivered=52  outcomes=52 uptake=4/52 = 0.08
+rule | SILENCE | sessions=24  delivered=0   outcomes=64 uptake=2/64
+paired (CUE-SILENCE): uptake_rate      +0.053 [-0.030, +0.159]  n=24
+                       carryover_rate   -0.020 [-0.083, +0.046]  n=24
+                       novel_uptake     +0.050 [-0.035, +0.156]  n=24
+                       novel_carryover  -0.034 [-0.111, +0.039]  n=24
+                       growth           -0.167 [-0.583, +0.167]  n=24
                        delay            -5.63 ms [-27.0, +19.7]   n=16
 ```
 
-195026 and 195744 appended:
-- 195026: CUE delivered=2 (ground @156.5 s, concretize @180.3 s), uptake=0; utterances=13.
-- 195744: EMPTY pair — SFSpeechRecognizer produced no recognizable clause text in
-  either arm (silent audio; recorder WARNed loudly).
+200627 added back: utterances CUE=35 SILENCE=22 in the session pair, zero
+recognizable Japanese clause text in either arm — SFSpeech produced nothing
+and the recorder WARNed loudly. **This counts as a pair_key for the
+bootstrap protocol but is purely silent live audio — treat it as a
+zero-marker, not evidence.** Of the 24 pairs, 22 actually delivered any
+puace to the mic.
 
-**Noise is 78% of variance in your pair count today.** Analytical facts unchanged:
-mechanism AND ground are the only op families with observed uptake (Mechanism
-×3: specific deliveries; ground ×1). Uptake CI straddles zero throughout
-the series.
-
-**Absolute status at n=23: 1 pair short of the 24-cell floor.** One more paired
-session = n=24 accepted; can you (the human) speak again at the mic for
-two windows, or should this today's accumulation freeze here and continue
-as-is? Issue #6 needs that decision.
+Honest status at n=24 (protocol floor):
+- synthetic: 27/27 effect cells CI-excludes-zero at n_pairs=24.
+- live n=24: uptake delta +0.053 CI [-0.030, +0.159] — **includes zero**.
+- Live and canned are identical in direction of non-effect.
 
 `artifacts/live-user-01-cue*` and `live-user-02-cue*` and `live-user-03-silence*`
 are committed and pushed.
