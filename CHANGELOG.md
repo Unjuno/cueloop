@@ -3,6 +3,11 @@
 ## Unreleased
 
 ### Added
+- **`--early-lead-ms` plumbed through the Lux simulator** (default 0,
+  off): plan cues up to N ms before the pause threshold — executes only
+  on TICK-bearing input. On Lux replay (segment feeds without TICKs)
+  0 vs 300 produces 30/30 identical sessions; knob exists for future
+  TICK-driven studies. Production default unchanged.
 - **2026-11-15 playback reclassification (docs/real-speech.md)**: every
   "live" paired capture in this repository is replay of the owner's own
   pre-recorded Japanese monologue into the mic (user-confirmed).

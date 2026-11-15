@@ -180,6 +180,7 @@ def run_session(
     pause_ms: int,
     cooldown_ms: int,
     min_text_characters: int,
+    early_lead_ms: int = 0,
     predictor_name: str = "cycle",
     decision_name: str = "rule",
     local_model: str = "qwen2.5:7b-instruct",
@@ -245,6 +246,7 @@ def run_session(
         pause_ms=pause_ms,
         cooldown_ms=cooldown_ms,
         min_text_characters=min_text_characters,
+        early_lead_ms=early_lead_ms,
         outcome_window_ms=8_000,
         condition=condition,
         assignment="canonical",
@@ -293,6 +295,8 @@ def main() -> int:
         help="label embedded in the report note (e.g. 'lux', 'reazon')",
     )
     parser.add_argument("--pause-ms", type=int, default=350)
+    parser.add_argument("--early-lead-ms", type=int, default=0,
+                        help="plan cues this many ms before the pause threshold (off)")
     parser.add_argument("--cooldown-ms", type=int, default=1_500)
     parser.add_argument("--min-text-characters", type=int, default=4)
     parser.add_argument("--whisper-model", default="/tmp/whisper-base")
@@ -335,6 +339,7 @@ def main() -> int:
                 pause_ms=args.pause_ms,
                 cooldown_ms=args.cooldown_ms,
                 min_text_characters=args.min_text_characters,
+                early_lead_ms=args.early_lead_ms,
                 predictor_name=args.predictor,
                 decision_name=args.decision,
                 local_model=args.local_model,

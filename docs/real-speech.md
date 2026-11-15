@@ -514,6 +514,41 @@ the **delivery-fire evidence** (boundary→delivery 100-181 ms on replayed
 real human speech), and the **pipeline end-to-end correctness**
 (boundary→intervention→delivery→outcome→carryover all log live).
 
+## The real-time axis (measured 2026-11-15, synthetic Lux replay, 30 files)
+
+An internal reviewer question — "does the cue fire *during* the clause or
+only after the speaker finishes?" — was answered mechanically, not
+rhetorically, by reading `src/cueloop/sync/runtime.py` and replaying Lux
+with two `--early-lead-ms` settings (note: replay paths without TICK
+streams do not exercise the early-lead branch):
+
+Mechanical answer (code-path truth, file:line):
+- TICK path (`runtime.py:267-277`): pause detection fires on TICKs only
+  when the last transcript change was ≥ `pause_ms` (default 350 ms) ago →
+  delivery at 100-181 ms after the pause is detectable.
+- TRANSCRIPT_PARTIAL path (`runtime.py:248-256`): boundary detection runs
+  on every observed transcript change; clause-ender punctuation or
+  TRIGGER_PHRASES clause indicate an immediate boundary. So per-utterance
+  cues fire between clauses, not at turn end.
+- `early_lead_ms` (`runtime.py:279-285`): pre-plans the cue up to
+  `early_lead_ms` before the pause threshold arrives — but executes only
+  on TICKs. Replaying Lux (segments only, no TICKs) gives identical
+  results for 0 and 300 — sessions 30/30 matched, delivery-identical
+  (`artifacts/lux-lead0` vs `artifacts/lux-lead300`).
+
+Practical consequences of today's reality:
+- Cues land at clause boundaries ≈ pause>=350 ms delimiter or
+  clause-ender punctuation — mid-speaker, not end-of-turn.
+- 100-181 ms later delivery after the pause threshold (evidence from
+  all replay + playback sessions).
+- `--early-lead-ms > 0` exists as a CLI knob but would only matter with
+  TICK input; measured on Lux today: zero effect. It is off by default
+  by design (const, not bug).
+
+`pause_ms`/`early_lead_ms` change the experiment constant — minimal
+malicious change control; they are documented here rather than enabled
+in production.
+
 ## Live paired session (playback, reclassified 2026-11-15)
 
 Two paired "live" runs on 2026-11-13 (macOS built-in mic, locale ja-JP,
