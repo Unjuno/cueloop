@@ -698,24 +698,32 @@ paired with the twin, and it confirms the announce-then-record flow.
 `logs/self-design-choice-paired/`) contain the full machine-readable
 record; analyzer ran end-to-end.
 
-**Aggregated live paired grid (2026-11-15 night, n_pairs=20):**
+**Aggregated live paired grid (2026-11-15 night, n_pairs=21):**
 
 ```text
-rule | CUE     | sessions=20  delivered=40  outcomes=40 uptake=3/40 = 0.08
-rule | SILENCE | sessions=20  delivered=0   outcomes=52 uptake=1/52
-paired (CUE-SILENCE): uptake_rate      +0.060 [-0.039, +0.183]  n=20
-                       carryover_rate   -0.016 [-0.088, +0.058]  n=20
-                       novel_uptake     +0.056 [-0.048, +0.180]  n=20
-                       novel_carryover  -0.032 [-0.121, +0.053]  n=20
-                       growth           -0.250 [-0.700, +0.150]  n=20
-                       delay            -1.18 ms [-25.8, +25.1]   n=14
+rule | CUE     | sessions=21  delivered=50  outcomes=50 uptake=4/50 = 0.08
+rule | SILENCE | sessions=21  delivered=0   outcomes=60 uptake=2/60
+paired (CUE-SILENCE): uptake_rate      +0.060 [-0.036, +0.179]  n=21
+                       carryover_rate   -0.023 [-0.092, +0.053]  n=21
+                       novel_uptake     +0.057 [-0.040, +0.178]  n=21
+                       novel_carryover  -0.038 [-0.123, +0.047]  n=21
+                       growth           -0.190 [-0.667, +0.190]  n=21
+                       delay            -4.33 ms [-28.5, +22.1]   n=15
 ```
 
-192620/193338 added back: CUE delivered=0 (193338 = most engaged session of the day: 9 cues, 0 uptake; SILENT arm 15 utterances, 13 held).
+194154 added back:
+- CUE arm caught a rich session: 11 utterances, predictions=54, 10 delivered
+  (concretize ×2, ground ×2, conclusion ×3, invert, mechanism, comparison,
+  boundary), mechanism uptake=True AND ground uptake=True (continuation
+  "根拠も一緒に" — lexicon-driven).
+- SILENT arm: 6 cancelled, 1 SILENT held on dependency (@142 s); conclusion
+  uptake=1 naturally in continuation; repertoire_growth CUE arm gained
+  4 tokens (boundary, comparison, mechanism, dependency), SILENT arm
+  gained 3 (comparison, conclusion, concretize).
 
-Mechanism stays the sole op family ever with any cue uptake event observed.
+Mechanism AND ground families now account for all cue uptake events observed.
 
-**CI verdict at n=20: still includes zero.** No CI-excludes-zero for any uptake-like metric.
+**CI verdict at n=21: still includes zero.** No CI-excludes-zero for any uptake-like metric. Opportunity to pass the 24-paired cell is within reach if more sessions happen.
 
 `artifacts/live-user-01-cue*` and `live-user-02-cue*` and `live-user-03-silence*`
 are committed and pushed.
