@@ -698,32 +698,31 @@ paired with the twin, and it confirms the announce-then-record flow.
 `logs/self-design-choice-paired/`) contain the full machine-readable
 record; analyzer ran end-to-end.
 
-**Aggregated live paired grid (2026-11-15, n_pairs=4):**
+**Aggregated live paired grid (2026-11-15, n_pairs=5):**
 
 ```text
-rule | CUE     | sessions=4  delivered=9  outcomes=9  uptake=2/9 = 0.19
-rule | SILENCE | sessions=4  delivered=0  outcomes=10 uptake=0/10
-paired (CUE-SILENCE): uptake_rate     +0.188 [+0.000, +0.375]  n=4
-                       carryover_rate  -0.183 [-0.367, +0.000]  n=4
-                       novel_uptake    +0.188 [+0.000, +0.375]  n=4
-                       novel_carryover -0.250 [-0.500, +0.000]  n=4
-                       growth          -0.250 [-0.750, +0.000]  n=4
-                       median delay    -21.3 ms [-46.0, -6.5]    n=3
+rule | CUE     | sessions=5  delivered=10  outcomes=10 uptake=2/10 = 0.15
+rule | SILENCE | sessions=5  delivered=0   outcomes=15 uptake=0/15
+paired (CUE-SILENCE): uptake_rate     +0.150 [+0.000, +0.350]  n=5
+                       carryover_rate  -0.147 [-0.307, +0.000]  n=5
+                       novel_uptake    +0.150 [+0.000, +0.350]  n=5
+                       novel_carryover -0.200 [-0.400, +0.000]  n=5
+                       growth          -0.200 [-0.600, +0.000]  n=5
+                       median delay    +8.25 ms [-36.1, +69.9]   n=4
 
 individual pairs:
   170008: CUE uptake 1/2 (mechanism), SILENCE 0/0
   170941: CUE uptake 1/4 (mechanism), SILENCE 0/5 + carryover 2/5
   171810: CUE uptake 0/2,              SILENCE 0/2
   172505: CUE uptake 0/1,              SILENCE 0/3 + carryover 1/3
+  173444: CUE uptake 0/1 (mechanism delivered, outcome spot NOT seen), SILENCE 0/5
 ```
 
-Status: `uptake_rate` delta is positive (+0.188) but the bootstrap CI
-includes zero; the only CI excluding zero is `median_boundary_to_delivery`
-(-21.3 ms, n=3) — a timing measurement, not an effect. Mechanism uptake
-is 2/2 deliveries in pairs 170008/170941; by contrast concretize,
-ground, conclusion, invert deliveries are 0/4 paired with silence. This
-pattern is baseline-interchangeable with the speaker's lexicon; only
-24-32 pairs will resolve it.
+Status: `uptake_rate` delta is positive across the five live pairs
+(+0.150) but the bootstrap CI still includes zero ([+0.000, +0.350]).
+Mechanism deliveries remain the only source of uptake-on events (2 out
+of 10 delivered ops uptake=observed; both mechanism instances). No
+CI-excludes-zero is observed for any metric except none.
 
 `artifacts/live-user-01-cue*` and `live-user-02-cue*` and `live-user-03-silence*`
 are committed and pushed.

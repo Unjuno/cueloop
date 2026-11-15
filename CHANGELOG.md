@@ -3,15 +3,14 @@
 ## Unreleased
 
 ### Added
-- **2026-11-15 live pairs 5–6 (170941, 171810, 172505)**: two more
-  genuinely-live paired sessions captured end-to-end (each CUE+SILENCE,
-  180+180s, Kyoko announce). Pair 171810: CUE delivered 2 cues, uptake 0.
-  Pair 172505: CUE delivered 1 cue, uptake 0. Aggregated across 4 live
-  pairs (170008/170941/171810/172505): CUE uptake 2/9, SILENCE uptake
-  0/10; paired n_pairs=4 — uptake +0.188 CI [+0.000, +0.375] (includes
-  zero); carryover rate -0.183 [-0.367, +0.000]; only CI excluding zero
-  is median_boundary_to_delivery −21.3 ms (n=3). Not H1/H2 evidence —
-  24-32 pairs required; see issue #6.
+- **2026-11-15 live pairs 5–6 (170941, 171810, 172505, 173444)**: four
+  more genuinely-live paired sessions captured end-to-end (each
+  CUE+SILENCE, 180+180 s, Kyoko announce recorded/replayed-discovery).
+  Aggregated across 5 live pairs (170008/170941/171810/172505/173444):
+  CUE delivered=10, uptake=2/10; SILENCE delivered=0, uptake=0/15;
+  paired n_pairs=5 — uptake +0.150 CI [+0.000, +0.350] (includes zero);
+  carryover rate −0.147 [−0.307, +0.000]; delay +8.25 [−36.1, +69.9].
+  Not H1/H2 evidence — 24-32 pairs required; see issue #6.
 - **2026-11-15 17:09 design-choice attempt 4 (genuinely live)**: pair 3
   of the corpus's live history. CUE arm: utterances=1, predictions=23,
   4 deliveries (concretize/mech/ground/conclusion) — mechanism outcome
