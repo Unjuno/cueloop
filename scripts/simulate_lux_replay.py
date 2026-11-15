@@ -295,8 +295,12 @@ def main() -> int:
         help="label embedded in the report note (e.g. 'lux', 'reazon')",
     )
     parser.add_argument("--pause-ms", type=int, default=350)
-    parser.add_argument("--early-lead-ms", type=int, default=0,
-                        help="plan cues this many ms before the pause threshold (off)")
+    parser.add_argument(
+        "--early-lead-ms",
+        type=int,
+        default=0,
+        help="plan cues this many ms before the pause threshold (off)",
+    )
     parser.add_argument("--cooldown-ms", type=int, default=1_500)
     parser.add_argument("--min-text-characters", type=int, default=4)
     parser.add_argument("--whisper-model", default="/tmp/whisper-base")
