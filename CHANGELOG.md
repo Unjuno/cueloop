@@ -3,12 +3,12 @@
 ## Unreleased
 
 ### Added
-- **2026-11-15 absolute live-pair count 26 (202527 — third consecutive
-  empty)**: utterances CUE=29 SILENCE=37, zero Japanese clause text in
-  either arm; recorder WARNed loudly. Aggregated 26 pairs: uptake +0.049
-  CI [-0.029, +0.144] (includes zero). 3 consecutive silent pairs signal
-  owner away; live H1/H2 accumulation is stalled on human availability.
-  Not H1/H2 evidence — see issue #6.
+- **2026-11-15 absolute live-pair count 27 (203424 — fourth consecutive
+  empty)**: utterances CUE=15 SILENCE=37, zero Japanese clause text.
+  Aggregated 27 pairs: uptake +0.047 CI [-0.027, +0.141] (includes zero).
+  4 consecutive silent pairs signal owner reliably absent; live H1/H2
+  cannot advance without their return. No more empty-pair recordings will
+  be created this turn. See issue #6.
 - **2026-11-15 17:09 design-choice attempt 4 (genuinely live)**: pair 3
   of the corpus's live history. CUE arm: utterances=1, predictions=23,
   4 deliveries (concretize/mech/ground/conclusion) — mechanism outcome

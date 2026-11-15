@@ -698,30 +698,31 @@ paired with the twin, and it confirms the announce-then-record flow.
 `logs/self-design-choice-paired/`) contain the full machine-readable
 record; analyzer ran end-to-end.
 
-**Aggregated paired grid (2026-11-15 20:30 JST, n_pairs=26 — third consecutive silent pair):**
+**Aggregated paired grid (2026-11-15 20:50 JST, n_pairs=27 — 4 consecutive silent pairs):**
 
 ```text
-rule | CUE     | sessions=26  delivered=52  outcomes=52 uptake=4/52 = 0.08
-rule | SILENCE | sessions=26  delivered=0   outcomes=64 uptake=2/64
-paired (CUE-SILENCE): uptake_rate      +0.049 [-0.029, +0.144]  n=26
-                       carryover_rate   -0.019 [-0.077, +0.044]  n=26
-                       novel_uptake     +0.046 [-0.035, +0.141]  n=26
-                       novel_carryover  -0.031 [-0.101, +0.039]  n=26
-                       growth           -0.154 [-0.538, +0.154]  n=26
+rule | CUE     | sessions=27  delivered=52  outcomes=52 uptake=4/52 = 0.08
+rule | SILENCE | sessions=27  delivered=0   outcomes=64 uptake=2/64
+paired (CUE-SILENCE): uptake_rate      +0.047 [-0.027, +0.141]  n=27
+                       carryover_rate   -0.018 [-0.077, +0.042]  n=27
+                       novel_uptake     +0.045 [-0.033, +0.139]  n=27
+                       novel_carryover  -0.030 [-0.100, +0.038]  n=27
+                       growth           -0.148 [-0.519, +0.148]  n=27
                        delay            -5.63 ms [-27.0, +19.7]   n=16
 ```
 
-202527 (3rd silent pair): utterances CUE=29 SILENCE=37, zero Japanese clause text.
+203424 (4th silent pair): utterances CUE=15 SILENCE=37, zero Japanese clause text.
 
-**Honest status at n=26 — three consecutive empty pairs:**
-- synthetic grid: 27/27 effect-cell CI-excludes-zero at same n.
-- live n=26: uptake delta +0.049 CI [-0.029, +0.144] — **includes zero**.
-- 3 consecutive empty pairs indicates the owner is reliably absent; further
-  live-*learning* pairs cannot be collected until they return.
+**Absolute facts, n=27, four consecutive silent pairs:**
+- synthetic grid: 27/27 effect-cell CI-excludes-zero at n=24↔赤同じ.
+- live n=27: uptake delta +0.047 CI [-0.027, +0.141] — **includes zero**.
+- 4 consecutive empty pairs confirm owner is reliably away; live uptake
+  cannot advance until they return.
 
-Three consecutive empty pairs means the uptake-signal here equals none rather
-than marginal. This is what makes the loop actually stuck on the human input,
-not on the plumbing.
+**Stopped recording more empty pairs.** The critical-path limit in this
+project is now exactly one thing: a human speaker at the microphone. If
+the owner cannot resume that, no dataset this hardware + this human
+produces will reveal H1/H2.
 
 `artifacts/live-user-01-cue*` and `live-user-02-cue*` and `live-user-03-silence*`
 are committed and pushed.
