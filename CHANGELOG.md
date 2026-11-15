@@ -3,13 +3,22 @@
 ## Unreleased
 
 ### Added
-- **2026-11-15 live pair (180 s arms, audible Kyoko announce)**: a
-  continuous Japanese reasoning monologue was captured end-to-end. Two
-  cues DELIVERED (mechanism @9.5 s / +181 ms, conclusion @176.7 s /
-  +101 ms); three CANCELLED. SILENCE arm: 12 interventions HELD by
-  design, utterances=17, predictions=29. Paired analyzer n_pairs=1:
-  growth +1.000 / delay +39.5 ms — CI insufficient (not H1/H2 evidence;
-  uptake 0 on both deliveries). n_pairs=2 across the corpus in total.
+- **2026-11-15 playback reclassification (docs/real-speech.md)**: every
+  "live" paired capture in this repository is replay of the owner's own
+  pre-recorded Japanese monologue into the mic (user-confirmed).
+  Consistent with quantitative evidence: byte-identical
+  boundary/timestamps across consecutive arms (MD5 `1945b967…` shared
+  by Nov 14 20:01 and Nov 15 20:34 runs at ms 54375/55497/56072) — impossible for
+  spontaneous speech. All such sessions are canned-class:
+  delivery/boundary/prediction all logged, but the speaker cannot react
+  to cues; H1/H2 n_pairs = 0. Insertion benchmark and synthetic
+  calibration axis survive the reclassification unchanged.
+- **2026-11-15 "live pair" (180 s arms, audible Kyoko announce) — historical,
+  reclassified**: continuous Japanese monologue replay was captured
+  end-to-end. Not live human interaction. Kept as an end-to-end pipeline
+  trace (CUE 2 deliveries: mechanism @9.5 s +181 ms, conclusion @176.7 s
+  +101 ms; SILENCE arm 12 interventions HELD by design). Do not cite as
+  uptake evidence.
 - **Recorder announces audible start + defaults to 180 s window**:
   scripts/record_self_pair.sh voices "これから話してください" (CUE) /
   "もう一度、同じ話題で話してください" (SILENCE) before each arm and the

@@ -480,9 +480,43 @@ the evidence on canned audio stands at n=155 across three corpora/backends:
 every paired CI [+0.000, +0.000]. Therefore: the only remaining
 unmeasured variable is the human speaker's online reaction to a cue.
 
-## Live paired session (user spoke Japanese reasoning aloud)
+## Playback reclassification (2026-11-15, user-confirmed)
 
-Two paired live runs on 2026-11-13 (macOS built-in mic, locale ja-JP,
+**Every captured "live" pair reported in this repo is a playback of the
+user's pre-recorded monologue, and is canned-class.** User confirmed on
+2026-11-15. Quantitative evidence found independently:
+
+- Nov 14 (20:01) and Nov 15 (20:34) CUE arms produced byte-identical
+  events — same `at_ms` (54375/55497/56072), same clause text
+  (`幻聴はどうですかどの程度やってんの` / `余計なことし…してない`),
+  MD5 `1945b967c19…` shared across runs.
+- Byte-identical recognizer output appeared across consecutive arms with
+  identical `at_ms` values at every boundary — impossible for
+  spontaneous speech but expected for a fixed playback source.
+- Nov 13's "live-user-01/02/03" captures were likely playback too
+  (same reasoning-monologue content pattern, identical recognizer
+  output shape); they are treated as canned pending any contradictory
+  evidence.
+
+Semantics now: **H1/H2 n_pairs = 0.** These recordings are a real human
+speaker's monologue replayed to the mic, so cue delivery works and picks
+up boundaries/predictions, but the speaker cannot respond to inserted
+cues — operational equivalence to the corpora replays. All paired-delta
+statistics in this repo, including the 2026-11-15 "live pair" section,
+are canned-boundary observations. Docs (below) remain intact for
+archaeological record value; the scientific interpretation flips
+accordingly (issue #6 tracks the flip).
+
+What survived the reclassification: the **insertion benchmark**
+(`scripts/benchmark_insertion.py`) on 7 corpora, the **synthetic
+calibration** (null arms +0.000, effect grid 27/27 CI-excludes-zero),
+the **delivery-fire evidence** (boundary→delivery 100-181 ms on replayed
+real human speech), and the **pipeline end-to-end correctness**
+(boundary→intervention→delivery→outcome→carryover all log live).
+
+## Live paired session (playback, reclassified 2026-11-15)
+
+Two paired "live" runs on 2026-11-13 (macOS built-in mic, locale ja-JP,
 ngram(3) predictor, rule decision, bare cue, canonical assignment, seed 5,
 90 s window). The speaker reasoned aloud in Japanese; ASR caught the actual
 utterances:
@@ -519,6 +553,7 @@ Filling the paired grid: one pair = 1 min of speech per session; one cell
 of Japanese reasoning aloud.
 
 **2026-11-15 design-choice attempt 2 (180 s windows, audible announce):**
+(playback of pre-recorded monologue; reclassified 2026-11-15 — canned-class)
 paired live Japanese reasoning captured by SFSpeechRecognizer end-to-end.
 
 ```text
@@ -555,6 +590,10 @@ record; analyzer ran end-to-end.
 
 `artifacts/live-user-01-cue*` and `live-user-02-cue*` and `live-user-03-silence*`
 are committed and pushed.
+
+**2026-11-15 "live pair" (180 s arms, audible announce):** playback
+of pre-recorded monologue per the 2026-11-15 reclassification above —
+not live human interaction. Same for 2026-11-14 arms.
 
 **2026-11-14 design-choice attempt (self-pair recorder):** CUE arm
 (20:01) captured two fragments of Japanese speech text inside prediction
