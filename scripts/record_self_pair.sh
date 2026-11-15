@@ -44,6 +44,13 @@ fi
 
 mkdir -p logs/self
 
+STAMP2="$(date +%Y%m%d-%H%M%S)"
+
+# raw logs get a timestamp suffix so accumulated sessions are never
+# overwritten; the paired staging dir is likewise unique per invocation
+CUE_STEM="logs/self/${TOPIC}-cue-${STAMP2}"
+SILENCE_STEM="logs/self/${TOPIC}-silence-${STAMP2}"
+
 announce() {
   echo "$1"
   say -v Kyoko "$1" >/dev/null 2>&1 || true
@@ -59,8 +66,8 @@ python3 -m pip install -q -e . 2>/dev/null || true
   --condition-label CUE --assignment canonical --seed 3 --cue-style bare \
   --pair-key "self-$TOPIC-${STAMP}" \
   --session-id "self-$TOPIC-cue" \
-  --log "logs/self/${TOPIC}-cue.jsonl" --report "logs/self/${TOPIC}-cue.report"
-warn_if_silent "logs/self/${TOPIC}-cue.jsonl"
+  --log "${CUE_STEM}.jsonl" --report "${CUE_STEM}.report"
+warn_if_silent "${CUE_STEM}.jsonl"
 
 echo
 echo "=== recording SILENCE arm: $TOPIC (no cues voiced)"
@@ -72,17 +79,17 @@ announce "もう一度、同じ話題で話してください"
   --silent \
   --pair-key "self-$TOPIC-${STAMP}" \
   --session-id "self-$TOPIC-silence" \
-  --log "logs/self/${TOPIC}-silence.jsonl" --report "logs/self/${TOPIC}-silence.report"
-warn_if_silent "logs/self/${TOPIC}-silence.jsonl"
+  --log "${SILENCE_STEM}.jsonl" --report "${SILENCE_STEM}.report"
+warn_if_silent "${SILENCE_STEM}.jsonl"
 
-PAIR_DIR="logs/self-$(basename "$TOPIC")-paired"
+PAIR_DIR="logs/self-$(basename "$TOPIC")-paired-${STAMP2}"
 mkdir -p "$PAIR_DIR"
 # a totally silent arm may produce no .jsonl at all; keep the paired dir complete
-touch "logs/self/${TOPIC}-cue.jsonl" "logs/self/${TOPIC}-silence.jsonl"
-cp "logs/self/${TOPIC}-cue.jsonl" "$PAIR_DIR/cue.jsonl"
-cp "logs/self/${TOPIC}-cue.report" "$PAIR_DIR/cue.json"
-cp "logs/self/${TOPIC}-silence.jsonl" "$PAIR_DIR/silence.jsonl"
-cp "logs/self/${TOPIC}-silence.report" "$PAIR_DIR/silence.json"
+touch "${CUE_STEM}.jsonl" "${SILENCE_STEM}.jsonl"
+cp "${CUE_STEM}.jsonl" "$PAIR_DIR/cue.jsonl"
+cp "${CUE_STEM}.report" "$PAIR_DIR/cue.json"
+cp "${SILENCE_STEM}.jsonl" "$PAIR_DIR/silence.jsonl"
+cp "${SILENCE_STEM}.report" "$PAIR_DIR/silence.json"
 
 echo
 echo "=== done"
