@@ -3,11 +3,12 @@
 ## Unreleased
 
 ### Added
-- **2026-11-15 absolute live-pair total 21 (194154)**: aggregated across
-  21 genuinely-live pairs: CUE delivered=50 uptake=4/50 (mechanism×3,
-  ground×1); SILENCE delivered=0 uptake=2/60; paired n_pairs=21: uptake
-  +0.060 CI [-0.036, +0.179]. No CI excludes zero. Not H1/H2 evidence —
-  24-32 pairs. See issue #6.
+- **2026-11-15 absolute live-pair total 23 (195026/195744)**: aggregated
+  across 23 genuinely-live pairs (one pair stalled silent — SFSpeech
+  produced no clause text in either arm; recorder WARNed loudly). CUE
+  delivered=52 uptake=4/52 (mechanism×3, ground×1); SILENCE delivered=0
+  uptake=2/64; paired n_pairs=23 — uptake +0.055 CI [-0.033, +0.163]. No
+  CI excludes zero. Not H1/H2 evidence — 24-32 pairs. See issue #6.
 - **2026-11-15 17:09 design-choice attempt 4 (genuinely live)**: pair 3
   of the corpus's live history. CUE arm: utterances=1, predictions=23,
   4 deliveries (concretize/mech/ground/conclusion) — mechanism outcome

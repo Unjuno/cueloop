@@ -698,32 +698,33 @@ paired with the twin, and it confirms the announce-then-record flow.
 `logs/self-design-choice-paired/`) contain the full machine-readable
 record; analyzer ran end-to-end.
 
-**Aggregated live paired grid (2026-11-15 night, n_pairs=21):**
+**Aggregated live paired grid (2026-11-15 night, n_pairs=23):**
 
 ```text
-rule | CUE     | sessions=21  delivered=50  outcomes=50 uptake=4/50 = 0.08
-rule | SILENCE | sessions=21  delivered=0   outcomes=60 uptake=2/60
-paired (CUE-SILENCE): uptake_rate      +0.060 [-0.036, +0.179]  n=21
-                       carryover_rate   -0.023 [-0.092, +0.053]  n=21
-                       novel_uptake     +0.057 [-0.040, +0.178]  n=21
-                       novel_carryover  -0.038 [-0.123, +0.047]  n=21
-                       growth           -0.190 [-0.667, +0.190]  n=21
-                       delay            -4.33 ms [-28.5, +22.1]   n=15
+rule | CUE     | sessions=23  delivered=52  outcomes=52 uptake=4/52 = 0.08
+rule | SILENCE | sessions=23  delivered=0   outcomes=64 uptake=2/64
+paired (CUE-SILENCE): uptake_rate      +0.055 [-0.033, +0.163]  n=23
+                       carryover_rate   -0.021 [-0.088, +0.050]  n=23
+                       novel_uptake     +0.052 [-0.038, +0.163]  n=23
+                       novel_carryover  -0.035 [-0.114, +0.042]  n=23
+                       growth           -0.174 [-0.609, +0.174]  n=23
+                       delay            -5.63 ms [-27.0, +19.7]   n=16
 ```
 
-194154 added back:
-- CUE arm caught a rich session: 11 utterances, predictions=54, 10 delivered
-  (concretize ×2, ground ×2, conclusion ×3, invert, mechanism, comparison,
-  boundary), mechanism uptake=True AND ground uptake=True (continuation
-  "根拠も一緒に" — lexicon-driven).
-- SILENT arm: 6 cancelled, 1 SILENT held on dependency (@142 s); conclusion
-  uptake=1 naturally in continuation; repertoire_growth CUE arm gained
-  4 tokens (boundary, comparison, mechanism, dependency), SILENT arm
-  gained 3 (comparison, conclusion, concretize).
+195026 and 195744 appended:
+- 195026: CUE delivered=2 (ground @156.5 s, concretize @180.3 s), uptake=0; utterances=13.
+- 195744: EMPTY pair — SFSpeechRecognizer produced no recognizable clause text in
+  either arm (silent audio; recorder WARNed loudly).
 
-Mechanism AND ground families now account for all cue uptake events observed.
+**Noise is 78% of variance in your pair count today.** Analytical facts unchanged:
+mechanism AND ground are the only op families with observed uptake (Mechanism
+×3: specific deliveries; ground ×1). Uptake CI straddles zero throughout
+the series.
 
-**CI verdict at n=21: still includes zero.** No CI-excludes-zero for any uptake-like metric. Opportunity to pass the 24-paired cell is within reach if more sessions happen.
+**Absolute status at n=23: 1 pair short of the 24-cell floor.** One more paired
+session = n=24 accepted; can you (the human) speak again at the mic for
+two windows, or should this today's accumulation freeze here and continue
+as-is? Issue #6 needs that decision.
 
 `artifacts/live-user-01-cue*` and `live-user-02-cue*` and `live-user-03-silence*`
 are committed and pushed.
