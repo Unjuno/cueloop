@@ -698,6 +698,33 @@ paired with the twin, and it confirms the announce-then-record flow.
 `logs/self-design-choice-paired/`) contain the full machine-readable
 record; analyzer ran end-to-end.
 
+**Aggregated live paired grid (2026-11-15, n_pairs=4):**
+
+```text
+rule | CUE     | sessions=4  delivered=9  outcomes=9  uptake=2/9 = 0.19
+rule | SILENCE | sessions=4  delivered=0  outcomes=10 uptake=0/10
+paired (CUE-SILENCE): uptake_rate     +0.188 [+0.000, +0.375]  n=4
+                       carryover_rate  -0.183 [-0.367, +0.000]  n=4
+                       novel_uptake    +0.188 [+0.000, +0.375]  n=4
+                       novel_carryover -0.250 [-0.500, +0.000]  n=4
+                       growth          -0.250 [-0.750, +0.000]  n=4
+                       median delay    -21.3 ms [-46.0, -6.5]    n=3
+
+individual pairs:
+  170008: CUE uptake 1/2 (mechanism), SILENCE 0/0
+  170941: CUE uptake 1/4 (mechanism), SILENCE 0/5 + carryover 2/5
+  171810: CUE uptake 0/2,              SILENCE 0/2
+  172505: CUE uptake 0/1,              SILENCE 0/3 + carryover 1/3
+```
+
+Status: `uptake_rate` delta is positive (+0.188) but the bootstrap CI
+includes zero; the only CI excluding zero is `median_boundary_to_delivery`
+(-21.3 ms, n=3) — a timing measurement, not an effect. Mechanism uptake
+is 2/2 deliveries in pairs 170008/170941; by contrast concretize,
+ground, conclusion, invert deliveries are 0/4 paired with silence. This
+pattern is baseline-interchangeable with the speaker's lexicon; only
+24-32 pairs will resolve it.
+
 `artifacts/live-user-01-cue*` and `live-user-02-cue*` and `live-user-03-silence*`
 are committed and pushed.
 
