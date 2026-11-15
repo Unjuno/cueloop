@@ -3,13 +3,12 @@
 ## Unreleased
 
 ### Added
-- **2026-11-15 absolute pair total 24 (200627 — empty)** — protocol floor
-  reached via an empty pair; utterances CUE=35 SILENCE=22, zero Japanese
-  clause text in either arm; recorder WARNed loudly. Aggregated across 24
-  pairs: CUE delivered=52 uptake=4/52; SILENCE delivered=0 uptake=2/64;
-  paired n_pairs=24: uptake +0.053 CI [-0.030, +0.159] (includes zero).
-  Synthetic grid recovers programmed effect at same n; live does not.
-  See issue #6.
+- **2026-11-15 absolute live-pair count 25 (201606 — empty)**: two
+  consecutive silent pairs (200627, 201606) — owner absent from the mic.
+  Aggregated 25 pairs: CUE delivered=52 uptake=4/52; SILENCE delivered=0
+  uptake=2/64. paired n_pairs=25: uptake +0.051 CI [-0.030, +0.150]
+  (includes zero). Not H1/H2 evidence — see issue #6; live pair
+  accumulation has stalled on human availability.
 - **2026-11-15 17:09 design-choice attempt 4 (genuinely live)**: pair 3
   of the corpus's live history. CUE arm: utterances=1, predictions=23,
   4 deliveries (concretize/mech/ground/conclusion) — mechanism outcome

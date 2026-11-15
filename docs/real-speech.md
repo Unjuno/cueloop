@@ -698,30 +698,32 @@ paired with the twin, and it confirms the announce-then-record flow.
 `logs/self-design-choice-paired/`) contain the full machine-readable
 record; analyzer ran end-to-end.
 
-**Aggregated paired grid (2026-11-15 20:00 JST, n_pairs=24 — protocol floor):**
+**Aggregated live paired grid (2026-11-15 20:30 JST, n_pairs=25):**
 
 ```text
-rule | CUE     | sessions=24  delivered=52  outcomes=52 uptake=4/52 = 0.08
-rule | SILENCE | sessions=24  delivered=0   outcomes=64 uptake=2/64
-paired (CUE-SILENCE): uptake_rate      +0.053 [-0.030, +0.159]  n=24
-                       carryover_rate   -0.020 [-0.083, +0.046]  n=24
-                       novel_uptake     +0.050 [-0.035, +0.156]  n=24
-                       novel_carryover  -0.034 [-0.111, +0.039]  n=24
-                       growth           -0.167 [-0.583, +0.167]  n=24
+rule | CUE     | sessions=25  delivered=52  outcomes=52 uptake=4/52 = 0.08
+rule | SILENCE | sessions=25  delivered=0   outcomes=64 uptake=2/64
+paired (CUE-SILENCE): uptake_rate      +0.051 [-0.030, +0.150]  n=25
+                       carryover_rate   -0.020 [-0.079, +0.042]  n=25
+                       novel_uptake     +0.048 [-0.035, +0.148]  n=25
+                       novel_carryover  -0.032 [-0.106, +0.034]  n=25
+                       growth           -0.160 [-0.520, +0.200]  n=25
                        delay            -5.63 ms [-27.0, +19.7]   n=16
 ```
 
-200627 added back: utterances CUE=35 SILENCE=22 in the session pair, zero
-recognizable Japanese clause text in either arm — SFSpeech produced nothing
-and the recorder WARNed loudly. **This counts as a pair_key for the
-bootstrap protocol but is purely silent live audio — treat it as a
-zero-marker, not evidence.** Of the 24 pairs, 22 actually delivered any
-puace to the mic.
+201606 empty added back: utterances CUE=19 SILENCE=15, zero Japanese clause text.
+Two empty pairs in a row (200627, 201606) confirm the speaker is no longer
+physically seated at the mic.
 
-Honest status at n=24 (protocol floor):
-- synthetic: 27/27 effect cells CI-excludes-zero at n_pairs=24.
-- live n=24: uptake delta +0.053 CI [-0.030, +0.159] — **includes zero**.
-- Live and canned are identical in direction of non-effect.
+**Absolute facts, n=25 with two silent pairs:**
+- synthetic grid: 27/27 effect-cell CI-excludes-zero at same n.
+- live n=25: uptake CI [-0.030, +0.150] still includes zero — consistent
+  with the recent reading that no uptake effect is identifiable at this
+  sample size on this task with this speaker.
+
+**Blocked on the human fork**: recording beyond this point requires the
+owner to return to the mic. The next meaningful action requires the
+speaker present and the Japanese reasoning flowing again.
 
 `artifacts/live-user-01-cue*` and `live-user-02-cue*` and `live-user-03-silence*`
 are committed and pushed.
