@@ -3,6 +3,15 @@
 ## Unreleased
 
 ### Added
+- **2026-11-15T17:00 design-choice attempt 3 (genuinely live)**: after
+  the playback reclassification, a truly live run captured the owner
+  speaking Japanese reasoning through the mic — utterances=1,
+  predictions=11, interventions=3 (2 DELIVERED: '仕組みは？' @149,005
+  ms +102 ms with outcome target_operation_seen=True → uptake on
+  mechanism; '根拠は？' @151,703 +171 ms uptake=False; 1 CANCELLED
+  '具体は？'). SILENCE twin kept silence by design. Analyzer n_pairs=1:
+  uptake delta +0.500 CI insufficient — not H1/H2 evidence; pending
+  24-32 pairs per cell.
 - **`--early-lead-ms` plumbed through the Lux simulator** (default 0,
   off): plan cues up to N ms before the pause threshold — executes only
   on TICK-bearing input. On Lux replay (segment feeds without TICKs)

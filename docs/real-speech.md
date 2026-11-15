@@ -593,8 +593,41 @@ Filling the paired grid: one pair = 1 min of speech per session; one cell
 (e.g. "conclusion-aware boundary") = 24-32 paired recordings ≈ 25-32 minutes
 of Japanese reasoning aloud.
 
-**2026-11-15 design-choice attempt 2 (180 s windows, audible announce):**
-(playback of pre-recorded monologue; reclassified 2026-11-15 — canned-class)
+**CORRECTION (2026-11-15): the "live pair" above is playback of a
+pre-recorded monologue; not live human verification.** See the
+"Playback reclassification" section.
+
+**2026-11-15 17:00 (design-choice attempt 3, genuinely live):**
+rebuilt after the reclassification fix. Personal live speech captured
+end-to-end:
+
+```text
+CUE arm (17:00–17:03 JST):
+  utterances=1  predictions=11  interventions=3 (2 DELIVERED, 1 CANCELLED)
+  '具体は？' (concretize)     128,804 ms  cancelled +122ms   (diverged)
+  '仕組みは？' (mechanism)    149,005 ms  DELIVERED          (+102 ms)
+  '根拠は？'   (ground)       151,703 ms  DELIVERED          (+171 ms)
+  outcome[mechanism] @157,005 ms: continuation = "緩急をつける必要が
+  あります仕組み" — target_operation_seen=True  (uptake on mechanism)
+  outcome[ground]    @159,704 ms: continuation = "" — False
+  carryover: mechanism mechanism + ground ground — none taken
+
+SILENCE arm:
+  utterances=1  predictions=3  delivered=0  (no cues voiced by design)
+  clause fragments: "ただ魅力的" / "魅力的にしてください"
+
+analyzer paired n_pairs=1: uptake_rate delta +0.500 [insufficient]
+  (CUE 0.50 = 1/2 mechanism, SILENCE 0.00; novel_uptake +0.500; CI
+  insufficient)
+```
+
+Live evidence this time: MD5 `0a8956b...` unique, clause texts
+genuinely different from any replay (e.g. "緩急をつける必要があります仕組み"
+also contained a mechanism token — plausibly chosen by the speaker in
+the moment after the cue, or a topic-continuity echo of hearing
+"仕組みは？"). This pair is a real human Japanese-reasoning sample
+captured through the mic end-to-end; NOT playback. One delivery out of
+two landed; Δ CI insufficient — n_pairs needs 24-32 to resolve.
 paired live Japanese reasoning captured by SFSpeechRecognizer end-to-end.
 
 ```text
