@@ -25,11 +25,11 @@ warn_if_silent() {
 
 if [ $# -lt 1 ]; then
   echo "usage: $0 TOPIC_SLUG [duration_seconds]"
-  echo "example: $0 design-choice 60"
+  echo "example: $0 design-choice"
   exit 1
 fi
 TOPIC="$1"
-DURATION="${2:-60}"
+DURATION="${2:-180}"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
@@ -44,7 +44,13 @@ fi
 
 mkdir -p logs/self
 
+announce() {
+  echo "$1"
+  say -v Kyoko "$1" >/dev/null 2>&1 || true
+}
+
 echo "=== recording CUE arm: $TOPIC (speaker will hear cues in Japanese)"
+announce "これから話してください"
 python3 -m pip install -q -e . 2>/dev/null || true
 .venv/bin/cueloop-sync \
   --event-command-json "[\".build/macos-speech-events\",\"--locale\",\"ja-JP\",\"--duration\",\"$DURATION\",\"--speech-db\",\"-50\"]" \
@@ -58,6 +64,7 @@ warn_if_silent "logs/self/${TOPIC}-cue.jsonl"
 
 echo
 echo "=== recording SILENCE arm: $TOPIC (no cues voiced)"
+announce "もう一度、同じ話題で話してください"
 .venv/bin/cueloop-sync \
   --event-command-json "[\".build/macos-speech-events\",\"--locale\",\"ja-JP\",\"--duration\",\"$DURATION\",\"--speech-db\",\"-50\"]" \
   --decision rule --predictor ngram \

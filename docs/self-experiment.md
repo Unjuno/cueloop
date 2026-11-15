@@ -42,8 +42,14 @@ the analyzer handles pairing by `pair_key`.
 One-command paired recording (sets the same `pair_key` for both arms):
 
 ```bash
-scripts/record_self_pair.sh design-choice 60
+scripts/record_self_pair.sh design-choice
 ```
+
+Default window is 180 s per arm (long enough to read this message, then
+speak). A Kyoko announcement precedes each arm ("これから話してください" /
+"もう一度、同じ話題で話してください") so the audible start is unambiguous.
+To keep arms paired, use the same topic slip in both arms; cue responses
+are naturally whatever you choose to make of the voiced prompts.
 
 That opens the mic for 60 s of CUE (cues spoken in Japanese via Kyoko) then
 60 s of SILENCE (no voice), using the same `pair_key`, and writes
