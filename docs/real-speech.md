@@ -698,30 +698,29 @@ paired with the twin, and it confirms the announce-then-record flow.
 `logs/self-design-choice-paired/`) contain the full machine-readable
 record; analyzer ran end-to-end.
 
-**Aggregated live paired grid (2026-11-15 late-day, n_pairs=16):**
+**Aggregated live paired grid (2026-11-15 night, n_pairs=18):**
 
 ```text
-rule | CUE     | sessions=16  delivered=29  outcomes=29 uptake=3/29 = 0.11
-rule | SILENCE | sessions=16  delivered=0   outcomes=43 uptake=1/43
-paired (CUE-SILENCE): uptake_rate      +0.075 [-0.056, +0.236]  n=16
-                       carryover_rate   -0.048 [-0.126, +0.016]  n=16
-                       novel_uptake     +0.070 [-0.064, +0.234]  n=16
-                       novel_carryover  -0.066 [-0.169, +0.016]  n=16
-                       growth           -0.188 [-0.750, +0.312]  n=16
-                       median delay     -0.500 ms [-30.5, +33.1]  n=11
+rule | CUE     | sessions=18  delivered=31  outcomes=31 uptake=3/31 = 0.10
+rule | SILENCE | sessions=18  delivered=0   outcomes=47 uptake=1/47
+paired (CUE-SILENCE): uptake_rate      +0.066 [-0.048, +0.198]  n=18
+                       carryover_rate   -0.042 [-0.110, +0.014]  n=18
+                       novel_uptake     +0.063 [-0.057, +0.196]  n=18
+                       novel_carryover  -0.059 [-0.150, +0.014]  n=18
+                       growth           -0.222 [-0.722, +0.222]  n=18
+                       median delay     -3.654 ms [-29.5, +24.9]  n=13
 ```
 
-184702/185405/190246 added back to the set:
-- 184702: CUE delivered=4 (concretize ×2, mechanism, ground), uptake=0; one ground outcome carried over.
-- 185405: CUE delivered=2 (conclusion, invert), uptake=0; repertoire_growth += comparison, dependency.
-- 190246: CUE delivered=1 (mechanism @10.1 s), target_operation_seen=True (3rd mechanism delivery; mechanism uptake persisting).
+191121/191819 added back:
+- 191121: CUE delivered=1 concretize (predictions=8, utterances=2), uptake=0.
+- 191819: CUE delivered=1 conclusion @155 s, uptake=0; SILENT arm utterances=23,
+  boundary carryover placeholder retained.
 
-Mechanism still uniquely produces uptake events (3/3 so far). The pattern
-isn't operant because the speaker's monologue self-anchors on "仕組み".
+Mechanism stays strictly the only uptake family (3/3 so far with uptake=True;
+the other 3 deliveries produced no detection).
 
-**Not H1/H2 evidence at n=16.** Uptake CI straddles zero again. Mechanism
-is the only family producing any positive event; need ≥24 pairs to make
-any claim about human-transfer.
+**CI verdict at n=18: still includes zero.** No CI-excludes-zero for any uptake-like metric.
+Minimum acceptable to discuss H1/H2 properly is 24 pairs.
 
 `artifacts/live-user-01-cue*` and `live-user-02-cue*` and `live-user-03-silence*`
 are committed and pushed.
