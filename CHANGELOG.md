@@ -3,6 +3,14 @@
 ## Unreleased
 
 ### Added
+- **`docs/gpt-live-protocol.md`** — precise protocol for pairing GPT Live
+  (the ChatGPT app's Japanese voice reasoning) with CUELOOP on this Mac:
+  topology (speakers-to-mic or BlackHole 2ch routing with owner consent),
+  recording procedure (paired CUE/SILENCE with shared pair_key), analysis,
+  caveats (agent-side uptake ≠ human-transfer).
+- **`scripts/record_gpt_live_pair.sh`** — one-command paired recorder for
+  the GPT Live setup (300 s arms, Kyoko announce). Smoke-tested today;
+  full pipeline works end-to-end, uptake=0 under ambient conditions.
 - **2026-11-15 absolute live-pair count 28 (204315 — fifth consecutive
   empty)**: utterances CUE=19 SILENCE=1, zero Japanese clause text.
   Aggregated 28 pairs: uptake +0.045 CI [-0.027, +0.132] (includes zero).
