@@ -698,26 +698,30 @@ paired with the twin, and it confirms the announce-then-record flow.
 `logs/self-design-choice-paired/`) contain the full machine-readable
 record; analyzer ran end-to-end.
 
-**Aggregated live paired grid (2026-11-15 end-of-day, n_pairs=15):**
+**Aggregated live paired grid (2026-11-15 late-day, n_pairs=16):**
 
 ```text
-rule | CUE     | sessions=15  delivered=28  outcomes=28 uptake=2/28 = 0.07
-rule | SILENCE | sessions=15  delivered=0   outcomes=42 uptake=2/42 = 0.05
-paired (CUE-SILENCE): uptake_rate      +0.013 [-0.072, +0.106]  n=15
-                       carryover_rate   -0.051 [-0.138, +0.022]  n=15
-                       novel_uptake     +0.009 [-0.083, +0.104]  n=15
-                       novel_carryover  -0.071 [-0.180, +0.020]  n=15
-                       growth           -0.200 [-0.800, +0.333]  n=15
-                       median delay     -8.950 ms [-37.2, +23.5]  n=10
+rule | CUE     | sessions=16  delivered=29  outcomes=29 uptake=3/29 = 0.11
+rule | SILENCE | sessions=16  delivered=0   outcomes=43 uptake=1/43
+paired (CUE-SILENCE): uptake_rate      +0.075 [-0.056, +0.236]  n=16
+                       carryover_rate   -0.048 [-0.126, +0.016]  n=16
+                       novel_uptake     +0.070 [-0.064, +0.234]  n=16
+                       novel_carryover  -0.066 [-0.169, +0.016]  n=16
+                       growth           -0.188 [-0.750, +0.312]  n=16
+                       median delay     -0.500 ms [-30.5, +33.1]  n=11
 ```
 
-Adding 183045/183745/184702/185405 to the set:
-- 184702: CUE delivered=4 (concretize ×2, mechanism, ground); uptake=0; one of the ground outcomes logged carryover_seen=True (+250 ms). repertoire_growth=ground.
-- 185405: CUE delivered=2 (conclusion, invert); uptake=0; repertoire_growth = comparison,dependency for that CUE arm.
+184702/185405/190246 added back to the set:
+- 184702: CUE delivered=4 (concretize ×2, mechanism, ground), uptake=0; one ground outcome carried over.
+- 185405: CUE delivered=2 (conclusion, invert), uptake=0; repertoire_growth += comparison, dependency.
+- 190246: CUE delivered=1 (mechanism @10.1 s), target_operation_seen=True (3rd mechanism delivery; mechanism uptake persisting).
 
-Across the full 15-pair pool: CUE+SILENCE arms delivered 28 cues, uptake=2. Mechanism family stays the only uptake-enriched op (2/3 delivered). SILENT outperformed on repertoire_growth (0.47 vs 0.27) and was perfectly anchored to structural lexis.
+Mechanism still uniquely produces uptake events (3/3 so far). The pattern
+isn't operant because the speaker's monologue self-anchors on "仕組み".
 
-**Effect status at n=15: none readable.** Uptake CI [-0.072, +0.106] — within noise on both sides as anticipated with the current lexicon-echo regime. Needs ≥24 pairs to resolve.
+**Not H1/H2 evidence at n=16.** Uptake CI straddles zero again. Mechanism
+is the only family producing any positive event; need ≥24 pairs to make
+any claim about human-transfer.
 
 `artifacts/live-user-01-cue*` and `live-user-02-cue*` and `live-user-03-silence*`
 are committed and pushed.
