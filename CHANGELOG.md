@@ -8,6 +8,15 @@
   topology (speakers-to-mic or BlackHole 2ch routing with owner consent),
   recording procedure (paired CUE/SILENCE with shared pair_key), analysis,
   caveats (agent-side uptake ≠ human-transfer).
+- **`scripts/run_agent_live_pair.sh`**: fully autonomous Japanese reasoning
+  monologue generation via local LLM (qwen2.5:7b-instruct) → Kyoko TTS →
+  SFSpeechRecognizer ingest. Keeps end-to-end pipeline exercised while the
+  owner is not at the mic; still produces agent-side data only — local LLM
+  cannot hear cues, uptake is structurally zero.
+- **First agent-live pair completed 2026-11-16** (logs/agent-live-なぜdesign-
+  choiceを選ぶのか-paired-20261116-005151): CUE delivered=4
+  (invert/mechanism/conclusion/concretize), uptake=0 on each; SILENCE arm
+  delivered=0 by design; paired analyzer ran end-to-end. Not H1/H2.
 - **`scripts/record_gpt_live_pair.sh`** — one-command paired recorder for
   the GPT Live setup (300 s arms, Kyoko announce). Smoke-tested today;
   full pipeline works end-to-end, uptake=0 under ambient conditions.
