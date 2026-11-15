@@ -698,32 +698,30 @@ paired with the twin, and it confirms the announce-then-record flow.
 `logs/self-design-choice-paired/`) contain the full machine-readable
 record; analyzer ran end-to-end.
 
-**Aggregated live paired grid (2026-11-15 20:30 JST, n_pairs=25):**
+**Aggregated paired grid (2026-11-15 20:30 JST, n_pairs=26 — third consecutive silent pair):**
 
 ```text
-rule | CUE     | sessions=25  delivered=52  outcomes=52 uptake=4/52 = 0.08
-rule | SILENCE | sessions=25  delivered=0   outcomes=64 uptake=2/64
-paired (CUE-SILENCE): uptake_rate      +0.051 [-0.030, +0.150]  n=25
-                       carryover_rate   -0.020 [-0.079, +0.042]  n=25
-                       novel_uptake     +0.048 [-0.035, +0.148]  n=25
-                       novel_carryover  -0.032 [-0.106, +0.034]  n=25
-                       growth           -0.160 [-0.520, +0.200]  n=25
+rule | CUE     | sessions=26  delivered=52  outcomes=52 uptake=4/52 = 0.08
+rule | SILENCE | sessions=26  delivered=0   outcomes=64 uptake=2/64
+paired (CUE-SILENCE): uptake_rate      +0.049 [-0.029, +0.144]  n=26
+                       carryover_rate   -0.019 [-0.077, +0.044]  n=26
+                       novel_uptake     +0.046 [-0.035, +0.141]  n=26
+                       novel_carryover  -0.031 [-0.101, +0.039]  n=26
+                       growth           -0.154 [-0.538, +0.154]  n=26
                        delay            -5.63 ms [-27.0, +19.7]   n=16
 ```
 
-201606 empty added back: utterances CUE=19 SILENCE=15, zero Japanese clause text.
-Two empty pairs in a row (200627, 201606) confirm the speaker is no longer
-physically seated at the mic.
+202527 (3rd silent pair): utterances CUE=29 SILENCE=37, zero Japanese clause text.
 
-**Absolute facts, n=25 with two silent pairs:**
+**Honest status at n=26 — three consecutive empty pairs:**
 - synthetic grid: 27/27 effect-cell CI-excludes-zero at same n.
-- live n=25: uptake CI [-0.030, +0.150] still includes zero — consistent
-  with the recent reading that no uptake effect is identifiable at this
-  sample size on this task with this speaker.
+- live n=26: uptake delta +0.049 CI [-0.029, +0.144] — **includes zero**.
+- 3 consecutive empty pairs indicates the owner is reliably absent; further
+  live-*learning* pairs cannot be collected until they return.
 
-**Blocked on the human fork**: recording beyond this point requires the
-owner to return to the mic. The next meaningful action requires the
-speaker present and the Japanese reasoning flowing again.
+Three consecutive empty pairs means the uptake-signal here equals none rather
+than marginal. This is what makes the loop actually stuck on the human input,
+not on the plumbing.
 
 `artifacts/live-user-01-cue*` and `live-user-02-cue*` and `live-user-03-silence*`
 are committed and pushed.
