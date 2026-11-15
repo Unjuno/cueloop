@@ -3,10 +3,10 @@
 ## Unreleased
 
 ### Added
-- **2026-11-15 absolute live-pair total 18 (191121/191819)**: aggregated
-  across 18 genuinely-live pairs: CUE delivered=31 uptake=3/31
-  (mechanism×3); SILENCE delivered=0 uptake=1/47; paired n_pairs=18:
-  uptake +0.066 CI [-0.048, +0.198]. No CI excludes zero. Not H1/H2
+- **2026-11-15 absolute live-pair total 20 (192620/193338)**: aggregated
+  across 20 genuinely-live pairs: CUE delivered=40 uptake=3/40
+  (mechanism×3); SILENCE delivered=0 uptake=1/52; paired n_pairs=20:
+  uptake +0.060 CI [-0.039, +0.183]. No CI excludes zero. Not H1/H2
   evidence — 24-32 pairs. See issue #6.
 - **2026-11-15 17:09 design-choice attempt 4 (genuinely live)**: pair 3
   of the corpus's live history. CUE arm: utterances=1, predictions=23,

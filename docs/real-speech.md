@@ -698,29 +698,24 @@ paired with the twin, and it confirms the announce-then-record flow.
 `logs/self-design-choice-paired/`) contain the full machine-readable
 record; analyzer ran end-to-end.
 
-**Aggregated live paired grid (2026-11-15 night, n_pairs=18):**
+**Aggregated live paired grid (2026-11-15 night, n_pairs=20):**
 
 ```text
-rule | CUE     | sessions=18  delivered=31  outcomes=31 uptake=3/31 = 0.10
-rule | SILENCE | sessions=18  delivered=0   outcomes=47 uptake=1/47
-paired (CUE-SILENCE): uptake_rate      +0.066 [-0.048, +0.198]  n=18
-                       carryover_rate   -0.042 [-0.110, +0.014]  n=18
-                       novel_uptake     +0.063 [-0.057, +0.196]  n=18
-                       novel_carryover  -0.059 [-0.150, +0.014]  n=18
-                       growth           -0.222 [-0.722, +0.222]  n=18
-                       median delay     -3.654 ms [-29.5, +24.9]  n=13
+rule | CUE     | sessions=20  delivered=40  outcomes=40 uptake=3/40 = 0.08
+rule | SILENCE | sessions=20  delivered=0   outcomes=52 uptake=1/52
+paired (CUE-SILENCE): uptake_rate      +0.060 [-0.039, +0.183]  n=20
+                       carryover_rate   -0.016 [-0.088, +0.058]  n=20
+                       novel_uptake     +0.056 [-0.048, +0.180]  n=20
+                       novel_carryover  -0.032 [-0.121, +0.053]  n=20
+                       growth           -0.250 [-0.700, +0.150]  n=20
+                       delay            -1.18 ms [-25.8, +25.1]   n=14
 ```
 
-191121/191819 added back:
-- 191121: CUE delivered=1 concretize (predictions=8, utterances=2), uptake=0.
-- 191819: CUE delivered=1 conclusion @155 s, uptake=0; SILENT arm utterances=23,
-  boundary carryover placeholder retained.
+192620/193338 added back: CUE delivered=0 (193338 = most engaged session of the day: 9 cues, 0 uptake; SILENT arm 15 utterances, 13 held).
 
-Mechanism stays strictly the only uptake family (3/3 so far with uptake=True;
-the other 3 deliveries produced no detection).
+Mechanism stays the sole op family ever with any cue uptake event observed.
 
-**CI verdict at n=18: still includes zero.** No CI-excludes-zero for any uptake-like metric.
-Minimum acceptable to discuss H1/H2 properly is 24 pairs.
+**CI verdict at n=20: still includes zero.** No CI-excludes-zero for any uptake-like metric.
 
 `artifacts/live-user-01-cue*` and `live-user-02-cue*` and `live-user-03-silence*`
 are committed and pushed.
