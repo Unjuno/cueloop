@@ -3,6 +3,18 @@
 ## Unreleased
 
 ### Added
+- **2026-11-15 live pair (180 s arms, audible Kyoko announce)**: a
+  continuous Japanese reasoning monologue was captured end-to-end. Two
+  cues DELIVERED (mechanism @9.5 s / +181 ms, conclusion @176.7 s /
+  +101 ms); three CANCELLED. SILENCE arm: 12 interventions HELD by
+  design, utterances=17, predictions=29. Paired analyzer n_pairs=1:
+  growth +1.000 / delay +39.5 ms — CI insufficient (not H1/H2 evidence;
+  uptake 0 on both deliveries). n_pairs=2 across the corpus in total.
+- **Recorder announces audible start + defaults to 180 s window**:
+  scripts/record_self_pair.sh voices "これから話してください" (CUE) /
+  "もう一度、同じ話題で話してください" (SILENCE) before each arm and the
+  default arm length is now 180 s, closing the structural race where the
+  window expired before the speaker reacted.
 - **Insertion benchmark extended to Common Voice 8.0** (4,483-file ja
   sample + 120-file replay subset). On the full sample: context-fit
   ranking 8.1% vs RANDOM-order PRIORITY 9.5% — the only corpus where
@@ -59,8 +71,7 @@
   (n=15), the canned-audio asymptote on the local-LLM path now stands at
   **n=155 paired sessions across three corpora — every CI zero**.
 - Real-speech replay across 8 Japanese corpora (see docs/real-speech.md) —
-  each replayed on real audio end-to-end with local-LLM and rule backends;
-  the 8th (`bandad/asr-testset-kw-ja-v1`) shows the highest op-tag density
+  canned audio, no effect claimed. Highlights: the 8th (`bandad/asr-testset-kw-ja-v1`) shows the highest op-tag density
   of any corpus measured (21.8% of 510 clips tag ≥ 1 operation; 1638 predictions,
   998 delivered cues). The 7th arm, `PlayMaker13/japanese-podcast`, contains
   conclusion-heavy native podcast monologues (20 paired sessions, 474

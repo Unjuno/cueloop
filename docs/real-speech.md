@@ -518,6 +518,41 @@ Filling the paired grid: one pair = 1 min of speech per session; one cell
 (e.g. "conclusion-aware boundary") = 24-32 paired recordings ≈ 25-32 minutes
 of Japanese reasoning aloud.
 
+**2026-11-15 design-choice attempt 2 (180 s windows, audible announce):**
+paired live Japanese reasoning captured by SFSpeechRecognizer end-to-end.
+
+```text
+CUE arm (2026-11-15 10:14–10:17 JST):
+  utterances=7  predictions=19  interventions=5 (2 DELIVERED, 3 CANCELLED)
+  delivered:  [  9.5 s] '仕組みは？' op=mechanism  (+181 ms)
+              [176.7 s] '結論は？'  op=conclusion (+101 ms;  222 s total window remainder)
+  uptake on both deliveries: target_operation_seen=false, prediction_followed=false
+  repertoire_growth: concretize = 1
+  median boundary->delivery: 141 ms
+
+SILENCE arm (one pass, same topic):
+  utterances=17 predictions=29  interventions=12 (all HELD by design),
+  3 cancellations; every op family requested except mechanism only at 79 s
+  analyzer (paired, n_pairs=1): growth delta +1.000, delay delta +39.5 ms —
+  CI insufficient; uptake delta +0.000
+```
+
+Transcript fragments captured by ASR (both arms) show a continuous
+Japanese monologue about skip-layer adapters/LoRA-style training noise
+insertion ("モデルをスキップしながらこのライナーを学習させる" /
+"ランダムノイズを入れ替える") — the speaker's natural surface for
+Japanese reasoning input. The pair is live human speech captured under
+the production pipeline: boundaries detected, cues delivered in
+100–181 ms, outcome scored, carryover cadenced, suppression behaving.
+
+**This pair alone is not H1/H2 evidence** (n_pairs=2 across the whole
+corpus; uptake 0/4 delivered cues). It removes the structural
+uncertainty that the pipeline can't keep one 180-second arm coherently
+paired with the twin, and it confirms the announce-then-record flow.
+`logs/self/design-choice-{cue,silence}.jsonl` (+ paired layout under
+`logs/self-design-choice-paired/`) contain the full machine-readable
+record; analyzer ran end-to-end.
+
 `artifacts/live-user-01-cue*` and `live-user-02-cue*` and `live-user-03-silence*`
 are committed and pushed.
 
