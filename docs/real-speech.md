@@ -698,40 +698,34 @@ paired with the twin, and it confirms the announce-then-record flow.
 `logs/self-design-choice-paired/`) contain the full machine-readable
 record; analyzer ran end-to-end.
 
-**Aggregated live paired grid (2026-11-15 end of day, n_pairs=11):**
+**Aggregated live paired grid (2026-11-15 end-of-day, n_pairs=13):**
 
 ```text
-rule | CUE     | sessions=11  delivered=18  outcomes=18 uptake=2/18 = 0.07
-rule | SILENCE | sessions=11  delivered=0   outcomes=30 uptake=2/30 = 0.02
-paired (CUE-SILENCE): uptake_rate       +0.048 [-0.040, +0.159]  n=11
-                       carryover_rate    -0.077 [-0.170, -0.010]  n=11
-                       novel_uptake       +0.048 [-0.040, +0.159]  n=11
-                       novel_carryover    -0.101 [-0.227, -0.010]  n=11
-                       growth             -0.182 [-0.636, +0.182]   n=11
-                       median delay      -11.929 ms [-45.2, +30.6]  n=7
+rule | CUE     | sessions=13  delivered=22  outcomes=22 uptake=2/22 = 0.09
+rule | SILENCE | sessions=13  delivered=0   outcomes=37 uptake=2/37 = 0.05
+paired (CUE-SILENCE): uptake_rate      +0.015 [-0.085, +0.128]  n=13
+                       carryover_rate   -0.078 [-0.160, -0.013]  n=13
+                       novel_uptake     +0.010 [-0.096, +0.123]  n=13
+                       novel_carryover  -0.101 [-0.210, -0.015]  n=13
+                       growth           -0.385 [-0.923, +0.077]  n=13
+                       delay             -8.6 ms [-40.4, +26.1]   n=9
+```
 
-individual pairs (all 11, same order as stamp):
-  170008: CUE uptake 1/2 (mechanism), SILENCE 0/0
-  170941: CUE uptake 1/4 (mechanism), SILENCE 0/5
-  171810: CUE uptake 0/2,              SILENCE 0/2
-  172505: CUE uptake 0/1,              SILENCE 0/3
-  173444: CUE uptake 0/1 (mechanism delivered, uptake not seen), SILENCE 0/5
-  174237: CUE delivered=0,             SILENCE utterances=n/a, uptake=0
-  174959: CUE delivered=1 (conclusion), uptake=0, SILENCE 0/3
-  175650: CUE delivered=3,            uptake=0
-  180714: CUE delivered=2,            uptake=0
-  181434: CUE delivered=0,            uptake=0
-  182148: CUE delivered=2,            uptake=0 (SILENT arm: 9 outcomes with op
-                                          tokens; op delivery avoided)
+**Hard truth (end of 2026-11-15):** 13 live pairs, zero CI-excludes-zero
+across the uptake and carryover axes.
+- Uptake rate delta +0.015 CI [-0.085, +0.128] — the sign is not
+  predictive at this scale, and the size shrinks further with n.
+- SILENCE generated ≥2.6x novel_operation opportunities and ≈3.6x
+  repertoire growth; the task is not always discriminant at this dose.
+- Both live traces that beat baseline-like uptake (mechanism family on
+  170008/170941) were anchoring on a word the speaker naturally continues
+  (仕組み) — lexical imitation, not operant shift.
 
-Honest read: the effect CI for uptake clearly includes zero at n=11 and
-goes negative. Mechanism delivered@17:09 on 170941 landed (target_operation
-_seen=True), and mechanism @17:00 on 170008 also; after that 9 consecutive
-deliveries did not produce op-token continuations. Result: the CUE-vs-SILENT
-contrast on uptake is unresolved to the point where, absent more evidence,
-the reasonable report is "consistent with zero effect; indistinguishable
-from a lexicon explanation." 13 more consistent-CI pairs needed to breach
-n=24. This is what issue #6 tracks.
+**H1/H2 status: not measurable.** The only legitimate reading is that the
+project's current state cannot tell whether cues are helping — and every
+benchmark leans marginally SILENCE-favorable. The 24–32 pair target is
+the correct gate; exhausting the day today at n=13, further sessions
+continue until that threshold is reached.
 
 `artifacts/live-user-01-cue*` and `live-user-02-cue*` and `live-user-03-silence*`
 are committed and pushed.
