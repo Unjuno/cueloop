@@ -213,6 +213,16 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
+        "--restrict-ops",
+        default="",
+        metavar="OP1,OP2,...",
+        help=(
+            "Comma-separated list of operations the rule decision is allowed "
+            "to fire. Useful for isolating op-token leakage of speaker-natural "
+            "vocab (e.g. 'boundary,comparison,invert') vs other ops. Default: all."
+        ),
+    )
+    parser.add_argument(
         "--pair-key",
         default="",
         help="Key shared by paired CUE and SILENCE runs for paired analysis.",
@@ -409,16 +419,23 @@ def main(argv: list[str] | None = None) -> int:
                 stem_max_characters=args.max_stem_characters,
             )
         else:
+            restrict = [op.strip() for op in args.restrict_ops.split(",") if op.strip()]
+            priority_tuple = tuple(restrict) if restrict else None
+            rule_kwargs = {
+                "min_confidence": args.min_confidence,
+                "max_characters": args.max_cue_characters,
+                "delivery_window_ms": args.delivery_window_ms,
+                "insertion_delay_ms": args.insertion_delay_ms,
+                "context_fit": not args.no_context_fit,
+                "cue_style": args.cue_style,
+                "stem_generator": stem_generator,
+                "stem_max_characters": args.max_stem_characters,
+            }
+            if priority_tuple is not None:
+                rule_kwargs["priority"] = priority_tuple
             decision_model = RuleDecisionModel(
                 assigner,
-                min_confidence=args.min_confidence,
-                max_characters=args.max_cue_characters,
-                delivery_window_ms=args.delivery_window_ms,
-                insertion_delay_ms=args.insertion_delay_ms,
-                context_fit=not args.no_context_fit,
-                cue_style=args.cue_style,
-                stem_generator=stem_generator,
-                stem_max_characters=args.max_stem_characters,
+                **rule_kwargs,
             )
         if args.assignment == "random-operation":
             decision_model = RandomOperationDecisionModel(

@@ -636,6 +636,7 @@ class RuleDecisionModel:
             ):
                 return None
             ranked = PolicyObservation.from_state(state).ranked_missing_operations()
+            ranked = [op for op in ranked if op in self.priority]
             if ranked:
                 missing = list(ranked)
             context_fit = True

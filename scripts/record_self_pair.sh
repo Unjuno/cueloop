@@ -1,5 +1,8 @@
 #!/bin/bash
 # Record one paired CUE/SILENCE self-experiment session on this Mac.
+# When the 3rd arg is given, only those operations are eligible for the
+# rule decision (e.g. 'boundary,comparison,invert' to suppress speaker-natural
+# op-tokens). Without it, all 8 ops are eligible (default PRIORITY).
 # Example:
 #   scripts/record_self_pair.sh design-choice
 #  -> creates logs/self/design-choice-{cue,silence}.jsonl/.report with the
@@ -24,12 +27,14 @@ warn_if_silent() {
 }
 
 if [ $# -lt 1 ]; then
-  echo "usage: $0 TOPIC_SLUG [duration_seconds]"
-  echo "example: $0 design-choice"
+  echo "usage: $0 TOPIC_SLUG [duration_seconds] [restrict_ops ops,comma,separated]"
+  echo "example: $0 design-choice 180 boundary,comparison,invert"
+  echo "env:  RESTRICT_OPS=boundary,comparison,invert (default: all ops)"
   exit 1
 fi
 TOPIC="$1"
 DURATION="${2:-180}"
+RESTRICT_OPS="${3:-${RESTRICT_OPS:-}}"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
@@ -61,6 +66,7 @@ announce "これから話してください"
 python3 -m pip install -q -e . 2>/dev/null || true
 .venv/bin/cueloop-sync \
   --event-command-json "[\".build/macos-speech-events\",\"--locale\",\"ja-JP\",\"--duration\",\"$DURATION\",\"--speech-db\",\"-50\"]" \
+  --restrict-ops "${RESTRICT_OPS}" \
   --decision rule --predictor ngram \
   --tts-command-json '["say","-v","Kyoko"]' \
   --condition-label CUE --assignment canonical --seed 3 --cue-style bare \
@@ -74,6 +80,7 @@ echo "=== recording SILENCE arm: $TOPIC (no cues voiced)"
 announce "もう一度、同じ話題で話してください"
 .venv/bin/cueloop-sync \
   --event-command-json "[\".build/macos-speech-events\",\"--locale\",\"ja-JP\",\"--duration\",\"$DURATION\",\"--speech-db\",\"-50\"]" \
+  --restrict-ops "${RESTRICT_OPS}" \
   --decision rule --predictor ngram \
   --condition-label SILENCE --assignment canonical --seed 3 --cue-style bare \
   --silent \
