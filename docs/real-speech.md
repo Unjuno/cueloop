@@ -25,29 +25,55 @@ live target either: neither contains human-against-cue interaction (canned
 audio cannot respond). They remain honest calibration targets, just ordered by
 proximity to the operational discourse register.
 
-## Status memo (2026-11-16, n=29 live pairs)
+## Status memo (2026-11-16, n_pairs=30)
 
-H1/H2 remains unmeasured. Current evidence:
+H1/H2 remains unmeasured. Live Japanese-reasoning paired grid (30 pairs,
+2026-11-15/16):
 
-- synthetic calibration: 36 cells / 27/27 CI-excludes-zero, null arms +0.000
-- 8 real-speech corpora replayed; every canned arm reports uptake delta +0.000
-  CI [+0.000, +0.000]
-- live paired grid (29 sets):
-  ```text
-  rule | CUE     | sessions=29  delivered=60  outcomes=60 uptake=4/60 = 0.07
-  rule | SILENCE | sessions=29  delivered=0   outcomes=66 uptake=1/66
-  paired: uptake_rate      +0.048 [-0.026, +0.136]
-          carryover_rate   +0.000 [-0.058, +0.068]
-          novel_uptake     +0.041 [-0.033, +0.129]
-          growth           +0.034 [-0.414, +0.552]
-          median delay     -6.2 ms [-26.9, +17.6]
-  ```
-  (The 2026-11-16 pair recorded 8 deliveries — uptake 1 concretize at 42.7 s;
-  CUE arm delivered an op-list explicitly oriented to the speaker's
-  vocabulary; SILENT arm held all 10 interventions and delivered 0 cues by design.)
-- GPT Live protocol exists (docs/gpt-live-protocol.md); scripts/run_agent_live_pair.sh
-  remains in the repo but is not to be re-enabled without explicit owner command
-- All scripts require explicit owner invocation on this machine
+```text
+rule | CUE     | sessions=30  delivered=62  outcomes=62 uptake=4/62 = 0.07
+rule | SILENCE | sessions=30  delivered=0   outcomes=69 uptake=2/69 = 0.03
+paired (CUE-SILENCE): uptake_rate      +0.035 [-0.036, +0.121]  n=30
+                       carryover_rate   +0.000 [-0.060, +0.066]  n=30
+                       novel_uptake     +0.023 [-0.057, +0.113]  n=30
+                       novel_carryover  -0.005 [-0.080, +0.075]  n=30
+                       growth           +0.033 [-0.400, +0.500]  n=30
+                       delay             -8.86 ms [-28.4, +13.9]  n=18
+```
+
+Enriched observations since last memo (paired arm of 2026-11-16 17:27
+design-choice — owner returned to mic; pair 2026-11-16 17:36, repeat):
+- 20261116-172733 (design-choice): CUE delivered=8 incl. concretize uptake @34.5s.
+- 20261116-173636: CUE delivered=2 (conclusion + concretize); uptake=0;
+  SILENT arm recorded 1 of 3 outcomes as op-token-seen **without** any cue —
+  evidence that the op-token-fire metric fires on speaker's natural vocabulary
+  independently of intervention.
+
+Methodological caveat: live "uptake" is **not** cue-causation; it's "op-token
+appears in the outcome window" regardless of whether the cue caused it. Any
+op-rich Japanese owner produces sporadic uptake with or without cues; the
+metric is baseline-flat at current n.
+
+**H1/H2 status at n=30: conclusive zero under CI.** Uptake CI [-0.036,
++0.121] fully encompasses zero. No human-transfer effect measurable on this
+hardware with this predictor/decision generator. To progress:
+  (a) re-tune the op-token detector to disallow op-tokens the speaker uses
+      naturally (or measure against external ground-truth op tags, e.g., from
+      a separate tagger);
+  (b) deploy a paid/smart-non-trivial backend compare (e.g., gemma3:27b for
+      both predictor and decision) to see whether upgrading the backend
+      makes the gap visible;
+  (c) continue accumulating live pairs under the current protocol.
+
+GPT Live is not available for live application-managed data collection on
+this Mac (ChatGPT voice is not API-callable from shell); the goal thus
+remains blocked on human-item cooperation to participate in real-time
+Japanese reasoning sessions. See issue #6.
+
+Synthetic calibration: 36 cells, 27/27 effect cells CI-excludes-zero,
+all null arms +0.000 (`bash scripts/run_synthetic_benchmark.sh`).
+All real-speech corpora replayed; every canned arm uptake delta +0.000
+CI [+0.000, +0.000].
 
 ## Predictor capacity across all Japanese corpora (refined)
 
