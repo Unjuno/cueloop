@@ -25,16 +25,29 @@ live target either: neither contains human-against-cue interaction (canned
 audio cannot respond). They remain honest calibration targets, just ordered by
 proximity to the operational discourse register.
 
-## Status memo (2026-11-16)
+## Status memo (2026-11-16, n=29 live pairs)
 
 H1/H2 remains unmeasured. Current evidence:
 
-- synthetic calibration: 36 cells, 27/27 effect cells CI-excludes-zero (`bash scripts/run_synthetic_benchmark.sh`), all null arms +0.000
-- 8 real-speech corpora replayed; every canned arm reports uptake delta +0.000 CI [+0.000, +0.000]; one live-mic session pair (2026-11-13) ran end-to-end; 28 subsequent paired sessions all yielded +0.045 CI [-0.027, +0.132]
-  i.e., zero human-transfer evidence; one live pair had uptake 1/2 deliveries on mechanism only (non-repeatable at current N)
-- GPT Live protocol documented at docs/gpt-live-protocol.md; scripts/run_agent_live_pair.sh remains in the repo but is never run automatically and the owner has indicated the synthesized-monologue path (auto-playing Kyoko) is unwanted
-- All live PaaS scripts (record_self_pair.sh, record_gpt_live_pair.sh, run_agent_live_pair.sh) require explicit owner invocation on this machine; nothing runs in the background
-- `scripts/run_agent_live_pair.sh` must not be restarted without explicit owner approval after 2026-11-16 01:08 JST
+- synthetic calibration: 36 cells / 27/27 CI-excludes-zero, null arms +0.000
+- 8 real-speech corpora replayed; every canned arm reports uptake delta +0.000
+  CI [+0.000, +0.000]
+- live paired grid (29 sets):
+  ```text
+  rule | CUE     | sessions=29  delivered=60  outcomes=60 uptake=4/60 = 0.07
+  rule | SILENCE | sessions=29  delivered=0   outcomes=66 uptake=1/66
+  paired: uptake_rate      +0.048 [-0.026, +0.136]
+          carryover_rate   +0.000 [-0.058, +0.068]
+          novel_uptake     +0.041 [-0.033, +0.129]
+          growth           +0.034 [-0.414, +0.552]
+          median delay     -6.2 ms [-26.9, +17.6]
+  ```
+  (The 2026-11-16 pair recorded 8 deliveries — uptake 1 concretize at 42.7 s;
+  CUE arm delivered an op-list explicitly oriented to the speaker's
+  vocabulary; SILENT arm held all 10 interventions and delivered 0 cues by design.)
+- GPT Live protocol exists (docs/gpt-live-protocol.md); scripts/run_agent_live_pair.sh
+  remains in the repo but is not to be re-enabled without explicit owner command
+- All scripts require explicit owner invocation on this machine
 
 ## Predictor capacity across all Japanese corpora (refined)
 
