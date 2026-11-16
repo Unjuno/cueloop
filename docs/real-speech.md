@@ -25,27 +25,32 @@ live target either: neither contains human-against-cue interaction (canned
 audio cannot respond). They remain honest calibration targets, just ordered by
 proximity to the operational discourse register.
 
-## Status memo (2026-11-16, n_pairs=35)
+## Status memo (2026-11-16, n_pairs=36)
 
 H1/H2 remains unmeasured. Live Japanese-reasoning paired grid (n_pairs
-= 35, 2026-11-15/16; pair #35 = 20261116-182217):
+= 36 (2026-11-15/16; latest pair #36 = 20261116-183121):
 
 ```text
-rule | CUE     | sessions=35  delivered=85  outcomes=85 uptake=7/85 = 0.08
-rule | SILENCE | sessions=35  delivered=0   outcomes=94 uptake=3/94 = 0.03
-paired (CUE-SILENCE): uptake_rate      +0.045 [-0.022, +0.126]  n=35
-                       carryover_rate   -0.009 [-0.063, +0.048]  n=35
-                       novel_uptake     +0.033 [-0.038, +0.118]  n=35
-                       novel_carryover  -0.005 [-0.076, +0.067]  n=35
-                       growth           +0.200 [-0.314, +0.743]  n=35
+rule | CUE     | sessions=36  delivered=96  outcomes=96 uptake=9/96 = 0.09
+rule | SILENCE | sessions=36  delivered=0   outcomes=94 uptake=3/94 = 0.03
+paired (CUE-SILENCE): uptake_rate      +0.054 [-0.014, +0.135]  n=36
+                       carryover_rate   +0.001 [-0.058, +0.060]  n=36
+                       novel_uptake     +0.040 [-0.032, +0.124]  n=36
+                       novel_carryover  +0.004 [-0.069, +0.078]  n=36
+                       growth           +0.278 [-0.250, +0.806]  n=36
                        delay            -6.41 ms [-24.0, +13.3]   n=22
+
 ```
 
-Enriched observation since last memo (paired arm 20261116-182217):
-pair #35 CUE arm delivered=6; uptake=1/6 (ground, @99 s: the speaker
-produced 根拠 in the outcome; non-ignorable because they fundamentally
-use the word more than any other op); SILENT arm delivered=0 by design,
-carryover=1 (concretize among 3 natural carryovers).
+Enriched observation since last memo (paired arms 20261116-182217,
+20261116-183121): pair #36 CUE arm was unusually engaged — 11 delivered
+(including conclusion×2, ground, mechanism, invert, concretize×3) and
+uptake=4/11 (conclusion, ground, mechanism). The SILENT arm contained
+technical-computation phrases but no op-token match whatsoever (no
+"結論"/"仕組み"/"依存"/etc.), therefore SILENCE delivered=0.
+Cumulative CUE-arm breakdown (96 deliveries):
+- op-attended: mechanism×4, concretize×? — exact counts above
+- uptake op-fire: conclusion×2, ground×1, mechanism×1 (4 of 9 in pair #36)
 
 Enriched observation since last memo (paired arms 20261116-175439,
 20261116-180346): pair #33 delivered=0 everywhere — full-cline of
@@ -61,17 +66,14 @@ mechanism×4, conclusion×1, concretize×1, invert×1, ground×1
   (conclusion, concretize, mechanism heaviest); only cue-divergent unique
   appearances: invert×1, ground×1 (n=2).
 
-**Status at n=35: zero-equivalent under CI** — uptake CI [-0.022, +0.126]
-encompasses zero. No detectable human-transfer effect; H1/H2 require a
-fresh experiment design (or just n→ very large with same protocol; but at
-this rate it will likely stay unsupported). Candidate next steps:
-- increase n only if the protocol can change (e.g.+,
-  causal rewrite of the op-token detector, or a new purpose-built utterance
-  that stresses Japanese reasoning in a controlled manner — e.g., reading a
-  verbatim syllogism aloud — even if it's weaker than human spontaneity);
+**Status at n=36: zero-equivalent under CI** — uptake CI [-0.014, +0.135]
+encompasses zero (lower bound steadily rising toward zero but still
+encompassed). Candidate next steps (unchanged):
+- increase n only if the protocol can change;
 - add a causal attribution on per-op SILENT vs CUE firing rates;
-- re-tune the op-token detector to exclude speaker-natural tokens to shed
-  the dominant-false-positive issue.
+- re-tune the op-token detector to exclude speaker-natural tokens or
+  natural-fire pre-increment weighting to give the upper-bound better
+  separation.
 
 
 ## Predictor capacity across all Japanese corpora (refined)
