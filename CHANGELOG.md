@@ -35,7 +35,7 @@
   Aggregated 28 pairs: uptake +0.045 CI [-0.027, +0.132] (includes zero).
   5 consecutive silent pairs confirmed owner absent; live H1/H2 could not
   advance. See issue #6.
-- **2026-11-15/17 live pairs #29–#44**: pairs #29-#32 supported the live-grid build; #33-#39 = owner-present + empty-spell blocks; #40 (owner returned — CUE delivered=5 uptake=1/5 'ある結論3つのプロンプトを構築して'), #41 delivered=1 uptake=0, #42 away during CUE (SILENT captured productive reasoning), #43 both arms light (CUE delivered=1 uptake=0), #44 both arms language-free ("お前mtファイブ", "どっちですか" etc; no Japanese reasoning content). Aggregated 44 live pairs: uptake +0.048 CI [-0.006, +0.113] — zero straddles. See issue #6.
+- **2026-11-15/17 live pairs #29–#46**: pairs #40, #41 owner returned — recording productive Japanese reasoning; pairs #42-#46 = language quality degraded (e.g. 'お前mtファイブ関連の', mixed English/Japanese chatter) with delivered=0 CUE pairs #42/#44/#46 (SFSpeech recognized mostly non-analytical content). Pair #45 delivered=11 incl. ground×2 and mechanism×1 uptake. Aggregated 46 live pairs: uptake +0.043 CI [-0.008, +0.104] — zero straddles. See issue #6.
 - **2026-11-15 17:09 design-choice attempt 4 (genuinely live)**: pair 3
   of the corpus's live history. CUE arm: utterances=1, predictions=23,
   4 deliveries (concretize/mech/ground/conclusion) — mechanism outcome
