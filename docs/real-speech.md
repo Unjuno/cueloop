@@ -25,6 +25,17 @@ live target either: neither contains human-against-cue interaction (canned
 audio cannot respond). They remain honest calibration targets, just ordered by
 proximity to the operational discourse register.
 
+## Status memo (2026-11-16)
+
+H1/H2 remains unmeasured. Current evidence:
+
+- synthetic calibration: 36 cells, 27/27 effect cells CI-excludes-zero (`bash scripts/run_synthetic_benchmark.sh`), all null arms +0.000
+- 8 real-speech corpora replayed; every canned arm reports uptake delta +0.000 CI [+0.000, +0.000]; one live-mic session pair (2026-11-13) ran end-to-end; 28 subsequent paired sessions all yielded +0.045 CI [-0.027, +0.132]
+  i.e., zero human-transfer evidence; one live pair had uptake 1/2 deliveries on mechanism only (non-repeatable at current N)
+- GPT Live protocol documented at docs/gpt-live-protocol.md; scripts/run_agent_live_pair.sh remains in the repo but is never run automatically and the owner has indicated the synthesized-monologue path (auto-playing Kyoko) is unwanted
+- All live PaaS scripts (record_self_pair.sh, record_gpt_live_pair.sh, run_agent_live_pair.sh) require explicit owner invocation on this machine; nothing runs in the background
+- `scripts/run_agent_live_pair.sh` must not be restarted without explicit owner approval after 2026-11-16 01:08 JST
+
 ## Predictor capacity across all Japanese corpora (refined)
 
 For every Japanese speech corpus we ran the n-gram predictor sweep. Zero
