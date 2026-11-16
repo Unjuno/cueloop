@@ -25,63 +25,53 @@ live target either: neither contains human-against-cue interaction (canned
 audio cannot respond). They remain honest calibration targets, just ordered by
 proximity to the operational discourse register.
 
-## Status memo (2026-11-16, n_pairs=31)
+## Status memo (2026-11-16, n_pairs=32)
 
 H1/H2 remains unmeasured. Live Japanese-reasoning paired grid (n_pairs
-= 31, 2026-11-15/16):
+= 32, 2026-11-15/16):
 
 ```text
-rule | CUE     | sessions=31  delivered=69  outcomes=69 uptake=5/69 = 0.07
-rule | SILENCE | sessions=31  delivered=0   outcomes=75 uptake=6/75 = 0.08
-paired (CUE-SILENCE): uptake_rate      +0.038 [-0.033, +0.121]  n=31
-                       carryover_rate   +0.003 [-0.053, +0.067]  n=31
-                       novel_uptake     +0.032 [-0.049, +0.119]  n=31
-                       novel_carryover  +0.001 [-0.067, +0.080]  n=31
-                       growth           +0.161 [-0.323, +0.677]  n=31
+rule | CUE     | sessions=32  delivered=78  outcomes=78 uptake=6/78 = 0.08
+rule | SILENCE | sessions=32  delivered=0   outcomes=78 uptake=3/78 = 0.04
+paired (CUE-SILENCE): uptake_rate      +0.044 [-0.027, +0.131]  n=32
+                       carryover_rate   +0.007 [-0.051, +0.063]  n=32
+                       novel_uptake     +0.031 [-0.046, +0.124]  n=32
+                       novel_carryover  +0.015 [-0.064, +0.091]  n=32
+                       growth           +0.250 [-0.250, +0.750]  n=32
+                       delay            -5.65 ms [-24.9, +15.7]   n=20
+```
 
-Enriched observation since last memo (paired arm 20261116-174543,
-owner at the mic again):
+Enriched observation since last memo (paired arms 20261116-174543,
+20261116-175439 — owner returned to mic):
 
 ```text
 20261116-174543 (design-choice):
-  CUE: utterances=58 predictions=32 delivered=7 (concl.+inv.+ground+mech.+concretize×2+dependency×2)
-       uptake=2/7 (conclusion, invert @190s boundary); carryover=3/7; growth=5
-  SILENT: utterances=36 predictions=61 delivered=0 by design (all suppressed)
-       uptake=1/6 (conclusion @ natural fire)
+  CUE: utterances=58 predictions=32 delivered=7 uptake=2/7 (conclusion, invert)
+  SILENT: utterances=36 predictions=61 delivered=0 by design uptake=1/6
+20261116-175439 (design-choice):
+  CUE: utterances=21 predictions=62 delivered=9 uptake=2/9 (conclusion, concretize) carryover=4
+  SILENT: utterances=44 predictions=57 delivered=0 by design uptake=1/3? (conclusion natural, repertoire_growth=concretize, carryover=1)
 ```
 
-Breakdown — op-token fires on each arm (across 31 live pairs):
+Breakdown of op-token fires on each arm (aggregate across 32 live pairs):
 
 ```text
-SILENT arm natural op-fire uptake:  conclusion×3, concretize×2, dependency×2 (speaker-natural patterns)
-CUE arm post-cue op-fire uptake:    mechanism×4, conclusion×1, concretize×1, invert×1, ground×1
-
-→ 4 of the 5 cue-induced "uptakes" were mechanism (の声として仕組み heavy), matching
-  the speaker's lexical frequency. The only non-common-op cue-induced uptake
-  unique to CUE is (invert, ground) — n=2, statistically uninterpretable.
+SILENT natural-fires: conclusion×3, concretize×2, dependency×2  (≈7 natural)
+CUE post-cue-fires:  mechanism×4, conclusion×1, concretize×1, invert×1, ground×1
 ```
 
-### Methodological caveat (live uptake)
+→ 5 of 6 CUE-arm op-fire uptake decisions are shared natural-fire op families
+  (conclusion, concretize, mechanism heaviest); only cue-divergent unique
+  appearances: invert×1, ground×1 (n=2).
 
-Any single-op-token appearance in the outcome window is counted as
-"uptake", regardless of cause. Speaker-tail frequency means the metric
-is baseline-flat. The mechanism×4 "uptake" in the CUE arm does not by
-itself prove CUELOOP caused the use; at best it proves the cue fires in
-a vocabulary the speaker is already highly likely to use.
-
-**H1/H2 status at n=31: zero-equivalent under CI.** Uptake CI
-[-0.033, +0.121] fully encompasses zero. The live paths show no
-measurable human-transfer effect. To narrow the CI and narrow down
-op-level attribution:
-- increase session count further;
-- add a go/nogo causal test (e.g., train a detector on SILENT-arm
-  baseline fire rates vs CUE-arm fire rates, per-op, per-utterance)
-  to separate "speaker-natural" from "cue-likely".
-- re-tune the op-token detector to exclude speaker-natural tokens from
-  the core scoring path (that would yield a cleaner causal estimator).
-
-Synthetic calibration (unchanged): 36 cells, 27/27 CI excludes zero.
-All real-speech corpora replayed; canned arms = +0.000 uptake.
+**Status at n=32: zero-equivalent under CI** — uptake CI [-0.027, +0.131]
+encompasses zero. No detectable human-transfer effect of CUE delivery on
+this predictor/decision stack; H1/H2 require a different experiment design
+to resolve. Candidate next steps:
+- increase n beyond 32 further (24-cell protocol already met);
+- add a causal attribution on per-op SILENT vs CUE firing rates;
+- re-tune the op-token detector to exclude speaker-natural tokens (counter-frequency)
+  to get a cleaner causal signal.
 
 ## Predictor capacity across all Japanese corpora (refined)
 
