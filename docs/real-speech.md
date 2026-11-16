@@ -25,19 +25,19 @@ live target either: neither contains human-against-cue interaction (canned
 audio cannot respond). They remain honest calibration targets, just ordered by
 proximity to the operational discourse register.
 
-## Status memo (2026-11-17, n_pairs=50)
+## Status memo (2026-11-17, n_pairs=52)
 
-H1/H2 remains unmeasured. Live Japanese-reasoning paired grid totals (n=50 — all genuinely-live paired sessions 2026-11-15/17): uptake +0.034 CI [-0.017, +0.094] — zero straddles.
+H1/H2 remains unmeasured. Live Japanese-reasoning paired grid totals (n=52 — all genuinely-live paired sessions 2026-11-15/17): uptake +0.033 CI [-0.019, +0.090] — zero straddles.
 
 ```text
-rule | CUE     | sessions=50  delivered=140 outcomes=140 uptake=10/140 = 0.07
-rule | SILENCE | sessions=50  delivered=0   outcomes=143 uptake=6/143
-paired (CUE-SILENCE): uptake_rate      +0.034 [-0.017, +0.094]  n=50
-                       carryover_rate   +0.015 [-0.033, +0.064]  n=50
-                       novel_uptake     +0.032 [-0.020, +0.095]  n=50
-                       novel_carryover  +0.011 [-0.045, +0.069]  n=50
-                       growth           +0.180 [-0.260, +0.620]  n=50
-                       delay            -5.55 ms [-19.62, +9.50]  n=30
+rule | CUE     | sessions=52  delivered=142 outcomes=142 uptake=10/142 = 0.07
+rule | SILENCE | sessions=52  delivered=0   outcomes=155 uptake=6/155
+paired (CUE-SILENCE): uptake_rate      +0.033 [-0.019, +0.090]  n=52
+                       carryover_rate   +0.024 [-0.025, +0.076]  n=52
+                       novel_uptake     +0.031 [-0.022, +0.089]  n=52
+                       novel_carryover  +0.021 [-0.036, +0.080]  n=52
+                       growth           +0.192 [-0.212, +0.615]  n=52
+                       delay            -5.03 ms [-18.48, +10.19]  n=31
 ```
 
 Recent verified pairs (2026-11-16/17):
@@ -45,6 +45,10 @@ Recent verified pairs (2026-11-16/17):
 20261117-041814 (pair #47): CUE delivered=9 (incl. ground×2 uptake=1, mechanism uptake=1 — 実話 conditionにしては op-on-op high volume); SILENT arm delivered=0 by design; utterances=22 predictions=50 delivered=0 — natural uptake=2 (concretize, dependency), cap on carryover=1 boundary op=1 concluresion op=1.
 20261117-040755 (pair #46): CUE utterances=78 predictions=3 delivered=0 (the owner was away or producing non-analytical chatter; SFSpeechRecognizer produced no Japanese reasoning clause bytes). SILENT arm utterances=26 predictions=44 delivered=0 by design; uptake=1 op=concretize (natural).
 20261117-040029 (pair #45): CUE delivered=11 (incl. ground×2, mechanism×1 uptake); SILENT delivered=0 by design; uptake=1 op=concretize (natural).
+20261117-050142 (pair #52): CUE delivered=2 (conclusion, invert); update=0; SILENT utterances=59 predictions=12 delivered=0 by design; no new repertoire growth.
+20261117-045423 (pair #51): CUE utterances=40 predictions=8 delivered=0 (non-analytical content 'クソ野郎がかゆい'); SILENT utterances=25 predictions=50 delivered=0 by design (all 6 interventions cancelled, growth=-).      
+20261117-044512 (pair #50): CUE delivered=2 uptake=0; SILENT utterances=34 predictions=36 delivered=0 by design.
+20261117-043743 (pair #49): CUE delivered=6 uptake=0; SILENT delivered=0 by design.
 20261117-042752 (pair #48): CUE utterances=~110 predictions=12 delivered=10 (high-volume session; all 10 ops uptake=0); SILENT utterances=53 predictions=29 delivered=0 by design; growth=[boundary,conclusion].
 20261117-034503 (pair #44): both arms language-free ('お前mtファイブ関連の', 'どっちですか'); delivered=0 both.
 20261117-033726 (pair #43): CUE delivered=1 (concretize @44.3s) uptake=0; SILENT delivered=0.
@@ -76,7 +80,7 @@ Recent verified pairs (2026-11-16/17):
 20261116-190051 (pair #39): EMPTY pair — utterances CUE=68 SILENT=62, zero Japanese clause text (recorder WARNed; owner away). Three consecutive empty pairs.
 ```
 
-Breakdown of op-token fires on each arm across **all 50 live pairs**:
+Breakdown of op-token fires on each arm across **all 52 live pairs**:
 - SILENT natural-fires: conclusion×3, concretize×2, dependency×2 (≈7)
 - CUE post-cue-fires: mechanism×4, conclusion×2, concretize×1, invert×1,
   ground×1
@@ -86,13 +90,13 @@ Breakdown of op-token fires on each arm across **all 50 live pairs**:
   Live uptake remains a vocabulary-echo artifact of the speaker, not a
   cue-causal effect of CUELOOP's insertion policy.
 
-**Status at n_pairs=50: zero-equivalent under CI** — uptake CI [-0.017,
-+0.094] encompasses zero. Numbers continue to drift toward zero with no
-effect detected. H1/H2 require either (a) owner shifting to a different
-backend / op-token vocabulary, (b) owner explicitly dictating controlled
-analytical prompts for the next pair to surface a measurable contrast, or
-(c) accepting that H1/H2 is unwitnessable for this corpus at the current
-scale and pivoting the research question.
+**Status at n_pairs=52: zero-equivalent under CI** — uptake CI [-0.019,
++0.090] encompasses zero. Four additional pairs (48→52) did not produce
+exit; CI lower bound is -0.019, upper bound +0.090. H1/H2 require either
+(a) owner shifting to a different backend / op-token vocabulary / controlled
+prompt experiment, or (b) accepting the conclusion that for this speaker /
+hardware / corpus, the uptake task as defined is not measurable, and
+pivoting the research question accordingly.
 
 ## Predictor capacity across all Japanese corpora (refined)
 
