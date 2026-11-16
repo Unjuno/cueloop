@@ -25,21 +25,20 @@ live target either: neither contains human-against-cue interaction (canned
 audio cannot respond). They remain honest calibration targets, just ordered by
 proximity to the operational discourse register.
 
-## Status memo (2026-11-16, n_pairs=33)
+## Status memo (2026-11-16, n_pairs=34)
 
 H1/H2 remains unmeasured. Live Japanese-reasoning paired grid (n_pairs
-= 33, 2026-11-15/16; pair #33 = 20261116-180346, utterances 62/37, both
-arms 0 delivered cues — total cancelled interventions):
+= 34, 2026-11-15/16; pair #34 = 20261116-181246, utterances 63/57, CUE delivered=1):
 
 ```text
-rule | CUE     | sessions=33  delivered=78  outcomes=78 uptake=6/78 = 0.08
-rule | SILENCE | sessions=33  delivered=0   outcomes=82 uptake=3/82 = 0.04
-paired (CUE-SILENCE): uptake_rate      +0.042 [-0.026, +0.130]  n=33
-                       carryover_rate   -0.001 [-0.054, +0.057]  n=33
-                       novel_uptake     +0.030 [-0.044, +0.122]  n=33
-                       novel_carryover  +0.004 [-0.066, +0.077]  n=33
-                       growth           +0.333 [-0.152, +0.879]  n=33
-                       delay            -5.65 ms [-24.9, +15.7]   n=20
+rule | CUE     | sessions=34  delivered=79  outcomes=79 uptake=6/79 = 0.08
+rule | SILENCE | sessions=34  delivered=0   outcomes=85 uptake=3/85 = 0.04
+paired (CUE-SILENCE): uptake_rate      +0.041 [-0.025, +0.121]  n=34
+                       carryover_rate   -0.011 [-0.067, +0.052]  n=34
+                       novel_uptake     +0.029 [-0.045, +0.117]  n=34
+                       novel_carryover  -0.006 [-0.078, +0.072]  n=34
+                       growth           +0.265 [-0.265, +0.794]  n=34
+                       delay            -7.62 ms [-26.0, +13.5]   n=21
 ```
 
 Enriched observation since last memo (paired arms 20261116-175439,
@@ -56,11 +55,11 @@ mechanism×4, conclusion×1, concretize×1, invert×1, ground×1
   (conclusion, concretize, mechanism heaviest); only cue-divergent unique
   appearances: invert×1, ground×1 (n=2).
 
-**Status at n=33: zero-equivalent under CI** — uptake CI [-0.026, +0.130]
+**Status at n=34: zero-equivalent under CI** — uptake CI [-0.025, +0.121]
 encompasses zero. No detectable human-transfer effect of CUE delivery on
 this predictor/decision stack; H1/H2 require a different experiment design
 to resolve. Candidate next steps:
-- increase n beyond 33 further (24-cell protocol already met);
+- increase n beyond 34 further (24-cell protocol already met);
 - add a causal attribution on per-op SILENT vs CUE firing rates;
 - re-tune the op-token detector to exclude speaker-natural tokens (counter-frequency)
   to get a cleaner causal signal.
