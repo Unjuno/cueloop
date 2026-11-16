@@ -35,7 +35,7 @@
   Aggregated 28 pairs: uptake +0.045 CI [-0.027, +0.132] (includes zero).
   5 consecutive silent pairs confirmed owner absent; live H1/H2 could not
   advance. See issue #6.
-- **2026-11-15/17 live pairs #36–#48**: #40/#41 owner returned to mic; #42-#48 = mixed evidence (delivered=0 in #42/#44/#46; pair #45 delivered=11 incl. mechanism/ground uptake; pair #47 delivered=9 incl. ground/mechanism uptake; pair #48 delivered=10 uptake=0). Aggregated 48 live pairs: uptake +0.036 CI [-0.018, +0.099] — zero straddles. See issue #6.
+- **2026-11-15/17 live pairs #36–#50**: #40/#41 owner returned to mic; #42-#49 = mixed evidence — #42/#44/#46/#47/#48/#49/#50 delivered=0/0/0/9/10/6/2 respective; #43 delivered=1 uptake=0; #45 delivered=11 incl. mechanism/ground uptake. Aggregated 50 live pairs: uptake +0.034 CI [-0.017, +0.094] — zero straddles. See issue #6.
 - **2026-11-15 17:09 design-choice attempt 4 (genuinely live)**: pair 3
   of the corpus's live history. CUE arm: utterances=1, predictions=23,
   4 deliveries (concretize/mech/ground/conclusion) — mechanism outcome
