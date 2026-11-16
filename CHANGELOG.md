@@ -35,7 +35,7 @@
   Aggregated 28 pairs: uptake +0.045 CI [-0.027, +0.132] (includes zero).
   5 consecutive silent pairs confirmed owner absent; live H1/H2 could not
   advance. See issue #6.
-- **2026-11-15/17 live pairs #36–#47**: #36 top engagement delivered=11 incl. mechanism uptake; #37/#38/#39 three consecutive empty pairs (owner absent); #40 (owner returned — CUE delivered=5 uptake=1/5 'ある結論3つのプロンプトを構築して'), #41 delivered=1 uptake=0, #42-#44 language-quality degraded pairs delivering 0 CUE (suspendable batches), #45 attempted=11 incl. ground×2 mechanism uptake, #46/#47 = delivered 0 / 9 respectively. Aggregated 47 live pairs: uptake +0.034 CI [-0.022, +0.098] — zero straddles. See issue #6.
+- **2026-11-15/17 live pairs #36–#48**: #40/#41 owner returned to mic; #42-#48 = mixed evidence (delivered=0 in #42/#44/#46; pair #45 delivered=11 incl. mechanism/ground uptake; pair #47 delivered=9 incl. ground/mechanism uptake; pair #48 delivered=10 uptake=0). Aggregated 48 live pairs: uptake +0.036 CI [-0.018, +0.099] — zero straddles. See issue #6.
 - **2026-11-15 17:09 design-choice attempt 4 (genuinely live)**: pair 3
   of the corpus's live history. CUE arm: utterances=1, predictions=23,
   4 deliveries (concretize/mech/ground/conclusion) — mechanism outcome
