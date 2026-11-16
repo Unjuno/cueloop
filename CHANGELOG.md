@@ -25,7 +25,7 @@
   Aggregated 28 pairs: uptake +0.045 CI [-0.027, +0.132] (includes zero).
   5 consecutive silent pairs confirmed owner absent; live H1/H2 could not
   advance. See issue #6.
-- **2026-11-16 live pairs #29–#39**: #29 delivered=8 incl. concretize uptake; #32 delivered=9 uptake=2/9; #33 delivered=0; #34 delivered=1; #35 delivered=6 incl. ground uptake; #36 delivered=11 (top); #37-#39 EMPTY (owner away, three in a row). Aggregated 39 live pairs: uptake +0.054 CI [-0.014, +0.135] — still covers zero. See issue #6.
+- **2026-11-15/17 live pairs #29–#42**: pairs #29-#32 supported the live-grid build; #33-#39 = owner-present + 3 consecutive empties; #40 (owner returned — CUE delivered=5 uptake=1/5 'ある結論3つのプロンプトを構築して'), #41 delivered=1 uptake=0, #42 owner away during CUE arm, SILENT arm captured reasoning text on 'なぜなら検証には時間がかかるから' — Assistant uttered alt caption as designed. Aggregated 42 live pairs: uptake +0.051 CI [-0.006, +0.119] — zero straddles. See issue #6.
 - **2026-11-15 17:09 design-choice attempt 4 (genuinely live)**: pair 3
   of the corpus's live history. CUE arm: utterances=1, predictions=23,
   4 deliveries (concretize/mech/ground/conclusion) — mechanism outcome

@@ -25,24 +25,32 @@ live target either: neither contains human-against-cue interaction (canned
 audio cannot respond). They remain honest calibration targets, just ordered by
 proximity to the operational discourse register.
 
-## Status memo (2026-11-16, n_pairs=39)
+## Status memo (2026-11-17, n_pairs=42)
 
-H1/H2 remains unmeasured. Live Japanese-reasoning paired grid totals (n=39; #37/#38/#39 are consecutive EMPTY pairs — owner absent at mic; recorder WARNed):
+H1/H2 remains unmeasured. Live Japanese-reasoning paired grid totals (n=42 — all genuinely-live paired sessions 2026-11-15/17): uptake +0.051 CI [-0.006, +0.119] — zero straddles.
 
 ```text
-rule | CUE     | sessions=39  delivered=96  outcomes=96 uptake=9/96 = 0.09
-rule | SILENCE | sessions=39  delivered=0   outcomes=94 uptake=3/94 = 0.03
-paired (CUE-SILENCE): uptake_rate      +0.054 [-0.014, +0.135]  n=39
-                       carryover_rate   +0.001 [-0.058, +0.060]  n=39
-                       novel_uptake     +0.040 [-0.032, +0.124]  n=39
-                       novel_carryover  +0.004 [-0.069, +0.078]  n=39
-                       growth           +0.278 [-0.250, +0.806]  n=39
-                       delay            -6.41 ms [-24.0, +13.3]   n=22
-
+rule | CUE     | sessions=42  delivered=102 outcomes=102 uptake=8/102 = 0.08
+rule | SILENCE | sessions=42  delivered=0   outcomes=101 uptake=3/101
+paired (CUE-SILENCE): uptake_rate      +0.051 [-0.006, +0.119]  n=42
+                       carryover_rate   +0.001 [-0.049, +0.053]  n=42
+                       novel_uptake     +0.039 [-0.024, +0.112]  n=42
+                       novel_carryover  +0.003 [-0.058, +0.064]  n=42
+                       growth           +0.262 [-0.214, +0.738]  n=42
+                       delay            -5.04 ms [-20.96, +14.19]  n=24
 ```
 
-Recent verified pairs (2026-11-16):
+Recent verified pairs (2026-11-16/17):
 ```text
+20261117-032732 (pair #42): CUE utterances=68 with zero Japanese clause text;
+  owner away during the CUE arm; SILENT arm captured productive reasoning text
+  (e.g. 'なぜなら検証には時間がかかるから', 'サブエージェントを組み'). SILENT
+  delivered=0 as designed; paired parity maintained.
+20261117-031953 (pair #41): CUE delivered=1 invert, uptake=0; SILENT utterances=65 predictions=2 delivered=0.
+20261117-031139 (pair #40): owner returned to mic — CUE delivered=5 uptake=1/5
+  (conclusion @104.7s — continuation 'ある結論3つのプロンプトを構築して',
+   target_operation_seen=True). SILENT arm utterances=69 predictions=24
+  delivered=0 by design (3 outcomes, uptake=0).
 20261116-180346 (pair #33): utterances 62/37, CUE delivered=0 (all
   CANCELLED), SILENT delivered=0.
 20261116-181246 (pair #34): utterances 63/57, CUE delivered=1
@@ -62,7 +70,7 @@ Recent verified pairs (2026-11-16):
 20261116-190051 (pair #39): EMPTY pair — utterances CUE=68 SILENT=62, zero Japanese clause text (recorder WARNed; owner away). Three consecutive empty pairs.
 ```
 
-Breakdown of op-token fires on each arm across **all 39 live pairs**:
+Breakdown of op-token fires on each arm across **all 42 live pairs**:
 - SILENT natural-fires: conclusion×3, concretize×2, dependency×2 (≈7)
 - CUE post-cue-fires: mechanism×4, conclusion×2, concretize×1, invert×1,
   ground×1
@@ -72,11 +80,14 @@ Breakdown of op-token fires on each arm across **all 39 live pairs**:
   Live uptake remains a vocabulary-echo artifact of the speaker, not a
   cue-causal effect of CUELOOP's insertion policy.
 
-**Status at n_pairs=39: zero-equivalent under CI** — uptake CI [-0.014,
-+0.135] encompasses zero. Latest 3 consecutive pairs (37/38/39) are all
-empty — owner demonstrably absent. No measurable human-transfer effect
-of CUE delivery on this predictor/decision stack; H1/H2 require a
-different experiment design (or just presence of the speaker) to resolve.
+**Status at n_pairs=42: zero-equivalent under CI** — uptake CI [-0.006,
++0.119] encompasses zero from below. Owner alternates presence at the mic;
+in a fully remote configuration (live pair #42 with zero Japanese clause
+during CUE), uptake remains unverifiable by construction. Current aggregate
+output shows lower bound approaching zero, but with explicit upper bound
++0.119 the effect is still unidentified. H1/H2 require a stable speaker
+or a revised protocol (e.g., a controlled transcript to read aloud rather
+than impromptu reasoning) to isolate any CUE effect.
 
 ## Predictor capacity across all Japanese corpora (refined)
 
