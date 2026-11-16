@@ -25,7 +25,9 @@ live target either: neither contains human-against-cue interaction (canned
 audio cannot respond). They remain honest calibration targets, just ordered by
 proximity to the operational discourse register.
 
-## Status memo (2026-11-17, n_pairs=53)
+## Status memo (2026-11-17, n_pairs=53 full-PRIORITY + 3 restricted pairs)
+
+(Additionally: 3 paired sessions with `--restrict-ops boundary,comparison,invert` run after the 2026-11-17 07:38 fix of the ranked_missing_operations post-filter. See "Restricted-ops arm" subsection below.)
 
 H1/H2 remains unmeasured. Live Japanese-reasoning paired grid totals (n=53 — all genuinely-live paired sessions 2026-11-15/17): uptake +0.032 CI [-0.015, +0.089] — zero straddles.
 
@@ -98,6 +100,29 @@ attributed from any of the 18 sessions since 041014 (approx. from n=36).
 H1/H2 require either (a) owner switching to controlled analytical prompts,
 (b) a different backend or vocabulary, or (c) accepting the conclusion that
 at this scale, for this speaker, H1/H2 is not measurable.
+
+## Restricted-ops arm (2026-11-17)
+
+A defensive trial to isolate cue-vs-natural-op-token specificity. Ops
+the speaker essentially never produces (`boundary`, `comparison`,
+`invert`) were restricted-to (the only eligible operation families).
+
+```text
+| pair    | CUE delivered | uptake | carryover | notes |
+|---------|---------------|--------|-----------|-------|
+| 073910  | 1 (invert)    | 0      | 0         | SILENT utterances=8 |
+| 074709  | 1 (boundary)  | 0      | 1         | SILENT articulation produced only sparse non-analytical speech |
+| 075431  | 0             | 0      | 0         | speaker silent (utterances=1 in CUE) |
+```
+
+Correction binding: post-fix (`c2196a0` at main), the rule decision's
+`ranked_missing_operations` is now filtered by `self.priority` —
+strictly eliminating out-of-restrict ops. See CHANGELOG and commit message.
+
+Verdict: with restricted whitelist, restricted arm produced 2 deliveries
+across 3 pairs, uptake=0 — baseline-frequency constraint speaks for itself:
+the speaker doesn't naturally use these op-tokens, so deleting them means
+zero chance of speaker-natural washouts. Effect still zero.
 
 ## Predictor capacity across all Japanese corpora (refined)
 

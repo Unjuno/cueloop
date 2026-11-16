@@ -13,6 +13,12 @@
   commit the adapter binary (`macos-speech-events-ci` is already shipped
   for this reason), or (c) pin macos-latest version and reduce toolchain
   dependencies. See issue #6.
+- **2026-11-17 (restricted-ops arm)**: ran 3 paired sessions with
+  `--restrict-ops boundary,comparison,invert` to test whether cue effects
+  surface under op-token regimes outside speaker-natural frequency.
+  Outcome: 0 uptakes across all three (2 deliveries total, both upstream
+  files changed). Confirmed earlier diagnosis: the restricted-set scope is
+  very narrow for the speaker.
 - **`docs/gpt-live-protocol.md`** — precise protocol for pairing GPT Live
   (the ChatGPT app's Japanese voice reasoning) with CUELOOP on this Mac:
   topology (speakers-to-mic or BlackHole 2ch routing with owner consent),
