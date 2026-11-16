@@ -25,53 +25,46 @@ live target either: neither contains human-against-cue interaction (canned
 audio cannot respond). They remain honest calibration targets, just ordered by
 proximity to the operational discourse register.
 
-## Status memo (2026-11-16, n_pairs=32)
+## Status memo (2026-11-16, n_pairs=33)
 
 H1/H2 remains unmeasured. Live Japanese-reasoning paired grid (n_pairs
-= 32, 2026-11-15/16):
+= 33, 2026-11-15/16; pair #33 = 20261116-180346, utterances 62/37, both
+arms 0 delivered cues — total cancelled interventions):
 
 ```text
-rule | CUE     | sessions=32  delivered=78  outcomes=78 uptake=6/78 = 0.08
-rule | SILENCE | sessions=32  delivered=0   outcomes=78 uptake=3/78 = 0.04
-paired (CUE-SILENCE): uptake_rate      +0.044 [-0.027, +0.131]  n=32
-                       carryover_rate   +0.007 [-0.051, +0.063]  n=32
-                       novel_uptake     +0.031 [-0.046, +0.124]  n=32
-                       novel_carryover  +0.015 [-0.064, +0.091]  n=32
-                       growth           +0.250 [-0.250, +0.750]  n=32
+rule | CUE     | sessions=33  delivered=78  outcomes=78 uptake=6/78 = 0.08
+rule | SILENCE | sessions=33  delivered=0   outcomes=82 uptake=3/82 = 0.04
+paired (CUE-SILENCE): uptake_rate      +0.042 [-0.026, +0.130]  n=33
+                       carryover_rate   -0.001 [-0.054, +0.057]  n=33
+                       novel_uptake     +0.030 [-0.044, +0.122]  n=33
+                       novel_carryover  +0.004 [-0.066, +0.077]  n=33
+                       growth           +0.333 [-0.152, +0.879]  n=33
                        delay            -5.65 ms [-24.9, +15.7]   n=20
 ```
 
-Enriched observation since last memo (paired arms 20261116-174543,
-20261116-175439 — owner returned to mic):
+Enriched observation since last memo (paired arms 20261116-175439,
+20261116-180346): pair #33 delivered=0 everywhere — full-cline of
+cancellations only; the rule-pipeline chose to hold every intervention
+despite 20 predictions triggered.
 
-```text
-20261116-174543 (design-choice):
-  CUE: utterances=58 predictions=32 delivered=7 uptake=2/7 (conclusion, invert)
-  SILENT: utterances=36 predictions=61 delivered=0 by design uptake=1/6
-20261116-175439 (design-choice):
-  CUE: utterances=21 predictions=62 delivered=9 uptake=2/9 (conclusion, concretize) carryover=4
-  SILENT: utterances=44 predictions=57 delivered=0 by design uptake=1/3? (conclusion natural, repertoire_growth=concretize, carryover=1)
-```
-
-Breakdown of op-token fires on each arm (aggregate across 32 live pairs):
-
-```text
-SILENT natural-fires: conclusion×3, concretize×2, dependency×2  (≈7 natural)
-CUE post-cue-fires:  mechanism×4, conclusion×1, concretize×1, invert×1, ground×1
-```
+SILENT natural-fires (across all 33 live pairs):
+conclusion×3, concretize×2, dependency×2 (≈7 natural)
+CUE post-cue-fires  (across 33 live pairs):
+mechanism×4, conclusion×1, concretize×1, invert×1, ground×1
 
 → 5 of 6 CUE-arm op-fire uptake decisions are shared natural-fire op families
   (conclusion, concretize, mechanism heaviest); only cue-divergent unique
   appearances: invert×1, ground×1 (n=2).
 
-**Status at n=32: zero-equivalent under CI** — uptake CI [-0.027, +0.131]
+**Status at n=33: zero-equivalent under CI** — uptake CI [-0.026, +0.130]
 encompasses zero. No detectable human-transfer effect of CUE delivery on
 this predictor/decision stack; H1/H2 require a different experiment design
 to resolve. Candidate next steps:
-- increase n beyond 32 further (24-cell protocol already met);
+- increase n beyond 33 further (24-cell protocol already met);
 - add a causal attribution on per-op SILENT vs CUE firing rates;
 - re-tune the op-token detector to exclude speaker-natural tokens (counter-frequency)
   to get a cleaner causal signal.
+
 
 ## Predictor capacity across all Japanese corpora (refined)
 
