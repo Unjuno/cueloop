@@ -3,6 +3,16 @@
 ## Unreleased
 
 ### Added
+- **CI macos-adapter job is currently cancellation-prone** (last 3 main-branch
+  runs cancelled mid-compile, including at 9e4054c/docs: 44 live pairs). The
+  macOS Swift build does complete locally on this M1 Max Mac (tools/macos_
+  speech_events.swift compiles and runs); the actions-runner container on
+  GitHub Actions appears to exceed a 10-minute limit during first compile.
+  Documented here; workaround options: (a) skip macos-adapter in CI to
+  expedite Windows/Linux unit tests (least invasive), (b) build once and
+  commit the adapter binary (`macos-speech-events-ci` is already shipped
+  for this reason), or (c) pin macos-latest version and reduce toolchain
+  dependencies. See issue #6.
 - **`docs/gpt-live-protocol.md`** — precise protocol for pairing GPT Live
   (the ChatGPT app's Japanese voice reasoning) with CUELOOP on this Mac:
   topology (speakers-to-mic or BlackHole 2ch routing with owner consent),
