@@ -25,11 +25,7 @@
   Aggregated 28 pairs: uptake +0.045 CI [-0.027, +0.132] (includes zero).
   5 consecutive silent pairs confirmed owner absent; live H1/H2 could not
   advance. See issue #6.
-- **2026-11-16 live pairs #29–#38**: #29 delivered=8 incl. concretize uptake;
-  #32 delivered=9 uptake=2/9; #33 delivered=0; #34 delivered=1; #35 delivered=6
-  incl. ground uptake; #36 delivered=11 incl. conclusion×2, ground, mechanism
-  (top engagement); #37,#38 EMPTY pairs (owner away). Aggregated 38 live
-  pairs: uptake +0.054 CI [-0.014, +0.135] — still covers zero. See issue #6.
+- **2026-11-16 live pairs #29–#39**: #29 delivered=8 incl. concretize uptake; #32 delivered=9 uptake=2/9; #33 delivered=0; #34 delivered=1; #35 delivered=6 incl. ground uptake; #36 delivered=11 (top); #37-#39 EMPTY (owner away, three in a row). Aggregated 39 live pairs: uptake +0.054 CI [-0.014, +0.135] — still covers zero. See issue #6.
 - **2026-11-15 17:09 design-choice attempt 4 (genuinely live)**: pair 3
   of the corpus's live history. CUE arm: utterances=1, predictions=23,
   4 deliveries (concretize/mech/ground/conclusion) — mechanism outcome

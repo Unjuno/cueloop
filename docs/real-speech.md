@@ -25,18 +25,18 @@ live target either: neither contains human-against-cue interaction (canned
 audio cannot respond). They remain honest calibration targets, just ordered by
 proximity to the operational discourse register.
 
-## Status memo (2026-11-16, n_pairs=38)
+## Status memo (2026-11-16, n_pairs=39)
 
-H1/H2 remains unmeasured. Live Japanese-reasoning paired grid totals:
+H1/H2 remains unmeasured. Live Japanese-reasoning paired grid totals (n=39; #37/#38/#39 are consecutive EMPTY pairs — owner absent at mic; recorder WARNed):
 
 ```text
-rule | CUE     | sessions=38  delivered=96  outcomes=96 uptake=9/96 = 0.09
-rule | SILENCE | sessions=38  delivered=0   outcomes=94 uptake=3/94 = 0.03
-paired (CUE-SILENCE): uptake_rate      +0.054 [-0.014, +0.135]  n=38
-                       carryover_rate   +0.001 [-0.058, +0.060]  n=38
-                       novel_uptake     +0.040 [-0.032, +0.124]  n=38
-                       novel_carryover  +0.004 [-0.069, +0.078]  n=38
-                       growth           +0.278 [-0.250, +0.806]  n=38
+rule | CUE     | sessions=39  delivered=96  outcomes=96 uptake=9/96 = 0.09
+rule | SILENCE | sessions=39  delivered=0   outcomes=94 uptake=3/94 = 0.03
+paired (CUE-SILENCE): uptake_rate      +0.054 [-0.014, +0.135]  n=39
+                       carryover_rate   +0.001 [-0.058, +0.060]  n=39
+                       novel_uptake     +0.040 [-0.032, +0.124]  n=39
+                       novel_carryover  +0.004 [-0.069, +0.078]  n=39
+                       growth           +0.278 [-0.250, +0.806]  n=39
                        delay            -6.41 ms [-24.0, +13.3]   n=22
 
 ```
@@ -57,13 +57,12 @@ Recent verified pairs (2026-11-16):
   speaker-biased lexicon. SILENT arm: utterances=57 on dense technical
   notation (matrix/attention math phrasing), delivered=0 (no op-token
   matches).
-20261116-184046 (pair #37): EMPTY pair — utterances CUE=65 SILENT=53,
-  zero Japanese clause text captured (recorder WARNed loudly both arms; owner away).
-20261116-185032 (pair #38): EMPTY pair — utterances CUE=69 SILENT=59,
-  zero Japanese clause text; recorder WARNed loudly.
+20261116-184046 (pair #37): EMPTY pair — utterances CUE=65 SILENT=53, zero Japanese clause text (recorder WARNed; owner away).
+20261116-185032 (pair #38): EMPTY pair — utterances CUE=69 SILENT=59, zero Japanese clause text (recorder WARNed; owner away).
+20261116-190051 (pair #39): EMPTY pair — utterances CUE=68 SILENT=62, zero Japanese clause text (recorder WARNed; owner away). Three consecutive empty pairs.
 ```
 
-Breakdown of op-token fires on each arm across **all 38 live pairs**:
+Breakdown of op-token fires on each arm across **all 39 live pairs**:
 - SILENT natural-fires: conclusion×3, concretize×2, dependency×2 (≈7)
 - CUE post-cue-fires: mechanism×4, conclusion×2, concretize×1, invert×1,
   ground×1
@@ -73,12 +72,11 @@ Breakdown of op-token fires on each arm across **all 38 live pairs**:
   Live uptake remains a vocabulary-echo artifact of the speaker, not a
   cue-causal effect of CUELOOP's insertion policy.
 
-**Status at n_pairs=38: zero-equivalent under CI** — uptake CI [-0.014,
-+0.135] encompasses zero. No measurable human-transfer effect of CUE
-delivery on this predictor/decision stack; most recent 5 chronological
-sessions are 2 empty (owner away), 2 fully rejected (cancellations only),
-1 delivered=1. The speaker's recurrent op-token set is essentially cached; 
-none of the pair data here supports a positive effect.
+**Status at n_pairs=39: zero-equivalent under CI** — uptake CI [-0.014,
++0.135] encompasses zero. Latest 3 consecutive pairs (37/38/39) are all
+empty — owner demonstrably absent. No measurable human-transfer effect
+of CUE delivery on this predictor/decision stack; H1/H2 require a
+different experiment design (or just presence of the speaker) to resolve.
 
 ## Predictor capacity across all Japanese corpora (refined)
 
