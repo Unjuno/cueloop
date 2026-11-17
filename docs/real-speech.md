@@ -146,10 +146,12 @@ cue-divergent candidates identified in the live op-token spectrum.
 | 001419 | 2026-11-18 00:14 | 0             | 0 | utterances=1 predictions=7 ('こんにちは無料でログインするには') |
 | 002521 | 2026-11-18 00:25 | 0             | 0 | both arms EMPTY (SFSpeech produced almost no Japanese clauses; owner away) |
 | 004038 | 2026-11-18 00:40 | 1 — invert    | 0 | utterances=1 predictions=2 ('オープンコードパス'); SILENT utterances=1 ('されてもいいと思う', '良い状態であるか') |
+| 005156 | 2026-11-18 00:51 | 1 — invert    | 0 | utterances=2 predictions=5 ('冷たいの', 'PIでやったらさぁ使われるんじゃないの'); SILENT utterances=1 ('PNとか使うの') |
 
-Aggregate A (n=6 pairs): CUE delivered=5 (ground×2, invert×2, comparison×1),
+Aggregate A (n=7 pairs): CUE delivered=6 (ground×2, invert×3, comparison×1),
 uptake=0; SILENCE delivered=0; paired CI [+0.000,+0.000]. No uptake
-detected in the restricted-A arm.
+detected in the restricted-A arm — 7 consecutive pairs with zero op-token
+fires after any cue.
 
 **Variant baseline (2026-11-17, whitelist {boundary, comparison, invert})**
 
