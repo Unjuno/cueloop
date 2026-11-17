@@ -25,21 +25,21 @@ live target either: neither contains human-against-cue interaction (canned
 audio cannot respond). They remain honest calibration targets, just ordered by
 proximity to the operational discourse register.
 
-## Status memo (2026-11-17, n_pairs=58 full-PRIORITY + 3 restricted pairs)
+## Status memo (2026-11-17, n_pairs=59 full-PRIORITY + 3 restricted pairs)
 
 (Additionally: 3 paired sessions with `--restrict-ops boundary,comparison,invert` run after the 2026-11-17 07:38 fix of the ranked_missing_operations post-filter. See "Restricted-ops arm" subsection below.)
 
-H1/H2 remains unmeasured. Live Japanese-reasoning paired grid totals (n=58 — all genuinely-live paired sessions 2026-11-15/17): uptake +0.029 CI [-0.015, +0.080] — zero straddles.
+H1/H2 remains unmeasured. Live Japanese-reasoning paired grid totals (n=59 — all genuinely-live paired sessions 2026-11-15/17): uptake +0.029 CI [-0.015, +0.081] — zero straddles.
 
 ```text
-rule | CUE     | sessions=58  delivered=144 outcomes=144 uptake=8/144 = 0.06
-rule | SILENCE | sessions=58  delivered=0   outcomes=159 uptake=5/159
-paired (CUE-SILENCE): uptake_rate      +0.029 [-0.015, +0.080]  n=58
-                       carryover_rate   +0.038 [-0.012, +0.093]  n=58
-                       novel_uptake     +0.028 [-0.019, +0.080]  n=58
-                       novel_carryover  +0.018 [-0.033, +0.072]  n=58
-                       growth           +0.190 [-0.172, +0.569]  n=58
-                       delay            -5.17 ms [-17.61, +9.59]  n=32
+rule | CUE     | sessions=59  delivered=145 outcomes=145 uptake=9/145 = 0.06
+rule | SILENCE | sessions=59  delivered=0   outcomes=165 uptake=5/165
+paired (CUE-SILENCE): uptake_rate      +0.029 [-0.015, +0.081]  n=59
+                       carryover_rate   +0.038 [-0.014, +0.095]  n=59
+                       novel_uptake     +0.027 [-0.020, +0.079]  n=59
+                       novel_carryover  +0.018 [-0.031, +0.068]  n=59
+                       growth           +0.169 [-0.186, +0.542]  n=59
+                       delay            -6.47 ms [-19.53, +8.14]  n=33
 ```
 
 Recent verified pairs (2026-11-16/17):
@@ -48,7 +48,8 @@ Recent verified pairs (2026-11-16/17):
 20261117-040755 (pair #46): CUE utterances=78 predictions=3 delivered=0 (the owner was away or producing non-analytical chatter; SFSpeechRecognizer produced no Japanese reasoning clause bytes). SILENT arm utterances=26 predictions=44 delivered=0 by design; uptake=1 op=concretize (natural).
 20261117-040029 (pair #45): CUE delivered=11 (incl. ground×2, mechanism×1 uptake); SILENT delivered=0 by design; uptake=1 op=concretize (natural).
 20261117-080312 (pair #58): CUE utterances=2 predictions=3 delivered=0 (two brief utterances 'うん続けて話すねもう少しだけ待ってね終わり次第椅子で話すよ' / '繋いでるからねちょっとだけ待っててね終わったらそのまま話し始めるよ'). SILENT arm 1 outcome: 'concretize' delivered (boundary=overdue cancelled).
-20261117-081021 (pair #59): CUE utterances=4 predictions=5 delivered=0 — owner slipped back into minimal-Japanese chatter. SILENT utterances=1 predictions=21 delivered=0; 1 CANCELLED. silence is unsubstantive.
+20261117-134115 (pair #59): CUE utterances=26 predictions=10 delivered=1 (concretize @54.9 s +101 ms) uptake=0 (modal human switch listener utterances just noise); SILENT arm delivered=0 by design; growth=[comparison].
+20261117-081021 (pair #59): CUE utterances=4 predictions=5 delivered=0; SILENT utterances=1 predictions=21 delivered=0; near-silent session.
 20261117-051049 (pair #53): CUE utterances=41 predictions=7 delivered=0 (review-time mouth chatter only — 'なるような', 'を探して'). SILENT arm utterances=61 delivered=0 (none delivered, all held).
 20261117-050142 (pair #52): CUE delivered=2 (conclusion, invert) uptake=0. SILENT utterances=59 predictions=12 delivered=0 by design. Note: both arms delivered=0 by design except for 2 CUE cues; uptake=0.
 20261117-045423 (pair #51): CUE utterances=40 predictions=8 delivered=0 (non-analytical content 'クソ野郎がかゆい'); SILENT utterances=25 predictions=50 delivered=0 by design (all 6 interventions cancelled, growth=-).      
@@ -85,7 +86,7 @@ Recent verified pairs (2026-11-16/17):
 20261116-190051 (pair #39): EMPTY pair — utterances CUE=68 SILENT=62, zero Japanese clause text (recorder WARNed; owner away). Three consecutive empty pairs.
 ```
 
-Breakdown of op-token fires on each arm across **all 58 live pairs**:
+Breakdown of op-token fires on each arm across **all 59 live pairs**:
 - SILENT natural-fires: conclusion×3, concretize×2, dependency×2 (≈7)
 - CUE post-cue-fires: mechanism×4, conclusion×2, concretize×1, invert×1,
   ground×1
@@ -95,14 +96,12 @@ Breakdown of op-token fires on each arm across **all 58 live pairs**:
   Live uptake remains a vocabulary-echo artifact of the speaker, not a
   cue-causal effect of CUELOOP's insertion policy.
 
-**Status at n_pairs=58: zero-equivalent under CI** — uptake CI [-0.015,
-+0.080] encompasses zero. Pair #58/#59 produced minimal utterances from
-the speaker — the speaker appears to be drifting out of session. The
-visible signal has remained: (0,0,0,0,3,0,0,2,0,4,1,1,1,0,0,3,2,0) ≈
-zero-uptake trend across the past 18 pair × 3 sessions. H1/H2 require
-either (a) owner shifting to a different backend / op-token vocabulary /
-liveness condition, or (b) accepting the current corpus/speaker/hardware
-combination as not measurable for H1/H2 and pivoting the research question.
+**Status at n_pairs=59: zero-equivalent under CI** — uptake CI [-0.015,
++0.081] encompasses zero. Pair #58/#59 saw voice levels drop with owner
+uttering mostly short phrases ('うん続けて話すねもう少しだけ待ってね', 'suよ', etc.) — listener drifting out of task focus. The visible signal
+across 59 pairs has been near-flat. H1/H2 remain unmeasurable for this
+corpus, speaker and task — owner must choose a different operating mode
+rather than continue with the current cadence.
 
 ## Restricted-ops arm (2026-11-17)
 
