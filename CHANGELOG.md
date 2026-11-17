@@ -13,12 +13,11 @@
   commit the adapter binary (`macos-speech-events-ci` is already shipped
   for this reason), or (c) pin macos-latest version and reduce toolchain
   dependencies. See issue #6.
-- **2026-11-17/18 restricted-ops arm (A — cue-divergent whitelist)**: 3 paired
-  sessions with `--restrict-ops comparison,ground,invert,mechanism` — ops the
-  speaker never uses unnaturally. Delivered 4 cues (ground×2, invert×1,
-  comparison×1), uptake=0. (C/SILENT both silent analyzer output \[+0.000,
-  +0.000].) Confirms the restricted-construction works; no hidden effect
-  surfaces in op-divergent ops either. Goal unchanged.
+- **2026-11-18 restricted-ops arm (A — n=4)**: pairs 234729/235451/000203/001419.
+  SILENT side delivered=0 by design. Aggregate A uptake +0.000 CI [+0.000, +0.000];
+  delivered=4 (ground×2, invert×1, comparison×1); no op fire after cue in any
+  restricted arm. Owner-inherent choice of (A) good run; effect remains
+  undetectable.
 - **`docs/gpt-live-protocol.md`** — precise protocol for pairing GPT Live
   (the ChatGPT app's Japanese voice reasoning) with CUELOOP on this Mac:
   topology (speakers-to-mic or BlackHole 2ch routing with owner consent),
