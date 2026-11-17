@@ -144,11 +144,11 @@ cue-divergent candidates identified in the live op-token spectrum.
 | 235451 | 2026-11-17 23:54 | 1 — ground | 0 | utterances=1 predictions=0 (empty) |
 | 000203 | 2026-11-18 00:02 | 1 — comparison | 0 | utterances=3 predictions=9 ('公開はそのままにしてるから') |
 | 001419 | 2026-11-18 00:14 | 0             | 0 | utterances=1 predictions=7 ('こんにちは無料でログインするには') |
+| 002521 | 2026-11-18 00:25 | 0             | 0 | both arms EMPTY (SFSpeech produced almost no Japanese clauses; owner away) |
 
-Aggregate A (n=4 pairs): CUE delivered=4 (ground×2, invert×1, comparison×1),
-uptake=0; SILENCE delivered=0; bundled uptake Δ +0.000 CI [+0.000,+0.000].
-No uptake detected in the restricted arm (every restricted-arm session so
-far produced zero op-token fire after cue delivery).
+Aggregate A (n=5 pairs): CUE delivered=4 (ground×2, invert×1, comparison×1),
+uptake=0; SILENCE delivered=0; paired CI [+0.000,+0.000]. No uptake
+detected in the restricted-A arm.
 
 **Variant baseline (2026-11-17, whitelist {boundary, comparison, invert})**
 

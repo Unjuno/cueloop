@@ -13,11 +13,9 @@
   commit the adapter binary (`macos-speech-events-ci` is already shipped
   for this reason), or (c) pin macos-latest version and reduce toolchain
   dependencies. See issue #6.
-- **2026-11-18 restricted-ops arm (A — n=4)**: pairs 234729/235451/000203/001419.
-  SILENT side delivered=0 by design. Aggregate A uptake +0.000 CI [+0.000, +0.000];
-  delivered=4 (ground×2, invert×1, comparison×1); no op fire after cue in any
-  restricted arm. Owner-inherent choice of (A) good run; effect remains
-  undetectable.
+- **2026-11-18 restricted-ops arm (A — n=5)**: pairs 234729/235451/000203/001419/002521
+  (currently nearly all empty — speaker ultimately too quiet or away). Aggregate A
+  tables identical delivered=4 uptake=0; CI [+0.000, +0.000]. Owner-level strategic choice required to move restricted-arm size faster; current pace (~6/min per pair) is uninformative for detecting effects.
 - **`docs/gpt-live-protocol.md`** — precise protocol for pairing GPT Live
   (the ChatGPT app's Japanese voice reasoning) with CUELOOP on this Mac:
   topology (speakers-to-mic or BlackHole 2ch routing with owner consent),
