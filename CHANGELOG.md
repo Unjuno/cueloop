@@ -41,7 +41,7 @@
   Aggregated 28 pairs: uptake +0.045 CI [-0.027, +0.132] (includes zero).
   5 consecutive silent pairs confirmed owner absent; live H1/H2 could not
   advance. See issue #6.
-- **2026-11-15/17 live pairs #36–#59**: pairs mostly reduced to non-Japanese-reasoning mouth chatter; many CUE/SILENT arms produced no Japanese reasoning clause bytes. Pair #134115 (pair #59) shows almost no analytical output. Aggregated 59 live pairs: uptake +0.029 CI [-0.015, +0.081] — zero straddles. See issue #6.
+- **2026-11-15/17 live pairs #36–#60**: #134115 and #141717 produced only token-noise; #59#60 essentially silent. An entire day's continued recording created no detectable effect across the n=60 paired grid. Aggregated 60 live pairs: uptake +0.028 CI [-0.016, +0.077] — zero straddles. See issue #6.
 - **2026-11-15 17:09 design-choice attempt 4 (genuinely live)**: pair 3
   of the corpus's live history. CUE arm: utterances=1, predictions=23,
   4 deliveries (concretize/mech/ground/conclusion) — mechanism outcome
