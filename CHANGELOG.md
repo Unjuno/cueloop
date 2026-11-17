@@ -41,12 +41,11 @@
   Aggregated 28 pairs: uptake +0.045 CI [-0.027, +0.132] (includes zero).
   5 consecutive silent pairs confirmed owner absent; live H1/H2 could not
   advance. See issue #6.
-- **2026-11-15/17 live pairs #36–#65**: pair #64/#65 = owner at mic with
-  uptake detected but always speaker-habitual op-tokens ('具体的', '結論から
-  言うと'). First aggregate metric whose CI marginally excludes zero:
-  carryover_rate +0.057 CI [+0.003, +0.118] — NOT uptake (later op-token
-  fires), needs baseline check, not H1/H2 evidence. Uptake still straddles
-  zero (+0.037 CI [-0.003, +0.087], lower bound −0.003). See issue #6.
+- **2026-11-15/17 live pairs #36–#66**: pair #64/#65 owner at mic (uptake=1
+  each, always speaker-habitual op-tokens); pair #66 EMPTY (utterances 18/46,
+  zero Japanese clause text). Carryover CI that marginally excluded zero at
+  n=65 (+0.003) eroded to +0.001 at n=66 — borderline bootstrap noise. Uptake
+  still straddles zero (+0.036 CI [-0.004, +0.084]). See issue #6.
 - **2026-11-15 17:09 design-choice attempt 4 (genuinely live)**: pair 3
   of the corpus's live history. CUE arm: utterances=1, predictions=23,
   4 deliveries (concretize/mech/ground/conclusion) — mechanism outcome
