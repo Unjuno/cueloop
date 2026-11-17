@@ -25,26 +25,60 @@ live target either: neither contains human-against-cue interaction (canned
 audio cannot respond). They remain honest calibration targets, just ordered by
 proximity to the operational discourse register.
 
-## Status memo (2026-11-17, n_pairs=66)
+## Status memo (2026-11-17, n_pairs=67)
 
 (Additionally: 3 paired sessions with `--restrict-ops boundary,comparison,invert` run after the 2026-11-17 07:38 fix of the ranked_missing_operations post-filter. See "Restricted-ops arm" subsection below.)
 
-H1/H2 remains unmeasured. Live Japanese-reasoning paired grid totals (n=66 — all genuinely-live paired sessions 2026-11-15/17): uptake +0.036 CI [-0.004, +0.084] — still straddles zero.
+H1/H2 remains unmeasured. Live Japanese-reasoning paired grid totals (n=67 — all genuinely-live paired sessions 2026-11-15/17): uptake +0.036 CI [-0.004, +0.083] — still straddles zero.
 
 ```text
-rule | CUE     | sessions=66  delivered=159 outcomes=159 uptake=11/159 = 0.07
-rule | SILENCE | sessions=66  delivered=0   outcomes=172 uptake=5/172  = 0.03
-paired (CUE-SILENCE): uptake_rate      +0.036 [-0.004, +0.084]  n=66
-                       carryover_rate   +0.056 [+0.001, +0.115]  n=66
-                       novel_uptake     +0.035 [-0.008, +0.083]  n=66
-                       novel_carryover  +0.038 [-0.015, +0.097]  n=66
-                       growth           +0.212 [-0.121, +0.545]  n=66
+rule | CUE     | sessions=67  delivered=159 outcomes=159 uptake=11/159 = 0.06
+rule | SILENCE | sessions=67  delivered=0   outcomes=172 uptake=5/172  = 0.03
+paired (CUE-SILENCE): uptake_rate      +0.036 [-0.004, +0.083]  n=67
+                       carryover_rate   +0.055 [+0.002, +0.114]  n=67
+                       novel_uptake     +0.035 [-0.009, +0.083]  n=67
+                       novel_carryover  +0.038 [-0.015, +0.095]  n=67
+                       growth           +0.209 [-0.119, +0.552]  n=67
                        delay            -3.28 ms [-15.85, +10.32]  n=36
 ```
 
-Apply caution on the previously noted carryover margin: one empty pair (#66)
-moved the carryover CI lower bound from +0.003 to +0.001 — the supposedly
-"positive" margin is noise-limited, not a stable effect.
+Apply caution on the previously noted carryover margin: the supposedly
+"positive" carryover CI margin is at the edge of zero (+0.001 -> +0.002
+with #67) — borderline bootstrap noise, not a stable effect.
+
+### Op-token spectrum (2026-11-17 18:30, generated via scripts/op_fire_spectrum.py)
+
+A cue-vs-natural split of every op-token across all **67 live design-choice
+pairs** (artifact: artifacts/live-op-spectrum.md — gitignored):
+
+```text
+speaker-natural ops (fire on SILENT arm too): boundary, conclusion, concretize, dependency
+cue-divergent ops (only under CUE):         comparison, ground, invert, mechanism
+
+| op         | CUE del | CUE upd | CUE carry | SILENT upd | class     |
+|------------|---------|---------|-----------|------------|-----------|
+| ground     | 19      | 4       | 7         | 0          | divergent |
+| comparison | 6       | 1       | 3         | 0          | divergent |
+| invert     | 22      | 1       | 4         | 0          | divergent |
+| mechanism  | 21      | 6       | 3         | 0          | divergent |
+| boundary   | 5       | 0       | 2         | 1          | natural   |
+| dependency | 13      | 0       | 1         | 4          | natural   |
+| concretize | 41      | 3       | 4         | 3          | natural   |
+| conclusion | 32      | 6       | 14        | 4          | natural   |
+
+CUE raw fire counts: delivered=159 uptake=21 (raw totals; the paired analyzer reports 11 per-pair when pairing session-timeslots)
+the per_operation totals count all outcomes including undelivered ones)
+CUE uptake split: speaker-natural op-tokens=9 | cue-divergent=12
+```
+
+The 12 cue-divergent CUE uptakes (mechanism6+ground4+invert1+comparison1)
+arrive only on the CUE arm — consistent with cue-induced distribution shift,
+but n is small. The residual 9 fires (conclusion6+concretize3) are habitual:
+the speaker uses '結論'/'具体' and fires them at the same rate whether or not a
+cue was given. This is the cleanest evidence so far of an op-selective CUE
+signature — but with SILENT-arm uptake=12 total (4+4+3+1), the shared
+families are not distinguishable from baseline within-sample. Not H1/H2
+evidence; do not read this as uptake effect.
 
 ## Recent verified pairs (chronological, 2026-11-16 to 2026-11-17)
 ```text
@@ -52,6 +86,7 @@ moved the carryover CI lower bound from +0.003 to +0.001 — the supposedly
 20261117-175006 (pair #64): owner at mic — CUE utterances=27 predictions=17 delivered=5 uptake=1/5 (concretize @25.8s: speaker said '具体的' in the outcome, the speaker-natural op-token again). SILENT utterances=28 predictions=4 delivered=0.
 20261117-175922 (pair #65): owner at mic — CUE utterances=27 predictions=11 delivered=2 uptake=1/2 (conclusion @22.7s: '結論から言うと'). Carryover=2/2.
 20261117-180831 (pair #66): EMPTY pair — CUE utterances=18 predictions=0 delivered=0; SILENT utterances=46 predictions=0 delivered=0. No Japanese clause text at all (owner away or voice level too low).
+20261117-181818 (pair #67): EMPTY pair — both arms zero Japanese clause text (CUE utterances=24 predictions=0; SILENT utterances=30 predictions=0).
 20261117-143502 (pair #62): EMPTY — CUE utterances=0 delivered=0; SILENCE utterances=1 delivered=0. No Japanese clause text. Recorder WARNed both arms.
 20261117-142638 (pair #61): EMPTY — both arms: SFSpeechRecognizer captured no Japanese clause text. Recorder WARNed both arms.
 20261117-141717 (pair #60): CUE utterances=9 predictions=14 delivered=3 (conclusion×2, invert @79s); SILENT utterances=0 delivered=0 by design.
@@ -71,7 +106,7 @@ moved the carryover CI lower bound from +0.003 to +0.001 — the supposedly
 20261117-031139 (pair #40): owner returned — CUE delivered=5 uptake=1/5. Only pair in the last 4 where speaker produced continuous Japanese reasoning.
 ```
 
-Breakdown of op-token fires on each arm across **all 66 live pairs**:
+Breakdown of op-token fires on each arm across **all 67 live pairs**:
 - SILENT natural-fires: conclusion×3, concretize×2, dependency×2 (≈7)
 - CUE post-cue-fires: mechanism×4, conclusion×2, concretize×1, invert×1,
   ground×1
@@ -81,13 +116,14 @@ Breakdown of op-token fires on each arm across **all 66 live pairs**:
   Live uptake remains a vocabulary-echo artifact of the speaker, not a
   cue-causal effect of CUELOOP's insertion policy.
 
-**Status at n_pairs=66: uptake straddles zero; carryover margin is noise** —
-uptake CI [-0.004, +0.084] encompasses zero. The carryover CI [+0.001,
-+0.115] that briefly appeared at n=65 shrunk to the edge of zero after a
-single empty pair — i.e., it was borderline noise on the bootstrap seed,
-not a stable effect. Uptake stays dominated by speaker-habitual op-tokens.
-H1/H2 remain unmeasured; owner must choose a different operating mode
-(see issue #6 options).
+**Status at n_pairs=67: uptake straddles zero; carryover margin is noise** —
+uptake CI [-0.004, +0.083] encompasses zero. The carryover CI stays at the
+edge of zero (+0.002) — borderline bootstrap noise, not a stable effect.
+The op-spectrum split (see above) is the only signal of interest:
+cue-divergent ops (mechanism/ground/invert/comparison) produced 12 of 21
+uptakes — but n is tiny; interpretive weight is minimal without a
+controlled variant. H1/H2 remain unmeasured; owner must choose a different
+operating mode (see issue #6 options).
 
 ## Restricted-ops arm (2026-11-17)
 

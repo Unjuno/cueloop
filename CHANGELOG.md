@@ -41,11 +41,16 @@
   Aggregated 28 pairs: uptake +0.045 CI [-0.027, +0.132] (includes zero).
   5 consecutive silent pairs confirmed owner absent; live H1/H2 could not
   advance. See issue #6.
-- **2026-11-15/17 live pairs #36–#66**: pair #64/#65 owner at mic (uptake=1
-  each, always speaker-habitual op-tokens); pair #66 EMPTY (utterances 18/46,
-  zero Japanese clause text). Carryover CI that marginally excluded zero at
-  n=65 (+0.003) eroded to +0.001 at n=66 — borderline bootstrap noise. Uptake
-  still straddles zero (+0.036 CI [-0.004, +0.084]). See issue #6.
+- **2026-11-17 op-spectrum**: `scripts/op_fire_spectrum.py` added; artifacts/
+  live-op-spectrum.md generated (gitignored). speaker-natural ops
+  (boundary/conclusion/concretize/dependency) fire on both arms; cue-
+  divergent (mechanism/ground/invert/comparison) appear only under CUE.
+  This is an op-selective hint, not evidence of causal uptake.
+- **2026-11-15/17 live pairs #36–#67**: pairs #60-#63 live; #62/#63 non-empty
+  (owner at mic) delivered 3/5/1/4 uptake0/1/0/1; #64/#65 owner at mic
+  uptake=1/5 & 1/2; #66/#67 EMPTY (zero Japanese clause text). Aggregated 67
+  live pairs: uptake +0.036 CI [-0.004, +0.083] — zero straddles.
+  See issue #6.
 - **2026-11-15 17:09 design-choice attempt 4 (genuinely live)**: pair 3
   of the corpus's live history. CUE arm: utterances=1, predictions=23,
   4 deliveries (concretize/mech/ground/conclusion) — mechanism outcome
