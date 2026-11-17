@@ -46,10 +46,7 @@
   (boundary/conclusion/concretize/dependency) fire on both arms; cue-
   divergent (mechanism/ground/invert/comparison) appear only under CUE.
   This is an op-selective hint, not evidence of causal uptake.
-- **2026-11-15/17 live pairs #36–#67**: pairs #60-#63 live; #62/#63 non-empty
-  (owner at mic) delivered 3/5/1/4 uptake0/1/0/1; #64/#65 owner at mic
-  uptake=1/5 & 1/2; #66/#67 EMPTY (zero Japanese clause text). Aggregated 67
-  live pairs: uptake +0.036 CI [-0.004, +0.083] — zero straddles.
+- **2026-11-15/17 live pairs #36–#68**: #66/#67 fully empty (utterances ≈18-30, C&S both delivered=0); #68 CUE arm empty (SILENT utterances=39 predictions=2, text captured = 'ごめんな'/'さい' — speaker drifted). No Japanese reasoning clause text in the most recent four pairs (#65→#68 aggregate stable at n=68 with unchanged counts). Aggregated: uptake +0.035 CI [-0.004, +0.082] — zero straddles.
   See issue #6.
 - **2026-11-15 17:09 design-choice attempt 4 (genuinely live)**: pair 3
   of the corpus's live history. CUE arm: utterances=1, predictions=23,
