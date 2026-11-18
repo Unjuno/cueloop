@@ -39,6 +39,9 @@ jobs:
 
   macos-adapter:
     runs-on: macos-latest
+    # macOS runners are Apple Silicon since macos-14; the source is <300 lines.
+    # 15 min cancel-issue is an infra limit (not a compile-limit), so bump the cap.
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - name: Compile macOS microphone adapter
