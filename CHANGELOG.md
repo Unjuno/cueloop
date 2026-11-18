@@ -3,11 +3,20 @@
 ## Unreleased
 
 ### Added
+- **`scripts/pair_audit.py`** — data-integrity audit across live paired
+  sessions. Scans every `logs/self-design-choice-paired-*` (or any roots
+  given), classifies each pair into EMPTY / SILENT / LIGHT / OK /
+  NON-LIVE, and reports per-pair clause-count, delivery count, and a
+  summary line. Catches the common silent-mic case where a session looks
+  like it "succeeded" but produced zero Japanese clause bytes. Runs in
+  ~0.1 s; `--json` output for automation.
 - **CI macos-adapter job is currently cancellation-prone** (last 3 main-branch
   runs cancelled mid-compile, including at 9e4054c/docs: 44 live pairs). The
   macOS Swift build does complete locally on this M1 Max Mac (tools/macos_
   speech_events.swift compiles and runs); the actions-runner container on
-  GitHub Actions appears to exceed a 10-minute limit during first compile.
+  GitHub Actions appears to exceed a 15-minute limit during first compile.
+  We added `timeout-minutes: 25` to the macos-adapter job at commit 16e62be;
+  the next run (44350984159) completed green on both jobs. Documented here.
   Documented here; workaround options: (a) skip macos-adapter in CI to
   expedite Windows/Linux unit tests (least invasive), (b) build once and
   commit the adapter binary (`macos-speech-events-ci` is already shipped
