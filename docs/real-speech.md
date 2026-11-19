@@ -1569,3 +1569,29 @@ Priority driven by the 2026-11-13 insertion benchmark
    review, design discussion) texts; re-evaluate `exact_prefix_rate` and
    the insertion benchmark's selection axis together — not each in
    isolation.
+
+## Verification pass (2026-11-19)
+
+Re-running the audit and analyzer against the full local store today:
+
+```text
+pair_audit.py logs/self-design-choice-paired-*/
+scanned=77  EMPTY=14  LIGHT=12  OK=44  SILENT=7
+
+analyze_experiment.py logs/self-design-choice-paired-*/   (n_pairs=77)
+  uptake_rate    +0.031 [-0.003, +0.073]
+  carryover_rate +0.048 [+0.002, +0.098]
+  novel_uptake   +0.030 [-0.006, +0.073]
+  novel_carryover +0.033 [-0.013, +0.082]
+  repertoire_growth +0.208 [-0.078, +0.519]
+  delay          -3.27 ms [-15.85, +9.65]  n=37
+```
+
+Consistent with the journal entries above (n=69): the uptake delta still
+straddles zero and the carryover curve is marginal at the lower edge of the
+bootstrap CI. The audit finds 77 paired directories, eight more than the
+journal's n=69 — these are the most recent pairs (including #76/#69-class
+EMPTY sessions). `scripts/pair_audit.py` now has a regression test
+(`tests/test_pair_audit.py`) and its SILENT/NON-LIVE verdicts were corrected
+and documented; the 14 EMPTY pairs remain excluded from nothing automatically,
+so treat any headline n with the empty-pair caveat stated in the journal.

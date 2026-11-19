@@ -4,10 +4,10 @@
 For every design-choice pair, read the .report files and classify:
 
   EMPTY      — both arms produced zero Japanese clause text (mic issue)
-  SILENT     — cue arm emits no speech at all; silence arm did deliver
+  SILENT     — exactly one arm produced no clause text; the other arm did
   LIGHT      — nonzero but <3 utterances with text on either arm
   OK         — both arms had Japanese clause text
-  NON-LIVE   — at least one arm misses the required files
+  NON-LIVE   — at least one arm's report file is missing or unreadable
 
 Prints one line per pair plus a summary. Use --json for machine-readable
 output. Does NOT read raw audio (it never exists).
