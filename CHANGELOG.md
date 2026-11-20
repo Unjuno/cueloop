@@ -7,7 +7,9 @@
   unformatted in 2eeed8b, so `ruff format --check` failed on the latest
   main-branch run (44475798168). Reformatted with `ruff format`; local
   `ruff check`, `ruff format --check`, 141 pytest tests and unittest discover
-  all pass (2026-11-21).
+  all pass (2026-11-21). Re-run 44825622170 is green on all three jobs.
+  CI actions were also bumped to `checkout@v5` / `setup-python@v6` to clear
+  the Node 20 deprecation annotations.
 
 ### Added
 - **`scripts/pair_audit.py`** — data-integrity audit across live paired
