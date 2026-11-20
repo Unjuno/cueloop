@@ -51,8 +51,9 @@ class PairAuditTests(unittest.TestCase):
     def test_classifies_ok_empty_silent_light_and_nonlive(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            write_pair(root, "20261101-ok", cue_text=2, sil_text=2,
-                       cue_utt=2, sil_utt=2)
+            write_pair(
+                root, "20261101-ok", cue_text=2, sil_text=2, cue_utt=2, sil_utt=2
+            )
             write_pair(root, "20261102-empty", cue_text=0, sil_text=0)
             write_pair(root, "20261103-silent", cue_text=0, sil_text=2)
             write_pair(

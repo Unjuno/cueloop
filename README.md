@@ -23,18 +23,19 @@ writing or reasoning improvement require a delayed, unassisted task.
 
 | What | State |
 | --- | --- |
-| Sync core (predict → synchronize → decide → speak) | working; 139 tests, CI green |
-| macOS microphone adapter + live demo | working on this machine; first paired CUE/SILENCE sessions captured (2 sessions, 1 pair) |
+| Sync core (predict → synchronize → decide → speak) | working; 141 tests, lint + format clean locally (2026-11-21) |
+| macOS microphone adapter + live demo | working on this machine; 69 live paired CUE/SILENCE sessions recorded |
 | Default voice | Japanese, macOS `say -v Kyoko` |
 | Synthetic calibration | analyzer recovers programmed effects end-to-end (docs/benchmark.md) |
-| Human-side evidence | partially captured (live-pair-1); not yet at protocol cell size (24-32 pairs/cell) |
+| Human-side evidence | 69 live pairs, many EMPTY/near-empty; aggregate uptake +0.035 CI [-0.004, +0.080] straddles zero; no clean protocol cell (24-32 pairs/cell) yet |
 | 8 Japanese real-speech corpora | replayed end-to-end; canned audio, uptake delta +0.000 |
-| Live paired CUE/SILENCE | 1 paired session captured (2026-11-13, Mac mic, Kyoko) |
+| Live paired CUE/SILENCE | 69 pairs (2026-11-13 → 2026-11-18); data integrity auditable via `scripts/pair_audit.py` |
 | H1/H2 milestone | open — requires Japanese reasoning speaker + mic |
 | License | MIT |
 
 Immediate uptake is only a mechanism check; it is not evidence of durable
-improvement. No claim here is supported by human data yet. See
+improvement. No durable-improvement claim is supported by the human data yet
+(the 69-pair aggregate straddles zero). See
 `docs/real-speech.md` for calibration against eight real Japanese speech
 corpora: Lux (read prose, CC-BY-4.0), ReazonSpeech (YouTube-derived
 discourse Japanese, CDLA-Sharing-1.0), MagicData (spontaneous 2-speaker

@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Fixed
+- **CI `unit` job format check** — `tests/test_pair_audit.py` was introduced
+  unformatted in 2eeed8b, so `ruff format --check` failed on the latest
+  main-branch run (44475798168). Reformatted with `ruff format`; local
+  `ruff check`, `ruff format --check`, 141 pytest tests and unittest discover
+  all pass (2026-11-21).
+
 ### Added
 - **`scripts/pair_audit.py`** — data-integrity audit across live paired
   sessions. Scans every `logs/self-design-choice-paired-*` (or any roots
