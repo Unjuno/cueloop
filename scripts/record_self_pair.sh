@@ -35,6 +35,14 @@ fi
 TOPIC="$1"
 DURATION="${2:-180}"
 RESTRICT_OPS="${3:-${RESTRICT_OPS:-}}"
+# Diversity knobs (set by the batch driver) so repeated sessions are NOT
+# identical samples from one fixed condition. The CUE and SILENCE arms of a
+# single pair always share these values; only the labeled condition differs.
+SEED="${CUELOOP_SEED:-3}"
+ASSIGNMENT="${CUELOOP_ASSIGNMENT:-canonical}"
+SPEECH_DB="${CUELOOP_SPEECH_DB:--50}"
+ANNOUNCE_CUE="${CUELOOP_ANNOUNCE_CUE:-これから話してください。結論は、なぜなら、逆に、具体例は、といった言葉を使いながら、日本語で話し続けてください。}"
+ANNOUNCE_SIL="${CUELOOP_ANNOUNCE_SIL:-もう一度、同じ話題で話してください。先ほどと同じように、結論は、なぜなら、逆に、といった言葉を使ってください。}"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
@@ -62,17 +70,18 @@ announce() {
 }
 
 echo "=== recording CUE arm: $TOPIC (speaker will hear cues in Japanese)"
-announce "これから話してください。結論は、なぜなら、逆に、具体例は、といった言葉を使いながら、日本語で話し続けてください。"
+echo "    condition diversity: seed=$SEED assignment=$ASSIGNMENT speech_db=$SPEECH_DB duration=$DURATION"
+announce "$ANNOUNCE_CUE"
 # Let the announcement finish and give SFSpeechRecognizer time to warm up;
 # the first recognition result can lag by ~20s after the adapter starts.
 sleep 3
 python3 -m pip install -q -e . 2>/dev/null || true
 .venv/bin/cueloop-sync \
-  --event-command-json "[\".build/macos-speech-events\",\"--locale\",\"ja-JP\",\"--duration\",\"$DURATION\",\"--speech-db\",\"-50\"]" \
+  --event-command-json "[\".build/macos-speech-events\",\"--locale\",\"ja-JP\",\"--duration\",\"$DURATION\",\"--speech-db\",\"$SPEECH_DB\"]" \
   --restrict-ops "${RESTRICT_OPS}" \
   --decision rule --predictor ngram \
   --tts-command-json '["say","-v","Kyoko"]' \
-  --condition-label CUE --assignment canonical --seed 3 --cue-style bare \
+  --condition-label CUE --assignment "$ASSIGNMENT" --seed "$SEED" --cue-style bare \
   --pair-key "self-$TOPIC-${STAMP}" \
   --session-id "self-$TOPIC-cue" \
   --log "${CUE_STEM}.jsonl" --report "${CUE_STEM}.report"
@@ -80,14 +89,14 @@ warn_if_silent "${CUE_STEM}.jsonl"
 
 echo
 echo "=== recording SILENCE arm: $TOPIC (no cues voiced)"
-announce "もう一度、同じ話題で話してください。先ほどと同じように、結論は、なぜなら、逆に、といった言葉を使ってください。"
+announce "$ANNOUNCE_SIL"
 # Same warm-up as the CUE arm so the two arms stay comparable.
 sleep 3
 .venv/bin/cueloop-sync \
-  --event-command-json "[\".build/macos-speech-events\",\"--locale\",\"ja-JP\",\"--duration\",\"$DURATION\",\"--speech-db\",\"-50\"]" \
+  --event-command-json "[\".build/macos-speech-events\",\"--locale\",\"ja-JP\",\"--duration\",\"$DURATION\",\"--speech-db\",\"$SPEECH_DB\"]" \
   --restrict-ops "${RESTRICT_OPS}" \
   --decision rule --predictor ngram \
-  --condition-label SILENCE --assignment canonical --seed 3 --cue-style bare \
+  --condition-label SILENCE --assignment "$ASSIGNMENT" --seed "$SEED" --cue-style bare \
   --silent \
   --pair-key "self-$TOPIC-${STAMP}" \
   --session-id "self-$TOPIC-silence" \
