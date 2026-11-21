@@ -337,11 +337,15 @@ class ExperimentAnalysisTests(unittest.TestCase):
             )
             self.assertEqual(completed.returncode, 0, completed.stderr)
             payload = json.loads(output.read_text(encoding="utf-8"))
-            # Only the valid CUE/SILENCE pair survives (>=1 outcome each).
+            # The empty CUE arm is a recording failure and is dropped. The
+            # empty SILENCE arm is intentionally kept (controls score no
+            # outcomes by design), but with no CUE partner it forms no pair.
+            # Only the fully valid CUE/SILENCE pair is analyzed.
             self.assertEqual(
                 sorted(name for name in payload["reports"]),
-                ["CUE-0.json", "SILENCE-0.json"],
+                ["CUE-0.json", "SILENCE-0.json", "SILENCE-empty.json"],
             )
+            self.assertEqual(payload["comparisons"]["rule"]["n_pairs"], 1)
 
     def test_analysis_pairs_two_level_arm_layout(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

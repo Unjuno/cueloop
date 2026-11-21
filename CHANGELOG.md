@@ -2,6 +2,30 @@
 
 ## Unreleased
 
+### Fixed — live microphone capture was silently broken
+- **Event commands now read through a PTY.** `cli._event_lines` launched the
+  speech adapter with `stdout=PIPE`. Swift's `print` block-buffers on a pipe
+  (its internal buffer is independent of `fflush(stdout)`), so
+  `transcript_partial` events never reached the runtime on live sessions:
+  predictions stayed ~0 and no cues were inserted. Reading from a PTY
+  (`pty.openpty`) restores line buffering; a pipe fallback remains for
+  platforms without PTYs. Evidence: a clean paired session now records
+  predictions=59, delivered=4, uptake=1/4 in the CUE arm.
+- The Swift source `emit()` was also changed to write via
+  `FileHandle.standardOutput.write` (effective once the Xcode license is
+  accepted and the adapter is rebuilt); the PTY fix works with the existing
+  prebuilt binary without needing that rebuild.
+- **`--min-outcomes` no longer gates the SILENCE control arm.** Controls
+  intentionally score zero outcomes, so gating them removed the control and
+  left the CUE arm unpaired (analysis reported "not comparable"). Now only
+  the CUE arm is quality-gated; the control is always retained.
+- `record_self_pair.sh` now uses a 3 s warm-up after each spoken announcement
+  (SFSpeechRecognizer's first result can lag ~20 s) and prompts for operation
+  words (結論は／なぜなら／逆に) so cues can actually be triggered.
+- First clean paired human session with the fixed stack:
+  `logs/self-accuracy-pty-paired-20261121-234611`, CUE uptake=1/4, SILENCE
+  outcomes=0, paired uptake delta +0.250 (n=1, CI insufficient).
+
 ### Added — analyzer quality gate
 - `scripts/analyze_experiment.py --min-outcomes N` drops sessions with fewer
   than N finalized outcomes before pairing. Empty/silent-mic arms can no

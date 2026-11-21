@@ -296,18 +296,43 @@ def _event_lines(args: argparse.Namespace) -> Iterable[str]:
         command = list(args.event_command)
     else:
         raise ValueError("an event source is required")
-    process = subprocess.Popen(
-        command,
-        stdout=subprocess.PIPE,
-        text=True,
-        bufsize=1,
-    )
-    assert process.stdout is not None
+    # Speech adapters that emit through Swift's `print` block-buffer when
+    # stdout is a pipe, so their JSON lines never arrive in time. Give the
+    # child a PTY (line-buffered) and read from the master side. Fall back to
+    # a plain pipe where PTYs are unavailable (e.g. Windows).
+    master_fd = None
     try:
+        import os
+        import pty
+
+        master_fd, slave_fd = pty.openpty()
+        process = subprocess.Popen(
+            command,
+            stdout=slave_fd,
+            stderr=subprocess.DEVNULL,
+            close_fds=True,
+        )
+        os.close(slave_fd)
+        assert master_fd is not None
+        with os.fdopen(master_fd, "r", encoding="utf-8", newline="") as stream:
+            master_fd = None
+            for line in stream:
+                yield line
+    except (ImportError, OSError):
+        if master_fd is not None:
+            import os
+
+            os.close(master_fd)
+        process = subprocess.Popen(
+            command,
+            stdout=subprocess.PIPE,
+            text=True,
+            bufsize=1,
+        )
+        assert process.stdout is not None
         for line in process.stdout:
             yield line
     finally:
-        process.stdout.close()
         return_code = process.wait(timeout=10)
         if return_code != 0:
             raise RuntimeError(f"event command exited with status {return_code}")

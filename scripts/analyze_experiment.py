@@ -124,7 +124,12 @@ def load_sessions(
                 # A session with too few finalized outcomes is a recording
                 # failure (silent mic / dropped arm), not a measurement. Drop
                 # it so empty arms cannot masquerade as "zero effect" data.
-                if metrics["outcomes"] < min_outcomes:
+                # The SILENCE control arm intentionally has zero outcomes by
+                # design (only audible cues are scored), so never gate it:
+                # gating SILENCE would destroy the pair and make the CUE arm
+                # unpaired and silently uncomputable.
+                is_control = str(metrics["condition"]).upper() == "SILENCE"
+                if not is_control and metrics["outcomes"] < min_outcomes:
                     continue
                 sessions.append((candidate.name, metrics))
     return sorted(sessions, key=lambda item: item[0])

@@ -62,7 +62,10 @@ announce() {
 }
 
 echo "=== recording CUE arm: $TOPIC (speaker will hear cues in Japanese)"
-announce "これから話してください"
+announce "これから話してください。結論は、なぜなら、逆に、具体例は、といった言葉を使いながら、日本語で話し続けてください。"
+# Let the announcement finish and give SFSpeechRecognizer time to warm up;
+# the first recognition result can lag by ~20s after the adapter starts.
+sleep 3
 python3 -m pip install -q -e . 2>/dev/null || true
 .venv/bin/cueloop-sync \
   --event-command-json "[\".build/macos-speech-events\",\"--locale\",\"ja-JP\",\"--duration\",\"$DURATION\",\"--speech-db\",\"-50\"]" \
@@ -77,7 +80,9 @@ warn_if_silent "${CUE_STEM}.jsonl"
 
 echo
 echo "=== recording SILENCE arm: $TOPIC (no cues voiced)"
-announce "もう一度、同じ話題で話してください"
+announce "もう一度、同じ話題で話してください。先ほどと同じように、結論は、なぜなら、逆に、といった言葉を使ってください。"
+# Same warm-up as the CUE arm so the two arms stay comparable.
+sleep 3
 .venv/bin/cueloop-sync \
   --event-command-json "[\".build/macos-speech-events\",\"--locale\",\"ja-JP\",\"--duration\",\"$DURATION\",\"--speech-db\",\"-50\"]" \
   --restrict-ops "${RESTRICT_OPS}" \

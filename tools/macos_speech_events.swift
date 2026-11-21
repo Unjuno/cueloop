@@ -59,8 +59,12 @@ final class EventEmitter: @unchecked Sendable {
         guard let data = try? JSONSerialization.data(withJSONObject: object),
               let line = String(data: data, encoding: .utf8) else { return }
         lock.lock()
-        print(line)
-        fflush(stdout)
+        // Write straight to the file descriptor: Swift's `print` buffers
+        // independently of stdio, so `fflush(stdout)` alone does not flush
+        // when stdout is a pipe (as it is under cueloop-sync). Without this,
+        // transcript events never reach the runtime and cues are never
+        // inserted on live microphone sessions.
+        FileHandle.standardOutput.write(Data((line + "\n").utf8))
         lock.unlock()
     }
 }
