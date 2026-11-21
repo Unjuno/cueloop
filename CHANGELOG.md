@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+### Continuous tuning: weight drift detection and refresh (2026-11-22)
+- Operation weights drift as data grows: re-deriving on all clean logs moved
+  boundary 1.455 -> 0.750 and comparison 1.333 -> 1.040 (early small samples
+  over-rated them). Installed the refreshed v2 weights
+  (`artifacts/operation-weights.json`): dependency 0.091, ground 1.714.
+- `scripts/check_weight_drift.py` re-derives weights from all clean CUE logs,
+  compares with the installed artifact, and exits 1 on max delta > 0.25 so
+  the tuning loop can auto-trigger a refresh. After installing v2: drift 0.
+- Fatigue penalty sweep (offline, 0..5) confirmed the current 2.0 is already
+  optimal (adjacent-repeat 1.8%, 7 distinct operations); no change needed.
+- v2 gate recorded 8 more pairs: adoption 0.318; all gated 23 pairs still
+  show a clear improvement over baseline (0.210 -> 0.338, CI [+0.044, +0.212]).
+  H1 stays significant at n=65 (+0.254 CI [+0.209, +0.296]).
+
 ### A/B verified: gate improves adoption (2026-11-22)
 - Recorded 18 gated paired human sessions (`gated01`/`gated02`, gate floor 0.5
   on `artifacts/operation-weights.json`) versus 18 baseline sessions. Results
