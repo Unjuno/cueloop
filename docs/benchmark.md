@@ -205,5 +205,5 @@ mean_score_negative on every split.
   model on the wire.
 - Policy metrics on logged data are not off-policy estimates of the deployed
   policy. Causal claims still require the exploration arm and SILENCE.
-- 0.3.0 ships this calibration as part of the release; human paired sessions
-  are still outstanding.
+- This calibration ships with the release (0.3.0 and later, current 0.4.0);
+  human paired sessions are still outstanding (issue #6).

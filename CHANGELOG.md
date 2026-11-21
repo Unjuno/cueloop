@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [0.4.0] - 2026-11-21
+
 ### Fixed
 - **CI `unit` job format check** — `tests/test_pair_audit.py` was introduced
   unformatted in 2eeed8b, so `ruff format --check` failed on the latest
@@ -19,18 +21,15 @@
   summary line. Catches the common silent-mic case where a session looks
   like it "succeeded" but produced zero Japanese clause bytes. Runs in
   ~0.1 s; `--json` output for automation.
-- **CI macos-adapter job is currently cancellation-prone** (last 3 main-branch
-  runs cancelled mid-compile, including at 9e4054c/docs: 44 live pairs). The
-  macOS Swift build does complete locally on this M1 Max Mac (tools/macos_
-  speech_events.swift compiles and runs); the actions-runner container on
-  GitHub Actions appears to exceed a 15-minute limit during first compile.
-  We added `timeout-minutes: 25` to the macos-adapter job at commit 16e62be;
-  the next run (44350984159) completed green on both jobs. Documented here.
-  Documented here; workaround options: (a) skip macos-adapter in CI to
-  expedite Windows/Linux unit tests (least invasive), (b) build once and
-  commit the adapter binary (`macos-speech-events-ci` is already shipped
-  for this reason), or (c) pin macos-latest version and reduce toolchain
-  dependencies. See issue #6.
+- **CI macos-adapter cancellation issue resolved.** Earlier main-branch runs
+  were cancelled mid-compile (~15 min infra limit, not a compile limit); the
+  Swift build always completed locally. `timeout-minutes: 25` was added at
+  commit 16e62be, and subsequent runs (44350984159, 44825622170,
+  44825852155) were green on both jobs. Actions were bumped to
+  `checkout@v5` / `setup-python@v6` to clear Node 20 deprecation warnings.
+  Workarounds if it recurs: (a) skip macos-adapter in CI, (b) commit the
+  prebuilt adapter binary (`macos-speech-events-ci`), or (c) pin macos-latest.
+  See issue #6.
 - **2026-11-18 restricted-ops arm (A — n=7)**: pairs 234729/235451/000203/001419/002521/004038/005156.
   Mostly sparse/tiny sessions; some language fragments only ('パイロット'/'PNとか使うの').
   Aggregate A: delivered=6 (ground×2, invert×3, comparison×1) uptake=0; paired CI [+0.000,+0.000].
