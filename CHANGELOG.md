@@ -2,6 +2,28 @@
 
 ## Unreleased
 
+### Tuning — suppress low-adoption operations (the actual over-insertion fix)
+- **Root cause of over-insertion**: not prediction confidence (uptake rate is
+  flat across confidence buckets: 0.4→0.36, 0.8→0.27, 1.0→0.28) but the
+  *operation choice*. Per-operation adoption rates vary 15x:
+  ground 0.42 / boundary 0.36 / comparison 0.33 / invert 0.26 vs
+  dependency 0.03 / mechanism 0.15 / concretize 0.19. The worst offenders
+  were delivered repeatedly as noise.
+- `RuleDecisionModel` gained `operation_weights` and `min_operation_weight`:
+  operations below the weight floor are excluded from selection (with a
+  safe fallback so the model never goes fully silent), and remaining picks
+  are scored by weight x fatigue. CLI flags `--operation-weights` (JSON)
+  and `--min-operation-weight` expose the knob.
+- `scripts/tune_operation_weights.py` derives weights from human DELIVERED
+  outcomes (rate x 4, capped 2.0). On the 47 CUE logs it produced
+  `artifacts/operation-weights.json` (dependency 0.108, ground 1.677).
+  Regression test `test_operation_weight_gate_suppresses_low_adoption_operation`
+  proves a low-weight operation is never chosen while a high-weight one is.
+- `scripts/h2_reconstruction.py` (+ tests) implements the *secondary* H2
+  outcome: blinded-rater rubric scoring (7 items) or a labeled lexical proxy,
+  paired CUE-SILENCE bootstrap on the rubric total and subscores. Proxy output
+  is explicitly marked as not human evidence.
+
 ### Learning & over-insertion analysis (2026-11-22)
 - **The live loop was overfitting to one condition.** Before this change the
   recorder used a fixed seed (3), assignment (canonical), speech-db (-50),

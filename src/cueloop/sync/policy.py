@@ -555,6 +555,8 @@ class RuleDecisionModel:
         stem_generator: StemCueGenerator | None = None,
         stem_max_characters: int = DEFAULT_STEM_MAX_CHARACTERS,
         fatigue_penalty: float = 2.0,
+        operation_weights: Mapping[str, float] | None = None,
+        min_operation_weight: float = 0.0,
     ) -> None:
         if not 0.0 <= min_confidence <= 1.0:
             raise ValueError("min_confidence must be between 0 and 1")
@@ -576,6 +578,8 @@ class RuleDecisionModel:
         self.context_fit = context_fit
         self.cue_style = cue_style
         self.fatigue_penalty = fatigue_penalty
+        self.operation_weights = dict(operation_weights or {})
+        self.min_operation_weight = min_operation_weight
         self._chosen_counts: Counter[str] = Counter()
         self.stem_generator = stem_generator
         self.stem_max_characters = stem_max_characters
@@ -595,16 +599,32 @@ class RuleDecisionModel:
         The counter is per model instance; a fresh runtime per session
         starts from zero, so sessions cannot bleed fatigue into each other.
         """
-        if len(missing) <= 1 or self.fatigue_penalty == 0:
-            chosen = missing[0]
+        # Gate out operations whose learned adoption weight is below the
+        # configured floor. This is the anti-over-insertion tuning knob: an
+        # operation the speaker rarely adopts (e.g. dependency at ~0.03) is
+        # suppressed instead of repeatedly delivered as noise.
+        eligible = [
+            operation
+            for operation in missing
+            if self.operation_weights.get(operation, 1.0) >= self.min_operation_weight
+        ]
+        if not eligible:
+            # Never go fully silent just because of the gate; fall back to the
+            # original ranked list so a usable cue is still available.
+            eligible = list(missing)
+        if len(eligible) <= 1 or self.fatigue_penalty == 0:
+            chosen = eligible[0]
             self._chosen_counts[chosen] += 1
             return chosen
-        total = len(missing)
+        total = len(eligible)
         chosen = max(
-            missing,
+            eligible,
             key=lambda operation: (
-                (total - missing.index(operation))
-                - self.fatigue_penalty * self._chosen_counts[operation]
+                (
+                    (total - eligible.index(operation))
+                    - self.fatigue_penalty * self._chosen_counts[operation]
+                )
+                * self.operation_weights.get(operation, 1.0)
             ),
         )
         self._chosen_counts[chosen] += 1

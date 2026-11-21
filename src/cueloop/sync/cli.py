@@ -151,6 +151,16 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-cue-characters", type=int, default=8)
     parser.add_argument("--min-confidence", type=float, default=0.55)
     parser.add_argument(
+        "--operation-weights",
+        help="JSON object of per-operation adoption weights (e.g. '{\"ground\":1.5}').",
+    )
+    parser.add_argument(
+        "--min-operation-weight",
+        type=float,
+        default=0.0,
+        help="Suppress operations whose learned adoption weight is below this floor.",
+    )
+    parser.add_argument(
         "--pause-ms", type=int, default=350, help="Pause that marks a clause boundary."
     )
     parser.add_argument(
@@ -446,6 +456,11 @@ def main(argv: list[str] | None = None) -> int:
         else:
             restrict = [op.strip() for op in args.restrict_ops.split(",") if op.strip()]
             priority_tuple = tuple(restrict) if restrict else None
+            operation_weights = None
+            if args.operation_weights:
+                operation_weights = json.loads(args.operation_weights)
+                if not isinstance(operation_weights, dict):
+                    raise ValueError("--operation-weights must be a JSON object")
             rule_kwargs = {
                 "min_confidence": args.min_confidence,
                 "max_characters": args.max_cue_characters,
@@ -455,6 +470,8 @@ def main(argv: list[str] | None = None) -> int:
                 "cue_style": args.cue_style,
                 "stem_generator": stem_generator,
                 "stem_max_characters": args.max_stem_characters,
+                "operation_weights": operation_weights,
+                "min_operation_weight": args.min_operation_weight,
             }
             if priority_tuple is not None:
                 rule_kwargs["priority"] = priority_tuple

@@ -519,6 +519,45 @@ class DecisionModelTests(unittest.TestCase):
         self.assertLessEqual(picks.count("concretize"), 2)
         self.assertGreaterEqual(len(set(picks)), 3)
 
+    def test_operation_weight_gate_suppresses_low_adoption_operation(self) -> None:
+        # With a weight floor, a low-adoption operation (e.g. dependency at
+        # ~0.03 observed) must never be chosen while a high-weight candidate
+        # is available. This is the anti-over-insertion tuning knob.
+        model = RuleDecisionModel(
+            CanonicalAssigner(),
+            context_fit=False,
+            operation_weights={"ground": 2.0, "dependency": 0.05},
+            min_operation_weight=0.5,
+        )
+
+        def _state() -> SyncState:
+            prediction = Prediction(
+                span="だから結論は決まる。",
+                operations=(),
+                confidence=0.9,
+                source="test",
+                created_at_ms=800,
+                base_length=len("この設計は前提を分けて考える。"),
+            )
+            return SyncState(
+                utterance_id="u1",
+                text="この設計は前提を分けて考える。",
+                context=(),
+                now_ms=800,
+                started_at_ms=0,
+                chars_per_second=4.0,
+                at_boundary=True,
+                prediction=prediction,
+                prediction_match=0,
+                diverged=False,
+                clause_operations=frozenset({"dependency"}),
+                recent_operations=frozenset(),
+            )
+
+        picks = [model.decide(_state()).requested_operation for _ in range(8)]
+        self.assertNotIn("dependency", picks)
+        self.assertIn("ground", picks)
+
     def test_no_fatigue_when_disabled(self) -> None:
         model = RuleDecisionModel(
             CanonicalAssigner(), context_fit=True, fatigue_penalty=0
