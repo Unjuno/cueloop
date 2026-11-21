@@ -27,15 +27,24 @@ writing or reasoning improvement require a delayed, unassisted task.
 | macOS microphone adapter + live demo | working on this machine; 69 live paired CUE/SILENCE sessions recorded |
 | Default voice | Japanese, macOS `say -v Kyoko` |
 | Synthetic calibration | analyzer recovers programmed effects end-to-end (docs/benchmark.md) |
-| Human-side evidence | 69 live pairs, many EMPTY/near-empty; aggregate uptake +0.035 CI [-0.004, +0.080] straddles zero; no clean protocol cell (24-32 pairs/cell) yet |
+| Human-side evidence | 69 recorded pairs, many EMPTY/near-empty and most are pre-recorded playback / agent-side, not live human interaction. The historical +0.035 CI [-0.004, +0.080] was computed with a contaminated SILENCE control (see below); a clean human dataset is still required. No clean protocol cell (24-32 pairs/cell). |
 | 8 Japanese real-speech corpora | replayed end-to-end; canned audio, uptake delta +0.000 |
 | Live paired CUE/SILENCE | 69 pairs (2026-11-13 → 2026-11-18); data integrity auditable via `scripts/pair_audit.py` |
 | H1/H2 milestone | open — requires Japanese reasoning speaker + mic |
 | License | MIT |
 
 Immediate uptake is only a mechanism check; it is not evidence of durable
-improvement. No durable-improvement claim is supported by the human data yet
-(the 69-pair aggregate straddles zero). See
+improvement. No durable-improvement claim is supported by the human data yet.
+
+**Observation fix (2026-11-21):** the historical paired numbers were computed
+with a contaminated control. `--silent` runs logged a SILENT delivery and
+then scored `target_operation_seen` on text the speaker never heard a cue
+for, inventing 12 spurious SILENCE "uptake" events across 77 pairs and
+pulling every CUE-SILENCE contrast toward zero. The runtime now scores
+outcomes only for audible deliveries; SILENT deliveries are logged for
+timing parity but produce no outcome. Consequently the old aggregate
+(+0.035 CI [-0.004, +0.080]) is **not** a valid estimate, and clean human
+pairs must be re-recorded with the fixed runtime. See
 `docs/real-speech.md` for calibration against eight real Japanese speech
 corpora: Lux (read prose, CC-BY-4.0), ReazonSpeech (YouTube-derived
 discourse Japanese, CDLA-Sharing-1.0), MagicData (spontaneous 2-speaker

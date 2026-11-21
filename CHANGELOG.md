@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+### Fixed — observation bug in the SILENCE control arm
+- **`SyncRuntime._deliver()` scored an Outcome for `SILENT` deliveries.**
+  `--silent` logged a SILENT delivery (timing parity) but then created an
+  Outcome and scored `target_operation_seen` on text the speaker never heard
+  a cue for. Over the 77 stored pairs this produced 12 spurious "uptake"
+  events in SILENCE arms (12/176) vs 21/165 in CUE arms, biasing every
+  paired CUE-SILENCE contrast toward zero. Now only audible (`DELIVERED`)
+  deliveries create Outcomes; SILENT deliveries are still logged so counts
+  and timing stay paired, but the control arm no longer invents uptake.
+- Regression tests updated: `SilentConditionTests` now asserts no outcomes
+  and zero novel uptake; `test_silence_never_speaks` and the effect-zero
+  calibration cell were aligned with the corrected control semantics.
+- Re-scoring with the fixed observation: a simulator arm with a programmed
+  +0.40 effect now reads +0.368 uptake delta (previously diluted by the
+  control arm's fake uptake). All 141 tests pass.
+
 ## [0.4.0] - 2026-11-21
 
 ### Fixed

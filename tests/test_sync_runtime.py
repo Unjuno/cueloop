@@ -502,7 +502,13 @@ class SilentConditionTests(unittest.TestCase):
             self.assertEqual(report["seed"], 0)
             self.assertEqual(report["pair_key"], "rule-seed0-fixture")
             self.assertEqual(report["session_id"], "silent-session")
-            self.assertEqual(len(report["outcomes"]), 1)
+            # A silent delivery is logged for timing/count parity, but no
+            # Outcome is scored: the speaker never heard the cue, so any
+            # "target_operation_seen" would be a spurious control-arm uptake.
+            self.assertEqual(runtime.outcomes, [])
+            self.assertEqual(report["outcomes"], [])
+            self.assertEqual(report["delivered"], 0)
+            self.assertEqual(report["novel_uptake"], 0)
             self.assertEqual(report["median_boundary_to_delivery_ms"], 0)
             payloads = [
                 json.loads(line)

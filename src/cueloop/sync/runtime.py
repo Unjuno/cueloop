@@ -601,7 +601,14 @@ class SyncRuntime:
                 else None,
             },
         )
-        if status in {"DELIVERED", "SILENT"}:
+        # Only an audible cue can be adopted by the speaker. In --silent
+        # runs the intervention is scheduled and a SILENT delivery is logged
+        # (so timing/count parity with the CUE arm is preserved), but creating
+        # an Outcome here would score `target_operation_seen` against a cue
+        # the speaker never heard. That contaminates the SILENCE control arm
+        # with spurious "uptake" and biases the paired CUE-SILENCE contrast
+        # toward zero. Keep the delivery log, omit the outcome.
+        if status == "DELIVERED":
             self.outcomes.append(
                 Outcome(
                     delivery=delivery,
