@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Added — analyzer quality gate
+- `scripts/analyze_experiment.py --min-outcomes N` drops sessions with fewer
+  than N finalized outcomes before pairing. Empty/silent-mic arms can no
+  longer masquerade as valid "zero effect" measurements. A regression test
+  (`test_min_outcomes_drops_empty_recording_failure`) proves empty pairs are
+  excluded. On the historical contaminated dataset, `--min-outcomes 1`
+  reduces 77 pairs to 37 (all with at least one CUE outcome).
+
 ### Fixed — observation bug in the SILENCE control arm
 - **`SyncRuntime._deliver()` scored an Outcome for `SILENT` deliveries.**
   `--silent` logged a SILENT delivery (timing parity) but then created an

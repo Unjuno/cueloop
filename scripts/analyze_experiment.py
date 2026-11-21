@@ -103,7 +103,9 @@ def session_metrics(report: dict[str, object]) -> dict[str, object]:
     }
 
 
-def load_sessions(paths: list[Path]) -> list[tuple[str, dict[str, object]]]:
+def load_sessions(
+    paths: list[Path], *, min_outcomes: int = 0
+) -> list[tuple[str, dict[str, object]]]:
     sessions: list[tuple[str, dict[str, object]]] = []
     for path in paths:
         if path.is_dir():
@@ -118,7 +120,13 @@ def load_sessions(paths: list[Path]) -> list[tuple[str, dict[str, object]]]:
             except (OSError, json.JSONDecodeError):
                 continue
             if isinstance(payload, dict) and "decision_model" in payload:
-                sessions.append((candidate.name, session_metrics(payload)))
+                metrics = session_metrics(payload)
+                # A session with too few finalized outcomes is a recording
+                # failure (silent mic / dropped arm), not a measurement. Drop
+                # it so empty arms cannot masquerade as "zero effect" data.
+                if metrics["outcomes"] < min_outcomes:
+                    continue
+                sessions.append((candidate.name, metrics))
     return sorted(sessions, key=lambda item: item[0])
 
 
@@ -363,6 +371,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--resamples", type=int, default=2_000)
     parser.add_argument("--confidence", type=float, default=0.95)
+    parser.add_argument(
+        "--min-outcomes",
+        type=int,
+        default=0,
+        help="Drop sessions with fewer than N finalized outcomes (recording failures).",
+    )
     return parser
 
 
@@ -374,7 +388,7 @@ def main(argv: list[str] | None = None) -> int:
     if not 0.0 < args.confidence < 1.0:
         print("error: --confidence must be between 0 and 1", file=sys.stderr)
         return 2
-    sessions = load_sessions(args.reports)
+    sessions = load_sessions(args.reports, min_outcomes=args.min_outcomes)
     if not sessions:
         print("error: no cueloop-sync report JSON found", file=sys.stderr)
         return 2

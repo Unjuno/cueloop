@@ -293,6 +293,56 @@ class ExperimentAnalysisTests(unittest.TestCase):
                     json.dumps(payload), encoding="utf-8"
                 )
 
+    def test_min_outcomes_drops_empty_recording_failure(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            reports = root / "reports"
+            reports.mkdir()
+            # One valid pair plus one pair whose CUE arm captured no outcomes.
+            self._write_pairs(reports, 1)
+            (reports / "CUE-empty.json").write_text(
+                json.dumps(
+                    _session_report("CUE", "empty-fixture", "CUE-empty", target=True)
+                    | {"outcomes": []}
+                ),
+                encoding="utf-8",
+            )
+            (reports / "SILENCE-empty.json").write_text(
+                json.dumps(
+                    _session_report(
+                        "SILENCE", "empty-fixture", "SILENCE-empty", target=False
+                    )
+                    | {"outcomes": []}
+                ),
+                encoding="utf-8",
+            )
+            output = root / "analysis.json"
+            markdown = root / "analysis.md"
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/analyze_experiment.py",
+                    str(reports),
+                    "--min-outcomes",
+                    "1",
+                    "--json",
+                    str(output),
+                    "--markdown",
+                    str(markdown),
+                ],
+                cwd=Path(__file__).resolve().parents[1],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            payload = json.loads(output.read_text(encoding="utf-8"))
+            # Only the valid CUE/SILENCE pair survives (>=1 outcome each).
+            self.assertEqual(
+                sorted(name for name in payload["reports"]),
+                ["CUE-0.json", "SILENCE-0.json"],
+            )
+
     def test_analysis_pairs_two_level_arm_layout(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
