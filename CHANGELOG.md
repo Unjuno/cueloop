@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+### H1 supported — first clean human paired result (n=24)
+- Recorded **24 clean paired human CUE/SILENCE sessions** with the fixed
+  runtime (after the PTY event-capture fix), using `scripts/record_self_pair.sh`
+  in batches via the new `scripts/run_accuracy_batch.sh`. The protocol's
+  24-pairs/cell cell is met.
+- `scripts/evaluate_h1h2.py` selects only fixed-runtime pairs (CUE outcomes>0
+  and SILENCE outcomes==0) and runs the seeded paired bootstrap. Result:
+  **uptake delta +0.254, 95% CI [+0.176, +0.335]** (excludes zero), novel
+  uptake +0.265 [+0.180, +0.354], carryover +0.250 [+0.170, +0.338].
+  CUE arm: 165 deliveries / 165 outcomes; SILENCE arm: 0 outcomes (clean
+  control). H1 (cue raises operation-word uptake in the next clause) is
+  supported on human Japanese reasoning speech. H2 remains unmeasured — it
+  needs the blinded delayed-reconstruction rubric.
+- This supersedes the historical contaminated-control estimate (+0.035).
+
 ### Fixed — live microphone capture was silently broken
 - **Event commands now read through a PTY.** `cli._event_lines` launched the
   speech adapter with `stdout=PIPE`. Swift's `print` block-buffers on a pipe
