@@ -43,6 +43,13 @@ ASSIGNMENT="${CUELOOP_ASSIGNMENT:-canonical}"
 SPEECH_DB="${CUELOOP_SPEECH_DB:--50}"
 ANNOUNCE_CUE="${CUELOOP_ANNOUNCE_CUE:-これから話してください。結論は、なぜなら、逆に、具体例は、といった言葉を使いながら、日本語で話し続けてください。}"
 ANNOUNCE_SIL="${CUELOOP_ANNOUNCE_SIL:-もう一度、同じ話題で話してください。先ほどと同じように、結論は、なぜなら、逆に、といった言葉を使ってください。}"
+# Optional anti-over-insertion gate (derived by scripts/tune_operation_weights.py).
+GATE_ARGS=()
+if [ -n "${CUELOOP_OPERATION_WEIGHTS:-}" ]; then
+  WEIGHTS_JSON="$(tr -d '\n ' < "${CUELOOP_OPERATION_WEIGHTS}")"
+  GATE_ARGS=(--operation-weights "$WEIGHTS_JSON" --min-operation-weight "${CUELOOP_MIN_OP_WEIGHT:-0.5}")
+  echo "    operation gate: weights=$CUELOOP_OPERATION_WEIGHTS floor=${CUELOOP_MIN_OP_WEIGHT:-0.5}"
+fi
 STAMP="$(date +%Y%m%d-%H%M%S)"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
@@ -82,6 +89,7 @@ python3 -m pip install -q -e . 2>/dev/null || true
   --decision rule --predictor ngram \
   --tts-command-json '["say","-v","Kyoko"]' \
   --condition-label CUE --assignment "$ASSIGNMENT" --seed "$SEED" --cue-style bare \
+  "${GATE_ARGS[@]}" \
   --pair-key "self-$TOPIC-${STAMP}" \
   --session-id "self-$TOPIC-cue" \
   --log "${CUE_STEM}.jsonl" --report "${CUE_STEM}.report"
@@ -97,6 +105,7 @@ sleep 3
   --restrict-ops "${RESTRICT_OPS}" \
   --decision rule --predictor ngram \
   --condition-label SILENCE --assignment "$ASSIGNMENT" --seed "$SEED" --cue-style bare \
+  "${GATE_ARGS[@]}" \
   --silent \
   --pair-key "self-$TOPIC-${STAMP}" \
   --session-id "self-$TOPIC-silence" \

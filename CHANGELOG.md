@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+### A/B verified: gate improves adoption (2026-11-22)
+- Recorded 18 gated paired human sessions (`gated01`/`gated02`, gate floor 0.5
+  on `artifacts/operation-weights.json`) versus 18 baseline sessions. Results
+  from `scripts/compare_gate_ab.py`:
+  - **adoption rate (uptake/delivered): baseline 0.210 -> tuned 0.341**
+    (delta +0.131, 95% cluster-bootstrap CI [+0.039, +0.215] -> clear
+    improvement).
+  - dependency share: 10.4% -> 4.0%; dependency adoption 0.032 -> 0.000.
+  - mechanism adoption 0.176 -> 0.320; concretize 0.139 -> 0.321.
+  - H1 stays significant at n=60 (uptake +0.254 CI [+0.208, +0.298]).
+- `record_self_pair.sh` accepts `CUELOOP_OPERATION_WEIGHTS` /
+  `CUELOOP_MIN_OP_WEIGHT` and passes `--operation-weights` /
+  `--min-operation-weight` to both arms. Batch driver enables it via
+  `GATE_WEIGHTS` and logs a `gated` flag per pair.
+- Fixed a batch randomizer bug: `fixed` assignment requires an explicit cue
+  and was removed from the random choices (canonical / random-operation only).
+
 ### Tuning — suppress low-adoption operations (the actual over-insertion fix)
 - **Root cause of over-insertion**: not prediction confidence (uptake rate is
   flat across confidence buckets: 0.4→0.36, 0.8→0.27, 1.0→0.28) but the

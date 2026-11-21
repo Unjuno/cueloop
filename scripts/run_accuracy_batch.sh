@@ -12,6 +12,12 @@ N="${1:-8}"
 MIN_DURATION="${2:-60}"
 LABEL="${3:-b$(date +%H%M%S)}"
 FEEDBACK="artifacts/feedback-loop.jsonl"
+# Optional anti-over-insertion gate (set GATE_WEIGHTS=artifacts/operation-weights.json)
+GATE_ENV=()
+if [ -n "${GATE_WEIGHTS:-}" ]; then
+  GATE_ENV=(CUELOOP_OPERATION_WEIGHTS="$GATE_WEIGHTS" CUELOOP_MIN_OP_WEIGHT="${GATE_FLOOR:-0.5}")
+  echo "=== operation gate ENABLED: $GATE_WEIGHTS floor=${GATE_FLOOR:-0.5} ==="
+fi
 mkdir -p artifacts
 
 # Prompt styles: different operation-word sets and speaking instructions.
@@ -32,11 +38,10 @@ echo "=== accuracy batch $LABEL: $N DIVERSE pairs (min ${MIN_DURATION}s arms) ==
 for i in $(seq 1 "$N"); do
   # Randomize condition for this pair.
   SEED=$(( (RANDOM % 97) + 1 ))
-  case $(( RANDOM % 4 )) in
+  # Only assigners that work without an explicit --cue (fixed requires one).
+  case $(( RANDOM % 2 )) in
     0) ASSIGNMENT=canonical ;;
-    1) ASSIGNMENT=random-operation ;;
-    2) ASSIGNMENT=fixed ;;
-    *) ASSIGNMENT=canonical ;;
+    *) ASSIGNMENT=random-operation ;;
   esac
   case $(( RANDOM % 4 )) in
     0) SPEECH_DB=-45 ;;
@@ -59,15 +64,15 @@ for i in $(seq 1 "$N"); do
 
   echo
   echo "--- $LABEL pair $i/$N ($TOPIC) seed=$SEED assign=$ASSIGNMENT db=$SPEECH_DB dur=$DURATION prompt=$PIDX ---"
-  if CUELOOP_SEED="$SEED" CUELOOP_ASSIGNMENT="$ASSIGNMENT" CUELOOP_SPEECH_DB="$SPEECH_DB" \
-     CUELOOP_ANNOUNCE_CUE="$PA" CUELOOP_ANNOUNCE_SIL="$PB" \
+  if env CUELOOP_SEED="$SEED" CUELOOP_ASSIGNMENT="$ASSIGNMENT" CUELOOP_SPEECH_DB="$SPEECH_DB" \
+     CUELOOP_ANNOUNCE_CUE="$PA" CUELOOP_ANNOUNCE_SIL="$PB" "${GATE_ENV[@]}" \
      scripts/record_self_pair.sh "$TOPIC" "$DURATION" >/tmp/cueloop-batch-pair.log 2>&1; then
     grep -E 'predictions=|WARNING' /tmp/cueloop-batch-pair.log | head -3
-    .venv/bin/python - "$TOPIC" "$FEEDBACK" "$SEED" "$ASSIGNMENT" "$SPEECH_DB" "$DURATION" "$PIDX" <<'PY'
+    .venv/bin/python - "$TOPIC" "$FEEDBACK" "$SEED" "$ASSIGNMENT" "$SPEECH_DB" "$DURATION" "$PIDX" "${GATE_WEIGHTS:-}" <<'PY'
 import glob, json, sys
 from pathlib import Path
 topic, feedback = sys.argv[1], Path(sys.argv[2])
-seed, assignment, db, duration, prompt = sys.argv[3:8]
+seed, assignment, db, duration, prompt, gated = sys.argv[3:9]
 dirs = sorted(glob.glob(f"logs/self-{topic}-paired-*"))
 if not dirs:
     sys.exit(0)
@@ -79,7 +84,7 @@ cue, sil = load("cue.json"), load("silence.json")
 row = {
     "pair": d.name,
     "seed": int(seed), "assignment": assignment, "speech_db": int(db),
-    "duration": int(duration), "prompt_style": int(prompt),
+    "duration": int(duration), "prompt_style": int(prompt), "gated": bool(gated),
     "cue_delivered": cue.get("delivered", 0),
     "cue_outcomes": len(cue.get("outcomes", [])),
     "cue_uptake": sum(1 for o in cue.get("outcomes", []) if o.get("target_operation_seen")),
