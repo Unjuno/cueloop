@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+### Learning & over-insertion analysis (2026-11-22)
+- **The live loop was overfitting to one condition.** Before this change the
+  recorder used a fixed seed (3), assignment (canonical), speech-db (-50),
+  duration (75 s), prompt wording and a metronomic 3-minute start gap
+  (stddev 0.01 min over 10 pairs). `run_accuracy_batch.sh` now randomizes
+  seed, assignment, speech-db, duration (60-104 s), prompt style (4 variants)
+  and inter-pair gap (60-240 s) for every pair, and logs each pair's
+  conditions + metrics to `artifacts/feedback-loop.jsonl`. Diversity audit
+  over 10 diverse pairs: 8 seeds, 2 assignments, 4 speech-db values,
+  9 durations, 4 prompt styles.
+- **Over-insertion quantified**: 5.8 cue deliveries/pair but only 1.22 uptake
+  -> ~79% of inserted cues are not adopted (noise). The rule backend's
+  `min_confidence` (default 0.55) controls this; `--min-confidence` is exposed
+  on the CLI.
+- **Learning from human logs demonstrated**: trained the linear policy on
+  271 samples (76 uptake positives) from the clean human CUE logs:
+  `artifacts/sync-policy-human.json`. Holdout ROC-AUC 0.708 (train 0.704),
+  Brier 0.229 — learns signal without overfitting. This is *offline policy
+  learning*, distinct from H2 (human durable learning), which remains
+  unmeasured and requires the blinded delayed-reconstruction task.
+
 ### H1 supported — first clean human paired result (n=24)
 - Recorded **24 clean paired human CUE/SILENCE sessions** with the fixed
   runtime (after the PTY event-capture fix), using `scripts/record_self_pair.sh`
