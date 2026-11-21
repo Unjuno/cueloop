@@ -63,7 +63,8 @@
   calibration cell were aligned with the corrected control semantics.
 - Re-scoring with the fixed observation: a simulator arm with a programmed
   +0.40 effect now reads +0.368 uptake delta (previously diluted by the
-  control arm's fake uptake). All 141 tests pass.
+  control arm's fake uptake). All 141 tests passed at that point; the suite
+  is now 142 tests after the quality-gate regression test was added.
 
 ## [0.4.0] - 2026-11-21
 
