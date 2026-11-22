@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Regression tests for baseline-only tuning (2026-11-23)
+- Added `tests/test_tune_operation_weights.py` (3 tests): `_is_gated` detects
+  all gated name tags (gated/v2gate/v3gate/floor0), gated logs are excluded so
+  baseline-only weights are reproduced, and the `--exclude-gated` CLI flag
+  works end-to-end. Test count 147 -> 150.
+
 ### Tuning-loop safety: weights derived from baseline only (2026-11-23)
 - Found a subtle self-amplification risk: deriving operation weights from all
   logs lets the gate's own adoption lift feed back into the weights
