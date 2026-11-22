@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### Floor-threshold sweep (2026-11-23) — floor 0.5 confirmed sufficient
+- Ran live gated batches at floor 0.3 (6 pairs), 0.5 (23), 0.7 (4) with the
+  same v2 weights. All floors beat baseline adoption 0.210 with CIs excluding
+  zero: 0.3→0.439 [+0.073,+0.379], 0.5→0.338 [+0.044,+0.212],
+  0.7→0.467 [+0.143,+0.388].
+- Crucially, v2 weights make floors 0.3/0.5/0.7 permit the **exact same 7
+  operations** (only dependency 0.091 is excluded), so the adoption spread is
+  sampling noise, not a real floor effect. floor 0.5 is retained as the
+  robust default (largest n, clean CI). `scripts/sweep_gate_floor.py`
+  (offline replay) and `scripts/compare_gate_ab.py` (per-floor breakdown)
+  document this. H1 stays significant at n=75 (+0.280 CI [+0.234,+0.323]).
+
 ### Continuous tuning: weight drift detection and refresh (2026-11-22)
 - Operation weights drift as data grows: re-deriving on all clean logs moved
   boundary 1.455 -> 0.750 and comparison 1.333 -> 1.040 (early small samples

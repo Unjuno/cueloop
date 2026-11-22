@@ -63,6 +63,18 @@ def main() -> int:
             f"uptake={s['uptake']:3d} adoption={s['adoption_rate']:.3f} "
             f"delivered/pair={s['per_pair_delivered']:.2f}"
         )
+    # Floor-threshold breakdown: adoption per configured min_operation_weight.
+    floors: dict[float, list[dict]] = {}
+    for row in tuned:
+        floors.setdefault(float(row.get("floor", 0.5)), []).append(row)
+    if len(floors) > 1:
+        print("--- by gate floor ---")
+        for floor in sorted(floors):
+            s = summarize(floors[floor])
+            print(
+                f"  floor={floor:.2f} pairs={s['pairs']:3d} "
+                f"delivered={s['delivered']:4d} adoption={s['adoption_rate']:.3f}"
+            )
     if not tuned:
         print("tuned group empty -> run a batch with GATE_WEIGHTS set first")
         return 0
