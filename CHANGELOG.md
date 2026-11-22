@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+### Tuning-loop safety: weights derived from baseline only (2026-11-23)
+- Found a subtle self-amplification risk: deriving operation weights from all
+  logs lets the gate's own adoption lift feed back into the weights
+  (boot_mean sat systematically above installed v3 values, e.g. ground 1.95
+  vs 1.64). Fixed `tune_operation_weights.py` with `--exclude-gated` and made
+  `check_weight_drift.py` use it, so weights track *natural* adoption only.
+- Verified installed v3 weights exactly equal the baseline-only derivation
+  (match=True, all 8 ops) and drift check reports "weights in sync". v3 is
+  therefore statistically stable (all weights inside bootstrap 95% CIs over
+  499 interventions). Voice-recording v3 A/B was attempted but the mic was
+  silent (manual step needed); offline validation + existing gated A/B
+  (0.210 -> 0.373, CI [+0.086,+0.238]) still support the tuning.
+
 ### Weight refresh v3 (2026-11-23) — drift detector fired
 - After the floor-sweep batches, `check_weight_drift.py` detected max drift
   0.260 on `invert` (adoption rose with more data). Installed v3 weights:

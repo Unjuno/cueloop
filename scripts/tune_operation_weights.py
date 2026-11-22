@@ -65,12 +65,27 @@ def build_parser() -> argparse.ArgumentParser:
         "--report", type=Path, help="Detailed per-operation report JSON."
     )
     parser.add_argument("--scale", type=float, default=4.0)
+    parser.add_argument(
+        "--exclude-gated",
+        action="store_true",
+        help=(
+            "Only use baseline (non-gated) sessions. Weights learned from "
+            "gated sessions absorb the gate's own adoption lift and "
+            "self-amplify; gates should be tuned on natural adoption."
+        ),
+    )
     return parser
+
+
+def _is_gated(path: Path) -> bool:
+    name = path.name.lower()
+    return any(tag in name for tag in ("gated", "v2gate", "v3gate", "floor0"))
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    weights, detail = derive(args.logs, scale=args.scale)
+    logs = [p for p in args.logs if not (args.exclude_gated and _is_gated(p))]
+    weights, detail = derive(logs, scale=args.scale)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(weights, indent=2) + "\n", encoding="utf-8")
     if args.report:

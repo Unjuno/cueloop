@@ -46,6 +46,7 @@ def main(argv: list[str] | None = None) -> int:
             sys.executable,
             str(ROOT / "scripts" / "tune_operation_weights.py"),
             *logs,
+            "--exclude-gated",
             "--output",
             str(args.fresh),
         ],
