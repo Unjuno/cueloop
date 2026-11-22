@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Weight refresh v3 (2026-11-23) — drift detector fired
+- After the floor-sweep batches, `check_weight_drift.py` detected max drift
+  0.260 on `invert` (adoption rose with more data). Installed v3 weights:
+  invert 1.204, conclusion 1.053, ground 1.644, dependency 0.083.
+  Drift re-check: "weights in sync".
+- Note: v3 makes floor 0.7 exclude `boundary` (0.686) while 0.5 still permits
+  all 7 operations — floor and weights interact, so re-sweep after refresh.
+
 ### Floor-threshold sweep (2026-11-23) — floor 0.5 confirmed sufficient
 - Ran live gated batches at floor 0.3 (6 pairs), 0.5 (23), 0.7 (4) with the
   same v2 weights. All floors beat baseline adoption 0.210 with CIs excluding
