@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### CI: macos-adapter no longer blocks main on infra cancels (2026-11-23)
+- Run 45195738266 had both unit jobs green but `macos-adapter` was CANCELLED
+  at the 15-min infra cap while still queued (zero steps executed). This is
+  the known macOS ARM capacity issue, not a compile failure. Set
+  `continue-on-error: true` on that job (workaround (a) in the earlier note):
+  the adapter compile is verified locally and unit covers lint/pytest/replay/
+  wheel, so a runner-capacity cancel must not make main red.
+
 ### More v3 live data (2026-11-23) — effect estimate stabilizes
 - Added 6 clean gated pairs (`v3more`) to the 7 `v3live` pairs: v3 adoption
   0.308 (v3live) and 0.250 (v3more), both above baseline 0.210.
