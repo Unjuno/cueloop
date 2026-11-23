@@ -151,6 +151,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-cue-characters", type=int, default=8)
     parser.add_argument("--min-confidence", type=float, default=0.55)
     parser.add_argument(
+        "--fatigue-penalty",
+        type=float,
+        default=2.0,
+        help="Damping on repeated operation choices (higher = fewer consecutive similar cues).",
+    )
+    parser.add_argument(
         "--operation-weights",
         help="JSON object of per-operation adoption weights (e.g. '{\"ground\":1.5}').",
     )
@@ -472,6 +478,7 @@ def main(argv: list[str] | None = None) -> int:
                 "stem_max_characters": args.max_stem_characters,
                 "operation_weights": operation_weights,
                 "min_operation_weight": args.min_operation_weight,
+                "fatigue_penalty": args.fatigue_penalty,
             }
             if priority_tuple is not None:
                 rule_kwargs["priority"] = priority_tuple

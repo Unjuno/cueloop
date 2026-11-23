@@ -50,6 +50,10 @@ if [ -n "${CUELOOP_OPERATION_WEIGHTS:-}" ]; then
   GATE_ARGS=(--operation-weights "$WEIGHTS_JSON" --min-operation-weight "${CUELOOP_MIN_OP_WEIGHT:-0.5}")
   echo "    operation gate: weights=$CUELOOP_OPERATION_WEIGHTS floor=${CUELOOP_MIN_OP_WEIGHT:-0.5}"
 fi
+if [ -n "${CUELOOP_FATIGUE:-}" ]; then
+  GATE_ARGS+=(--fatigue-penalty "$CUELOOP_FATIGUE")
+  echo "    fatigue penalty: $CUELOOP_FATIGUE"
+fi
 STAMP="$(date +%Y%m%d-%H%M%S)"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"

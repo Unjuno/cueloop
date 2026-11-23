@@ -2,6 +2,36 @@
 
 ## Unreleased
 
+### Turn analysis into action: expose fatigue penalty (2026-11-24)
+- Analysis of "ground/concretize feel repetitive":
+  - adjacent exact repeats 4.9%, same-family 10.1%; ground+concretize
+    adoption 0.381 vs others 0.277 (so they do work; the complaint is a
+    habituation/feel issue not captured by immediate uptake).
+  - dependency adoption 0.021 (share 7.7%) and boundary 0.154 are the ops
+    that are genuinely low-value.
+  - fatigue penalty was hard-coded (2.0) and NOT tunable. Now exposed as
+    `--fatigue-penalty` on the CLI, threaded through `record_self_pair.sh`
+    (`CUELOOP_FATIGUE`) and the batch driver (`FATIGUE=...`), and logged per
+    pair in `artifacts/feedback-loop.jsonl` so its effect can be A/B tested.
+  - Reverted a speculative change to the rank-bonus math (kept behavior
+    stable) — the data did not support "ground should be forced more".
+
+### Root-cause analysis (2026-11-24): gate weights are diluted by context-fit order
+- User observed "根拠は／具体的にはが連続していて適切じゃない". Log analysis:
+  - adjacent same-op repeats only 4.3% (so not literal repeats), but 124
+    three-cue windows have >=2 of ground+concretize (evidence ops clustered).
+  - concretize: delivered share 21.1% (highest) despite weight 0.95 and
+    adoption 0.326; ground: weight 1.644, adoption 0.486, but share only
+    11.2%. The weights are NOT driving selection as intended.
+- Cause: `RuleDecisionModel.decide()` re-ranks `missing` by context fit, then
+  `_choose_with_fatigue()` scores `(total - rank_index) - penalty*count` and
+  multiplies by weight. The rank bonus dominates: concretize (rank 0) beats
+  ground (higher weight) in a direct replay test (4 picks vs 2).
+- Consequence: the operation-weight gate only suppresses sub-floor ops
+  (dependency 7.4% share, adoption 0.021); it does not steer toward the
+  highest-adoption ops. Fix planned: normalize/dampen the rank bonus so
+  weights can dominate. Analysis only — no behavior change in this commit.
+
 ### CI: macos-adapter no longer blocks main on infra cancels (2026-11-23)
 - Run 45195738266 had both unit jobs green but `macos-adapter` was CANCELLED
   at the 15-min infra cap while still queued (zero steps executed). This is
