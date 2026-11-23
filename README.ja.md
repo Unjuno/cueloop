@@ -20,14 +20,14 @@ CUELOOP は、話し手が話している**最中に**、話し手が次に言�
 
 | 項目 | 状態 |
 | --- | --- |
-| 同期コア（予測→同期→判定→発話） | 動作。テスト142件、CIグリーン |
+| 同期コア（予測→同期→判定→発話） | 動作。テスト150件、CIグリーン |
 | macOS マイクアダプタ + ライブデモ | このMacで動作（PTYイベント取得修正済）。`scripts/record_self_pair.sh` でライブ収録可能 |
 | 既定の音声 | 日本語・macOS `say -v Kyoko` |
 | 合成データによる較正 | エンドツーエンドで効果を回収（docs/benchmark.md） |
-| 人間側の証拠 | **修正済みランタイムでクリーンな真人ペア24件を収録（プロトコルセル達成）**。ペア uptake 差 +0.254、95% CI [+0.176, +0.335] — ゼロを含まない。`scripts/evaluate_h1h2.py` 参照 |
+| 人間側の証拠 | **修正済みランタイムでクリーンな真人ペア75件**。ペア uptake 差 +0.280、95% CI [+0.234, +0.323] — ゼロを含まない。挿入過剰は調整済み operation-weight gate で修正：adoption 0.210 → 0.373（CI [+0.086, +0.238]）。`scripts/evaluate_h1h2.py`, `scripts/compare_gate_ab.py` 参照 |
 | 日本語実話コーパス | 8件 replay 済（すべて canned audio）。詳細は docs/real-speech.md |
-| ライブ CUE/SILENCE | クリーン24ペア（2026-11-21→22）。CUE 165 delivery/165 outcome、SILENCE 0 outcome（クリーン対照） |
-| H1 | **支持** — cue が次の節の操作語出現を上げる（CI がゼロを除外、n=24） |
+| ライブ CUE/SILENCE | クリーン75ペア。CUE 427 delivery、SILENCE 0 outcome（クリーン対照） |
+| H1 | **支持** — cue が次の節の操作語出現を上げる（CI がゼロを除外、n=75） |
 | H2 | 未測定 — blinded 遅延再構成タスクが必要 |
 | ライセンス | MIT |
 

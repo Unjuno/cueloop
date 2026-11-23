@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Docs reconciled (2026-11-23)
+- README (EN/JA) status refreshed to current facts: 150 tests, 75 clean
+  pairs, H1 uptake +0.280 CI [+0.234, +0.323] (n=75), CUE 427 deliveries,
+  and the over-insertion fix (adoption 0.210 -> 0.373). Previously these
+  tables were stale (142 tests / 24 pairs / +0.254).
+
 ### Regression tests for baseline-only tuning (2026-11-23)
 - Added `tests/test_tune_operation_weights.py` (3 tests): `_is_gated` detects
   all gated name tags (gated/v2gate/v3gate/floor0), gated logs are excluded so

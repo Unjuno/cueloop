@@ -23,14 +23,14 @@ writing or reasoning improvement require a delayed, unassisted task.
 
 | What | State |
 | --- | --- |
-| Sync core (predict → synchronize → decide → speak) | working; 142 tests, CI green |
+| Sync core (predict → synchronize → decide → speak) | working; 150 tests, CI green |
 | macOS microphone adapter + live demo | working on this machine (PTY event capture fix); live paired recording via `scripts/record_self_pair.sh` |
 | Default voice | Japanese, macOS `say -v Kyoko` |
 | Synthetic calibration | analyzer recovers programmed effects end-to-end (docs/benchmark.md) |
-| Human-side evidence | **24 clean paired human sessions captured with the fixed runtime** (protocol cell met). Paired uptake delta +0.254, 95% CI [+0.176, +0.335] — excludes zero. See `scripts/evaluate_h1h2.py` and CHANGELOG. |
+| Human-side evidence | **75 clean paired human sessions with the fixed runtime**; paired uptake delta +0.280, 95% CI [+0.234, +0.323] — excludes zero. Over-insertion fixed via tuned operation-weight gate: adoption 0.210 → 0.373 (CI [+0.086, +0.238]). See `scripts/evaluate_h1h2.py`, `scripts/compare_gate_ab.py`, CHANGELOG. |
 | 8 Japanese real-speech corpora | replayed end-to-end; canned audio, uptake delta +0.000 |
-| Live paired CUE/SILENCE | 24 clean pairs (2026-11-21 → 2026-11-22); CUE 165 deliveries/165 outcomes, SILENCE 0 outcomes (clean control) |
-| H1 milestone | **supported** — cue raises operation-word uptake in the next clause (CI excludes zero, n=24) |
+| Live paired CUE/SILENCE | 75 clean pairs; CUE 427 deliveries, SILENCE 0 outcomes (clean control) |
+| H1 milestone | **supported** — cue raises operation-word uptake in the next clause (CI excludes zero, n=75) |
 | H2 milestone | open — requires the blinded delayed-reconstruction task |
 | License | MIT |
 
