@@ -24,10 +24,10 @@ CUELOOP は、話し手が話している**最中に**、話し手が次に言�
 | macOS マイクアダプタ + ライブデモ | このMacで動作（PTYイベント取得修正済）。`scripts/record_self_pair.sh` でライブ収録可能 |
 | 既定の音声 | 日本語・macOS `say -v Kyoko` |
 | 合成データによる較正 | エンドツーエンドで効果を回収（docs/benchmark.md） |
-| 人間側の証拠 | **修正済みランタイムでクリーンな真人ペア75件**。ペア uptake 差 +0.280、95% CI [+0.234, +0.323] — ゼロを含まない。挿入過剰は調整済み operation-weight gate で修正：adoption 0.210 → 0.373（CI [+0.086, +0.238]）。`scripts/evaluate_h1h2.py`, `scripts/compare_gate_ab.py` 参照 |
+| 人間側の証拠 | **修正済みランタイムでクリーンな真人ペア88件**。ペア uptake 差 +0.277、95% CI [+0.237, +0.319] — ゼロを含まない。挿入過剰は調整済み operation-weight gate で修正：adoption 0.210 → 0.347（CI [+0.066, +0.203]）。`scripts/evaluate_h1h2.py`, `scripts/compare_gate_ab.py` 参照 |
 | 日本語実話コーパス | 8件 replay 済（すべて canned audio）。詳細は docs/real-speech.md |
-| ライブ CUE/SILENCE | クリーン75ペア。CUE 427 delivery、SILENCE 0 outcome（クリーン対照） |
-| H1 | **支持** — cue が次の節の操作語出現を上げる（CI がゼロを除外、n=75） |
+| ライブ CUE/SILENCE | クリーン88ペア。CUE 471 delivery、SILENCE 0 outcome（クリーン対照） |
+| H1 | **支持** — cue が次の節の操作語出現を上げる（CI がゼロを除外、n=88） |
 | H2 | 未測定 — blinded 遅延再構成タスクが必要 |
 | ライセンス | MIT |
 

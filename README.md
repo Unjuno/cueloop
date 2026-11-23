@@ -27,10 +27,10 @@ writing or reasoning improvement require a delayed, unassisted task.
 | macOS microphone adapter + live demo | working on this machine (PTY event capture fix); live paired recording via `scripts/record_self_pair.sh` |
 | Default voice | Japanese, macOS `say -v Kyoko` |
 | Synthetic calibration | analyzer recovers programmed effects end-to-end (docs/benchmark.md) |
-| Human-side evidence | **75 clean paired human sessions with the fixed runtime**; paired uptake delta +0.280, 95% CI [+0.234, +0.323] — excludes zero. Over-insertion fixed via tuned operation-weight gate: adoption 0.210 → 0.373 (CI [+0.086, +0.238]). See `scripts/evaluate_h1h2.py`, `scripts/compare_gate_ab.py`, CHANGELOG. |
+| Human-side evidence | **88 clean paired human sessions with the fixed runtime**; paired uptake delta +0.277, 95% CI [+0.237, +0.319] — excludes zero. Over-insertion fixed via tuned operation-weight gate: adoption 0.210 → 0.347 (CI [+0.066, +0.203]). See `scripts/evaluate_h1h2.py`, `scripts/compare_gate_ab.py`, CHANGELOG. |
 | 8 Japanese real-speech corpora | replayed end-to-end; canned audio, uptake delta +0.000 |
-| Live paired CUE/SILENCE | 75 clean pairs; CUE 427 deliveries, SILENCE 0 outcomes (clean control) |
-| H1 milestone | **supported** — cue raises operation-word uptake in the next clause (CI excludes zero, n=75) |
+| Live paired CUE/SILENCE | 88 clean pairs; CUE 471 deliveries, SILENCE 0 outcomes (clean control) |
+| H1 milestone | **supported** — cue raises operation-word uptake in the next clause (CI excludes zero, n=88) |
 | H2 milestone | open — requires the blinded delayed-reconstruction task |
 | License | MIT |
 

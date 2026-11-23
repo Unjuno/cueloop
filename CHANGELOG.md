@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### More v3 live data (2026-11-23) — effect estimate stabilizes
+- Added 6 clean gated pairs (`v3more`) to the 7 `v3live` pairs: v3 adoption
+  0.308 (v3live) and 0.250 (v3more), both above baseline 0.210.
+- All gated data now 46 pairs: adoption baseline 0.210 -> tuned 0.347,
+  95% CI [+0.066, +0.203] -> still a clear improvement. H1 significant at
+  n=88 (+0.277 CI [+0.237, +0.319]); drift check "weights in sync".
+- The adoption point estimate drifted down 0.373 -> 0.363 -> 0.347 as n grew
+  (early small samples overestimated); 0.347 is the more conservative and
+  realistic figure. The improvement over baseline remains significant.
+
 ### v3 real-recording A/B verified (2026-11-23)
 - Recorded 7 clean gated pairs with the installed v3 weights (floor 0.5,
   `v3live` batch; recorded via live microphone through the PTY-fixed runtime).
