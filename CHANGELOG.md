@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### v3 real-recording A/B verified (2026-11-23)
+- Recorded 7 clean gated pairs with the installed v3 weights (floor 0.5,
+  `v3live` batch; recorded via live microphone through the PTY-fixed runtime).
+  v3live adoption = 12/39 = 0.308 — comparable to v2 (0.338), so the v3
+  refresh introduced no regression.
+- All gated data now 40 pairs: adoption baseline 0.210 -> tuned 0.363,
+  95% CI [+0.080, +0.226] -> clear improvement. H1 stays significant at
+  n=82 (+0.281 CI [+0.236, +0.325]). Weight drift check: weights in sync.
+
 ### Docs reconciled (2026-11-23)
 - README (EN/JA) status refreshed to current facts: 150 tests, 75 clean
   pairs, H1 uptake +0.280 CI [+0.234, +0.323] (n=75), CUE 427 deliveries,
