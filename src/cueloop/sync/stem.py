@@ -108,6 +108,7 @@ def build_stem_messages(
     span: str,
     context: Sequence[str] = (),
     max_characters: int = DEFAULT_STEM_MAX_CHARACTERS,
+    attended_term: str | None = None,
 ) -> tuple[str, str]:
     """Attention-grounded stem prompt (v3, verified by scripts/experiment_stem_prompt.py).
 
@@ -127,15 +128,30 @@ def build_stem_messages(
         "その語を自然に次の文へ繋ぐ一文だけを書きます。"
         "出力は一文のみで、説明・引用符・箇条書き・ラベルを含めません。"
     )
+    if attended_term:
+        # When the attention extractor already identified the term, state it
+        # explicitly. Otherwise the model falls back to the most recent
+        # phrase ("逆の立場だと") instead of the term actually being circled.
+        focus = (
+            f"【注目すべき語（必ずこの語を使ってください）】{attended_term}\n"
+            f"【文脈】{recent}\n"
+            f"【発話】{text}\n"
+            f"【続きのヒント】{span}\n\n"
+            f"上の「注目すべき語」({attended_term})を自然に使って、"
+            "話し手が続きに言えそうな一文を書いてください。\n"
+        )
+    else:
+        focus = (
+            f"【文脈】{recent}\n"
+            f"【発話】{text}\n"
+            f"【続きのヒント】{span}\n\n"
+            "話し手が今いちばん引っかかっている語を、文脈の中から一つ選び、"
+            "その語を自然に使って、話し手が続きに言えそうな一文を書いてください。\n"
+        )
     user = (
-        f"【文脈】{recent}\n"
-        f"【発話】{text}\n"
-        f"【続きのヒント】{span}\n\n"
-        "話し手が今いちばん引っかかっている語を、文脈の中から一つ選び、"
-        "その語を自然に使って、話し手が続きに言えそうな一文を書いてください。\n"
-        "文末に句点を一つだけ付け、それ以外の句点は使いません。"
-        f"{max_characters}文字以内の一文です。\n"
-        "文:\n"
+        focus
+        + "文末に句点を一つだけ付け、それ以外の句点は使いません。"
+        + f"{max_characters}文字以内の一文です。\n文:\n"
     )
     return system, user
 
@@ -217,6 +233,7 @@ class StemCueGenerator:
         text: str,
         span: str,
         context: Sequence[str] = (),
+        attended_term: str | None = None,
     ) -> str | None:
         try:
             system, user = build_stem_messages(
@@ -225,6 +242,7 @@ class StemCueGenerator:
                 span=span,
                 context=context,
                 max_characters=self.max_characters,
+                attended_term=attended_term,
             )
             content = self._complete(
                 [

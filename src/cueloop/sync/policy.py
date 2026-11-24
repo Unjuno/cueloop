@@ -1036,16 +1036,12 @@ def _resolve_stem_cue(
     """LLM-written stem → predicted-span template stem → bare wording."""
     span = state.prediction.span if state.prediction is not None else ""
     if generator is not None:
-        context = list(state.context)
-        # Put the attention-grounded term first so the v3 prompt ("pick the
-        # term you are circling") lands on the extracted term deterministically.
-        if attended_term:
-            context.insert(0, attended_term)
         sentence = generator.generate(
             operation,
             text=state.text,
             span=span,
-            context=context,
+            context=state.context,
+            attended_term=attended_term,
         )
         if sentence:
             return sentence

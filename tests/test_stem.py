@@ -104,7 +104,7 @@ class RuleStemModeTests(unittest.TestCase):
             self.sentence = sentence
             self.calls = []
 
-        def generate(self, operation, *, text, span, context=()):
+        def generate(self, operation, *, text, span, context=(), attended_term=None):
             self.calls.append(operation)
             return self.sentence
 
@@ -153,7 +153,9 @@ class RandomOperationStemModeTests(unittest.TestCase):
             def __init__(self) -> None:
                 self.drawn = []
 
-            def generate(self, operation, *, text, span, context=()):
+            def generate(
+                self, operation, *, text, span, context=(), attended_term=None
+            ):
                 self.drawn.append(operation)
                 return f"{operation} の初期条件です。"
 

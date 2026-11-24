@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+### Context-length sweep and explicit attention term (2026-11-26)
+- Added `scripts/experiment_context_length.py` to test the user's claim
+  "文脈が多ければ多いほどより自然になる" across 0/1/2/4 context turns on the
+  v3 stem prompt (gemma3:4b, no mic).
+- First run (no explicit term): attended_uptake 80% at 0 turns -> 60% at 4
+  turns (target +20% FAILED). Inspecting the cues showed the model always
+  used the most recent phrase ("逆の立場だと"), not the attended term — the
+  v3 prompt's `context[-4:]` window dropped the extractor's term.
+- Fix: `build_stem_messages` now accepts `attended_term`; when the attention
+  extractor supplies a term it is stated explicitly ("注目すべき語"). Wired
+  through `StemCueGenerator.generate` and `_resolve_stem_cue`.
+- Re-run: all context lengths 0/1/2/4 reached attended_uptake 100%, op_leak
+  0% — the attended term is now used deterministically. This means "more
+  context -> more natural" is NOT demonstrated (ceiling effect); the proven
+  improvement is "explicit attention term -> reliable grounding", which we
+  report instead of overclaiming.
+- Updated 3 stub generators in tests/test_stem.py for the new kwarg; 155
+  tests pass.
+
 ### Attention-grounded cue SELECTION (2026-11-25) — the missing core
 - The user's keynote: the cue word should not be a fixed "逆は"-style label;
   it should engage the term the model is attending to ("選定する必要がある";
