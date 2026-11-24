@@ -402,6 +402,20 @@ def _build_speaker(args: argparse.Namespace) -> Speaker:
     return NullSpeaker()
 
 
+def _needs_stem_generator(args: argparse.Namespace) -> bool:
+    """Whether stem cues require a generator for this configuration.
+
+    A stem writer must exist for any stem run whose decision model cannot
+    write the stem itself: rule/linear need a separate writer, and local/steer
+    still need one for their instant rule fallback. Previously `local` was
+    missing here, so `stem + local` silently degraded to bare cues.
+    """
+    return args.cue_style == "stem" and (
+        args.decision in {"rule", "linear", "local", "steer"}
+        or args.assignment == "random-operation"
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
@@ -416,9 +430,7 @@ def main(argv: list[str] | None = None) -> int:
             max_characters=args.max_cue_characters,
         )
         stem_generator = None
-        need_stem_generator = args.cue_style == "stem" and (
-            args.decision in {"rule", "linear"} or args.assignment == "random-operation"
-        )
+        need_stem_generator = _needs_stem_generator(args)
         if need_stem_generator:
             try:
                 stem_generator = StemCueGenerator(
@@ -511,6 +523,9 @@ def main(argv: list[str] | None = None) -> int:
                     delivery_window_ms=args.delivery_window_ms,
                     insertion_delay_ms=args.insertion_delay_ms,
                     context_fit=not args.no_context_fit,
+                    cue_style=args.cue_style,
+                    stem_generator=stem_generator,
+                    stem_max_characters=args.max_stem_characters,
                 )
                 if args.decision_fallback == "rule"
                 else None

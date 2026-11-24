@@ -22,6 +22,14 @@ if [ -n "${FATIGUE:-}" ]; then
   GATE_ENV+=(CUELOOP_FATIGUE="$FATIGUE")
   echo "=== fatigue penalty override: $FATIGUE ==="
 fi
+if [ -n "${STACK:-}" ]; then
+  # e.g. STACK=stem-local selects CUELOOP_CUE_STYLE=stem CUELOOP_DECISION=local...
+  IFS=',' read -ra _stack_parts <<< "$STACK"
+  for part in "${_stack_parts[@]}"; do
+    GATE_ENV+=("CUELOOP_${part}")
+  done
+  echo "=== stack overrides: $STACK ==="
+fi
 mkdir -p artifacts
 
 # Prompt styles: different operation-word sets and speaking instructions.

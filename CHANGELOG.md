@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+### Address the "coarse" feedback: cue wording and context (2026-11-25)
+- User feedback (no quantification requested): too few words, no context,
+  too many false positives. Root cause in code: every live experiment ran
+  the coarsest stack `--cue-style bare --decision rule --predictor ngram`,
+  so the speaker heard only 8 fixed phrases regardless of what they said.
+- Made `record_self_pair.sh` configurable: `CUELOOP_DECISION`,
+  `CUELOOP_PREDICTOR`, `CUELOOP_CUE_STYLE`, `CUELOOP_BASE_URL`, `CUELOOP_MODEL`
+  (plus the batch driver's `STACK=KEY=VAL,...`). The richer stem+local stack
+  can now be recorded instead of being hard-coded off.
+- Fixed a wiring bug: `stem + local` silently produced bare cues because
+  `_needs_stem_generator` excluded `local`/`steer`, and the instant rule
+  fallback had no `cue_style`/`stem_generator`. Replay now yields a
+  context-grounded full sentence ("具体的には、逆に考える必要があるです。")
+  instead of "逆は？". Regression test added in `test_stem.py`.
+- Still coarse: the LLM-written stem mixes operations ("具体的には、逆に…")
+  — prompt quality is the next thing, not the wiring.
+
 ### Internal audit (2026-11-24): tuning is internally consistent
 - Added `scripts/audit_tuning.py` (no mic needed) — the "adjust internally"
   entry point. It checks weight/adoption correlation, repeat rates,

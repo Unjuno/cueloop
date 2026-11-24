@@ -336,6 +336,23 @@ class StemCliTests(unittest.TestCase):
         )
         self.assertEqual(args.cue_style, "bare")
 
+    def test_stem_generator_needed_for_all_decision_backends(self) -> None:
+        # Regression: stem+local previously produced bare cues because the
+        # generator was skipped for the local backend (and its rule fallback
+        # had no stem writer either).
+        for decision in ("rule", "linear", "local", "steer"):
+            args = sync_cli.build_parser().parse_args(
+                ["--events", "x.jsonl", "--cue-style", "stem", "--decision", decision]
+            )
+            self.assertTrue(
+                sync_cli._needs_stem_generator(args),
+                f"stem generator missing for decision={decision}",
+            )
+        bare = sync_cli.build_parser().parse_args(
+            ["--events", "x.jsonl", "--cue-style", "bare", "--decision", "local"]
+        )
+        self.assertFalse(sync_cli._needs_stem_generator(bare))
+
 
 if __name__ == "__main__":
     unittest.main()

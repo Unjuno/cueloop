@@ -41,6 +41,14 @@ RESTRICT_OPS="${3:-${RESTRICT_OPS:-}}"
 SEED="${CUELOOP_SEED:-3}"
 ASSIGNMENT="${CUELOOP_ASSIGNMENT:-canonical}"
 SPEECH_DB="${CUELOOP_SPEECH_DB:--50}"
+# Experiment configuration (previously hard-coded). Override to run the
+# richer stack: CUELOOP_CUE_STYLE=stem CUELOOP_DECISION=local CUELOOP_PREDICTOR=local.
+DECISION="${CUELOOP_DECISION:-rule}"
+PREDICTOR="${CUELOOP_PREDICTOR:-ngram}"
+CUE_STYLE="${CUELOOP_CUE_STYLE:-bare}"
+LLM_ARGS=()
+if [ -n "${CUELOOP_BASE_URL:-}" ]; then LLM_ARGS+=(--base-url "$CUELOOP_BASE_URL"); fi
+if [ -n "${CUELOOP_MODEL:-}" ]; then LLM_ARGS+=(--model "$CUELOOP_MODEL"); fi
 ANNOUNCE_CUE="${CUELOOP_ANNOUNCE_CUE:-これから話してください。結論は、なぜなら、逆に、具体例は、といった言葉を使いながら、日本語で話し続けてください。}"
 ANNOUNCE_SIL="${CUELOOP_ANNOUNCE_SIL:-もう一度、同じ話題で話してください。先ほどと同じように、結論は、なぜなら、逆に、といった言葉を使ってください。}"
 # Optional anti-over-insertion gate (derived by scripts/tune_operation_weights.py).
@@ -90,9 +98,9 @@ python3 -m pip install -q -e . 2>/dev/null || true
 .venv/bin/cueloop-sync \
   --event-command-json "[\".build/macos-speech-events\",\"--locale\",\"ja-JP\",\"--duration\",\"$DURATION\",\"--speech-db\",\"$SPEECH_DB\"]" \
   --restrict-ops "${RESTRICT_OPS}" \
-  --decision rule --predictor ngram \
+  --decision "$DECISION" --predictor "$PREDICTOR" "${LLM_ARGS[@]}" \
   --tts-command-json '["say","-v","Kyoko"]' \
-  --condition-label CUE --assignment "$ASSIGNMENT" --seed "$SEED" --cue-style bare \
+  --condition-label CUE --assignment "$ASSIGNMENT" --seed "$SEED" --cue-style "$CUE_STYLE" \
   "${GATE_ARGS[@]}" \
   --pair-key "self-$TOPIC-${STAMP}" \
   --session-id "self-$TOPIC-cue" \
@@ -107,8 +115,8 @@ sleep 3
 .venv/bin/cueloop-sync \
   --event-command-json "[\".build/macos-speech-events\",\"--locale\",\"ja-JP\",\"--duration\",\"$DURATION\",\"--speech-db\",\"$SPEECH_DB\"]" \
   --restrict-ops "${RESTRICT_OPS}" \
-  --decision rule --predictor ngram \
-  --condition-label SILENCE --assignment "$ASSIGNMENT" --seed "$SEED" --cue-style bare \
+  --decision "$DECISION" --predictor "$PREDICTOR" "${LLM_ARGS[@]}" \
+  --condition-label SILENCE --assignment "$ASSIGNMENT" --seed "$SEED" --cue-style "$CUE_STYLE" \
   "${GATE_ARGS[@]}" \
   --silent \
   --pair-key "self-$TOPIC-${STAMP}" \
