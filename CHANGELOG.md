@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+### Prompt tuning: attention-grounded stem cues (2026-11-25)
+- User asked for prompt improvement ("D5 / DS-Pi" name not found in repo),
+  specifically: the cue word should not be a fixed "逆は？"-style label; it
+  should engage the term the model is attending to in the live context.
+- Added `scripts/experiment_stem_prompt.py` (no mic needed): A/B of the old
+  operation-first prompt vs attention-grounded variants on 5 fixed Japanese
+  reasoning cases via local LLM (gemma3:4b-it-qat; qwen3 emits reasoning into
+  `reasoning` not `content`, so it is unusable for stems).
+- **Baseline** (old prompt): op-word leak 20%, attended-term uptake 60%,
+  one-sentence 100%. **Goal**: uptake 60->80%, keep one-sentence, no worse leak.
+- Variants: v1 (2-step attention, leak 0% but 2-sentence 20%), v2 (forbidden
+  word lists — backfired, leak 40%), v3 (affirmative-only: uptake 80%,
+  one-sentence, leak 20%), v4 (combined — worse). **Adopted v3**: it hits the
+  uptake goal (80%), keeps one-sentence output, and does not worsen leak.
+- `build_stem_messages` now implements v3 (operation-agnostic, finds the
+  attended term). Replay shows context-grounded sentences instead of fixed
+  "逆は？". Regression test added. Still coarse: some operation-like words
+  remain when they also occur naturally in the context.
+
 ### Address the "coarse" feedback: cue wording and context (2026-11-25)
 - User feedback (no quantification requested): too few words, no context,
   too many false positives. Root cause in code: every live experiment ran

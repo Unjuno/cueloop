@@ -14,7 +14,9 @@ from cueloop.sync.policy import (
     RuleDecisionModel,
 )
 from cueloop.sync.stem import (
+    OPERATION_INSTRUCTIONS,
     StemCueGenerator,
+    build_stem_messages,
     finalize_stem,
     render_stem_template,
 )
@@ -335,6 +337,22 @@ class StemCliTests(unittest.TestCase):
             ["--events", "x.jsonl", "--cue-style", "bare"]
         )
         self.assertEqual(args.cue_style, "bare")
+
+    def test_prompt_is_attention_grounded_not_operation_forced(self) -> None:
+        # The stem prompt must not tell the model which operation to perform
+        # (that forced "逆は？"/"例えば" into cues). It asks for the attended
+        # term in the live context instead.
+        _system, user = build_stem_messages(
+            "invert",
+            text="この設計は前提を分けて考える。でも逆の立場だと",
+            span="別の結論になる。",
+            context=["まず前提を確認したい"],
+            max_characters=48,
+        )
+        self.assertIn("引っかかっている語", user)
+        self.assertIn("文脈の中から一つ選び", user)
+        self.assertNotIn("逆の場合を検討", user)
+        self.assertNotIn(OPERATION_INSTRUCTIONS.get("invert", "___"), user)
 
     def test_stem_generator_needed_for_all_decision_backends(self) -> None:
         # Regression: stem+local previously produced bare cues because the

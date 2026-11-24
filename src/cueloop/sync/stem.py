@@ -109,24 +109,32 @@ def build_stem_messages(
     context: Sequence[str] = (),
     max_characters: int = DEFAULT_STEM_MAX_CHARACTERS,
 ) -> tuple[str, str]:
-    instruction = OPERATION_INSTRUCTIONS.get(operation, operation)
+    """Attention-grounded stem prompt (v3, verified by scripts/experiment_stem_prompt.py).
+
+    The old prompt told the model which operation to perform ("consider the
+    inverse", "state the ground"), which forced operation labels such as
+    "逆は？"/"例えば" into the cue. This version instead asks the model to find
+    the term the speaker is circling in the live context and write one natural
+    sentence that uses THAT term. In the A/B (gemma3:4b-it-qat, 5 reasoning
+    cases) this raised attended-term uptake 60%->80% while keeping one-sentence
+    output and not worsening operation-word leakage.
+    """
+    del operation  # intentionally operation-agnostic; the context picks the term
     recent = " / ".join(context[-4:]) or "なし"
     system = (
-        "あなたは日本語の話し手を支援する、推論の初期条件を一文で書くことに長けた"
-        "ファシリテーターです。出力は一文のみで、説明・引用符・箇条書きを含めません。"
+        "あなたは日本語の話し手を支援するファシリテーターです。"
+        "話し手が今まさに考えている「引っかかっている語」を捉え、"
+        "その語を自然に次の文へ繋ぐ一文だけを書きます。"
+        "出力は一文のみで、説明・引用符・箇条書き・ラベルを含めません。"
     )
     user = (
-        f"【直前までの文脈】\n{recent}\n\n"
-        f"【現在の発話】\n{text}\n\n"
-        f"【次に来ると予測される節】\n{span}\n\n"
-        f"この文脈で、話し手がこれから言うべき「{instruction}」を体現する、"
-        "最も妥当な一文を書いてください。\n"
-        "条件:\n"
-        f"- {max_characters}文字以内の自然な日本語の宣言文であること\n"
-        "- 話し手がそのまま採用して続きを話せる形であること\n"
-        "- 事実を断定しすぎず、推量・限定を含んでよいこと\n"
-        "- 改行・引用符・説明・記号の列挙を含めないこと\n"
-        "- 出力は一文のみ\n"
+        f"【文脈】{recent}\n"
+        f"【発話】{text}\n"
+        f"【続きのヒント】{span}\n\n"
+        "話し手が今いちばん引っかかっている語を、文脈の中から一つ選び、"
+        "その語を自然に使って、話し手が続きに言えそうな一文を書いてください。\n"
+        "文末に句点を一つだけ付け、それ以外の句点は使いません。"
+        f"{max_characters}文字以内の一文です。\n"
         "文:\n"
     )
     return system, user
