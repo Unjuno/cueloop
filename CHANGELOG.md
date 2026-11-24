@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+### Internal audit (2026-11-24): tuning is internally consistent
+- Added `scripts/audit_tuning.py` (no mic needed) — the "adjust internally"
+  entry point. It checks weight/adoption correlation, repeat rates,
+  low-adoption ops above the floor, and floor consistency.
+- Result on current data (98 sessions, 829 deliveries): correlation r=0.975,
+  adjacent exact repeats 4.9%, same-family 10.1%, no above-floor op with
+  adoption<0.10, floor 0.5 permits 7 ops. VERDICT: internally consistent;
+  no forced change warranted.
+- Corrected an earlier misread: a PCA sweep suggested "weights don't drive
+  selection", but that was a simulation artifact (fixed eligible ordering).
+  Real `_choose_with_fatigue` rotates via fatigue and the weights track
+  measured adoption at r=0.975. A speculative rank-bonus change was reverted.
+
 ### Turn analysis into action: expose fatigue penalty (2026-11-24)
 - Analysis of "ground/concretize feel repetitive":
   - adjacent exact repeats 4.9%, same-family 10.1%; ground+concretize
