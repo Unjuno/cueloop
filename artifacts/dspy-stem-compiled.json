@@ -1,0 +1,73 @@
+{
+  "write": {
+    "traces": [],
+    "train": [],
+    "demos": [
+      {
+        "augmented": true,
+        "context": "前提が曖昧だと話が進まない",
+        "text": "まず前提をはっきりさせたい。根拠は",
+        "span": "観測データが足りない。",
+        "attended_term": "前提",
+        "cue": "まず前提を明確にすることが重要です。"
+      },
+      {
+        "augmented": true,
+        "context": "抽象的な議論が続いている",
+        "text": "もっと具体的に言うと、例えば",
+        "span": "三段階で進める形です。",
+        "attended_term": "三段階",
+        "cue": "三段階のプロセスを検討しましょう。"
+      },
+      {
+        "augmented": true,
+        "context": "まず前提を確認したい",
+        "text": "この設計は前提を分けて考える。でも逆の立場だと",
+        "span": "別の結論になる。",
+        "attended_term": "前提",
+        "cue": "前提を改めて確認してみましょう。"
+      },
+      {
+        "augmented": true,
+        "context": "比較対象を聞かれた",
+        "text": "この方式とあれを比べると、違いは",
+        "span": "コスト差が大きい。",
+        "attended_term": "違い",
+        "cue": "コスト差が大きい点が、大きな違いです。"
+      }
+    ],
+    "signature": {
+      "instructions": "Write one natural Japanese cue engaging the term the speaker is circling.",
+      "fields": [
+        {
+          "prefix": "Context:",
+          "description": "直近の文脈"
+        },
+        {
+          "prefix": "Text:",
+          "description": "いまの発話"
+        },
+        {
+          "prefix": "Span:",
+          "description": "続きの予測（参考。そのまま書かない）"
+        },
+        {
+          "prefix": "Attended Term:",
+          "description": "必ず使うべき注目語"
+        },
+        {
+          "prefix": "Cue:",
+          "description": "48文字以内の自然な日本語一文。句点は文末に一つだけ"
+        }
+      ]
+    },
+    "lm": null
+  },
+  "metadata": {
+    "dependency_versions": {
+      "python": "3.12",
+      "dspy": "3.5.0",
+      "cloudpickle": "3.1"
+    }
+  }
+}

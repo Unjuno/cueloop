@@ -39,3 +39,7 @@ coverage/
 *.log
 logs/
 artifacts/
+# DSPy-compiled stem prompt is a learned artifact consumed at runtime.
+!artifacts/
+artifacts/*
+!artifacts/dspy-stem-compiled.json
