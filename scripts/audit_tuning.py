@@ -39,7 +39,9 @@ def load() -> tuple[dict[str, int], dict[str, int], list[list[str]]]:
     delivered: Counter[str] = Counter()
     adopted: Counter[str] = Counter()
     sessions: list[list[str]] = []
-    for path in sorted(glob.glob(str(ROOT / "logs" / "self-*accuracy*paired-*" / "cue.jsonl"))):
+    for path in sorted(
+        glob.glob(str(ROOT / "logs" / "self-*accuracy*paired-*" / "cue.jsonl"))
+    ):
         ops: list[str] = []
         for line in Path(path).read_text(encoding="utf-8").splitlines():
             if not line.strip():
@@ -48,11 +50,16 @@ def load() -> tuple[dict[str, int], dict[str, int], list[list[str]]]:
                 rec = json.loads(line)
             except json.JSONDecodeError:
                 continue
-            if rec.get("kind") == "intervention" and isinstance(rec.get("operation"), str):
+            if rec.get("kind") == "intervention" and isinstance(
+                rec.get("operation"), str
+            ):
                 op = rec["operation"]
                 ops.append(op)
                 delivered[op] += 1
-            elif rec.get("kind") == "outcome" and rec.get("target_operation_seen") is True:
+            elif (
+                rec.get("kind") == "outcome"
+                and rec.get("target_operation_seen") is True
+            ):
                 op = rec.get("operation")
                 if isinstance(op, str):
                     adopted[op] += 1
@@ -63,7 +70,9 @@ def load() -> tuple[dict[str, int], dict[str, int], list[list[str]]]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--weights", type=Path, default=ROOT / "artifacts" / "operation-weights.json")
+    parser.add_argument(
+        "--weights", type=Path, default=ROOT / "artifacts" / "operation-weights.json"
+    )
     parser.add_argument("--floor", type=float, default=0.5)
     args = parser.parse_args()
 
@@ -87,13 +96,17 @@ def main() -> int:
                 fam += 1
 
     eligible = sorted([o for o, w in weights.items() if w >= args.floor])
-    low_adoption = [o for o in eligible if delivered.get(o, 0) and adopted[o] / delivered[o] < 0.10]
+    low_adoption = [
+        o for o in eligible if delivered.get(o, 0) and adopted[o] / delivered[o] < 0.10
+    ]
 
     print("=== internal tuning audit ===")
     print(f"sessions={len(sessions)} deliveries={sum(delivered.values())}")
-    print(f"[1] weight/adoption correlation r={corr:.3f} ({'OK' if corr > 0.7 else 'NEEDS WORK'})")
-    print(f"[2] adjacent exact repeats={exact}/{total} ({exact/total:.1%})")
-    print(f"    adjacent same-family repeats={fam}/{total} ({fam/total:.1%})")
+    print(
+        f"[1] weight/adoption correlation r={corr:.3f} ({'OK' if corr > 0.7 else 'NEEDS WORK'})"
+    )
+    print(f"[2] adjacent exact repeats={exact}/{total} ({exact / total:.1%})")
+    print(f"    adjacent same-family repeats={fam}/{total} ({fam / total:.1%})")
     print(f"[3] above-floor ops with adoption<0.10: {low_adoption or 'none'}")
     print(f"[4] floor={args.floor} permits {len(eligible)} ops: {eligible}")
     if corr > 0.7 and not low_adoption:
