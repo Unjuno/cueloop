@@ -62,6 +62,10 @@ if [ -n "${CUELOOP_FATIGUE:-}" ]; then
   GATE_ARGS+=(--fatigue-penalty "$CUELOOP_FATIGUE")
   echo "    fatigue penalty: $CUELOOP_FATIGUE"
 fi
+if [ "${CUELOOP_ATTENTION_SELECT:-0}" = "1" ]; then
+  GATE_ARGS+=(--attention-select)
+  echo "    attention-grounded cue selection: ON"
+fi
 STAMP="$(date +%Y%m%d-%H%M%S)"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
