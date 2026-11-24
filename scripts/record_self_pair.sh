@@ -102,10 +102,10 @@ python3 -m pip install -q -e . 2>/dev/null || true
 .venv/bin/cueloop-sync \
   --event-command-json "[\".build/macos-speech-events\",\"--locale\",\"ja-JP\",\"--duration\",\"$DURATION\",\"--speech-db\",\"$SPEECH_DB\"]" \
   --restrict-ops "${RESTRICT_OPS}" \
-  --decision "$DECISION" --predictor "$PREDICTOR" "${LLM_ARGS[@]}" \
+  --decision "$DECISION" --predictor "$PREDICTOR" ${LLM_ARGS[@]+"${LLM_ARGS[@]}"} \
   --tts-command-json '["say","-v","Kyoko"]' \
   --condition-label CUE --assignment "$ASSIGNMENT" --seed "$SEED" --cue-style "$CUE_STYLE" \
-  "${GATE_ARGS[@]}" \
+  ${GATE_ARGS[@]+"${GATE_ARGS[@]}"} \
   --pair-key "self-$TOPIC-${STAMP}" \
   --session-id "self-$TOPIC-cue" \
   --log "${CUE_STEM}.jsonl" --report "${CUE_STEM}.report"
@@ -119,9 +119,9 @@ sleep 3
 .venv/bin/cueloop-sync \
   --event-command-json "[\".build/macos-speech-events\",\"--locale\",\"ja-JP\",\"--duration\",\"$DURATION\",\"--speech-db\",\"$SPEECH_DB\"]" \
   --restrict-ops "${RESTRICT_OPS}" \
-  --decision "$DECISION" --predictor "$PREDICTOR" "${LLM_ARGS[@]}" \
+  --decision "$DECISION" --predictor "$PREDICTOR" ${LLM_ARGS[@]+"${LLM_ARGS[@]}"} \
   --condition-label SILENCE --assignment "$ASSIGNMENT" --seed "$SEED" --cue-style "$CUE_STYLE" \
-  "${GATE_ARGS[@]}" \
+  ${GATE_ARGS[@]+"${GATE_ARGS[@]}"} \
   --silent \
   --pair-key "self-$TOPIC-${STAMP}" \
   --session-id "self-$TOPIC-silence" \
