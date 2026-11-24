@@ -74,6 +74,30 @@ CASES = [
         "span": "コスト差が大きい。",
         "attended_term": "違い",
     },
+    {
+        "context": "条件を整理したい",
+        "text": "この仮定が成り立つ条件は、いつか",
+        "span": "限定された場合だ。",
+        "attended_term": "条件",
+    },
+    {
+        "context": "なぜ起きるかを説明してほしい",
+        "text": "この結果の仕組みは、どうしてなのか",
+        "span": "入力が変わるからだ。",
+        "attended_term": "仕組み",
+    },
+    {
+        "context": "具体例を出してほしい",
+        "text": "もう少し具体的に言うと、例えば",
+        "span": "三段階で進める。",
+        "attended_term": "具体",
+    },
+    {
+        "context": "依存関係を確認したい",
+        "text": "これは何に依存しているのか、前提は",
+        "span": "環境設定次第だ。",
+        "attended_term": "前提",
+    },
 ]
 
 OP_LEAK_WORDS = (
@@ -174,7 +198,7 @@ def main() -> int:
     rng = random.Random(0)
     cases = list(CASES)
     rng.shuffle(cases)
-    split = max(2, len(cases) // 4)
+    split = max(4, len(cases) // 3)  # 12 cases -> 4 held-out, 8 train
     train, test = cases[split:], cases[:split]
     train_ex = [to_example(c) for c in train]
     test_ex = [to_example(c) for c in test]

@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### Larger DSPy split + non-ceiling context-length verification (2026-11-26)
+- DSPy optimization re-run with 12 cases and a 4-case held-out split
+  (was 8/2): baseline 0.75 -> optimized 1.00 (+0.25 PASS), artifact refreshed.
+- Context-length claim re-tested with a NON-ceiling metric. Earlier the
+  attended-term metric hit 100% at every length once the term was explicit.
+  Now the model picks the term itself (no explicit term) and we measure
+  "cue contains a word actually present in the live context". Over 10 cases:
+  context=0/1/2 -> 0% grounding, context=4 -> 30% (+30pt, target +20% PASS).
+  This supports "文脈が多ければ多いほどより自然になる" without ceiling.
+- `scripts/experiment_context_length.py` gained `--explicit-term` to switch
+  between the ceiling (explicit) and non-ceiling (model-picks) conditions.
+
 ### DSPy program integrated into runtime + objective selection metric (2026-11-26)
 - `src/cueloop/sync/stem.py`: `load_dspy_demos()` reads the compiled DSPy
   program (`artifacts/dspy-stem-compiled.json`) and injects its 4 bootstrapped

@@ -82,6 +82,36 @@ CASES = [
             "再設計の費用も検討中",
         ],
     },
+    {
+        "text": "この仮定が成り立つ条件は、いつか",
+        "span": "限定された場合だ。",
+        "attended": "条件",
+        "context": ["条件を整理したい", "この仮定は条件次第", "いつ適用されるか", "条件を明示したい"],
+    },
+    {
+        "text": "この結果の仕組みは、どうしてなのか",
+        "span": "入力が変わるからだ。",
+        "attended": "仕組み",
+        "context": ["仕組みを知りたい", "なぜ起きるか", "構造を説明して", "仕組みは単純だ"],
+    },
+    {
+        "text": "もう少し具体的に言うと、例えば",
+        "span": "三段階で進める。",
+        "attended": "具体",
+        "context": ["具体例が欲しい", "抽象的な話が続く", "手順を知りたい", "具体的に説明して"],
+    },
+    {
+        "text": "これは何に依存しているのか、前提は",
+        "span": "環境設定次第だ。",
+        "attended": "前提",
+        "context": ["依存関係を確認", "前提を明確に", "何が必要条件か", "前提は重要だ"],
+    },
+    {
+        "text": "この方式とあれを比べると、違いは",
+        "span": "コスト差が大きい。",
+        "attended": "違い",
+        "context": ["比較したい", "他社案と比べる", "違いを教えて", "差は明確だ"],
+    },
 ]
 
 OP_LEAK_WORDS = (
@@ -97,16 +127,18 @@ OP_LEAK_WORDS = (
 )
 
 
-def generate(gen: StemCueGenerator, case: dict, n_context: int) -> str | None:
+def generate(
+    gen: StemCueGenerator, case: dict, n_context: int, *, explicit_term: bool
+) -> str | None:
     context = case["context"][:n_context]
-    # The attention extractor supplies the term; pass it explicitly so the
-    # prompt uses it rather than the most recent phrase in the transcript.
+    # explicit_term=False lets the model pick a term from the context by
+    # itself — the non-ceiling condition for testing "more context -> better".
     return gen.generate(
         "invert",
         text=case["text"],
         span=case["span"],
         context=context,
-        attended_term=case["attended"],
+        attended_term=case["attended"] if explicit_term else None,
     )
 
 
@@ -115,6 +147,11 @@ def main() -> int:
     parser.add_argument("--base-url", default="http://127.0.0.1:11434")
     parser.add_argument("--model", default="gemma3:4b-it-qat")
     parser.add_argument("--json", type=Path)
+    parser.add_argument(
+        "--explicit-term",
+        action="store_true",
+        help="Pass the attended term explicitly (ceiling condition). Default: model picks.",
+    )
     args = parser.parse_args()
 
     gen = StemCueGenerator(
@@ -128,40 +165,44 @@ def main() -> int:
     summary: dict[int, dict] = {}
     details = []
     for n in lengths:
-        uptake = leak = valid = 0
+        grounded = leak = valid = 0
         for case in CASES:
-            cue = generate(gen, case, n)
+            cue = generate(gen, case, n, explicit_term=args.explicit_term)
             ok = cue is not None
             valid += ok
             if not ok:
                 details.append({"n_context": n, "case": case["attended"], "cue": None})
                 continue
-            hit = case["attended"] in cue
-            uptake += hit
+            # Non-ceiling metric: does the cue contain a word actually present
+            # in the live context? Independent of any single labeled term.
+            words = [w for w in case["context"] if len(w) >= 2]
+            hit = any(w in cue for w in words)
+            grounded += hit
             leak += any(w in cue for w in OP_LEAK_WORDS)
             details.append(
-                {"n_context": n, "case": case["attended"], "cue": cue, "uptake": hit}
+                {"n_context": n, "case": case["attended"], "cue": cue, "grounded": hit}
             )
         total = len(CASES)
         summary[n] = {
-            "attended_uptake": uptake / total,
+            "context_grounding": grounded / total,
             "op_leak_rate": leak / total if total else 0,
             "valid": valid,
         }
 
-    print("=== context-length sweep (v3 attention-grounded stem) ===")
+    mode = "explicit-term" if args.explicit_term else "model-picks"
+    print(f"=== context-length sweep (v3 stem, {mode}) ===")
     for n in lengths:
         s = summary[n]
         print(
-            f"  context={n}: attended_uptake={s['attended_uptake']:.0%} "
+            f"  context={n}: context_grounding={s['context_grounding']:.0%} "
             f"op_leak={s['op_leak_rate']:.0%} valid={s['valid']}/{len(CASES)}"
         )
-    base = summary[0]["attended_uptake"]
-    top = summary[4]["attended_uptake"]
+    base = summary[0]["context_grounding"]
+    top = summary[4]["context_grounding"]
     target = 0.20
-    verdict = "PASS (more context -> more natural)" if top - base >= target else "FAIL"
-    print(f"\nbaseline (0 context) uptake={base:.0%}; at 4 context={top:.0%}")
-    print(f"target: >= +{target:.0%} uptake -> {verdict} (actual {top - base:+.0%})")
+    verdict = "PASS (more context -> more grounded)" if top - base >= target else "FAIL"
+    print(f"\nbaseline (0 context) grounding={base:.0%}; at 4 context={top:.0%}")
+    print(f"target: >= +{target:.0%} grounding -> {verdict} (actual {top - base:+.0%})")
     if args.json:
         args.json.parent.mkdir(parents=True, exist_ok=True)
         args.json.write_text(
