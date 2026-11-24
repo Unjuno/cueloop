@@ -74,7 +74,17 @@ CASES = [
 ]
 
 # Operation words that the baseline prompt tends to force into the cue.
-OP_LEAK_WORDS = ("逆に", "逆は", "根拠は", "具体は", "例えば", "仕組みは", "なぜなら", "つまり", "結論は")
+OP_LEAK_WORDS = (
+    "逆に",
+    "逆は",
+    "根拠は",
+    "具体は",
+    "例えば",
+    "仕組みは",
+    "なぜなら",
+    "つまり",
+    "結論は",
+)
 
 
 def build_attention_messages(
