@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+### Attention-grounded cue SELECTION (2026-11-25) — the missing core
+- The user's keynote: the cue word should not be a fixed "逆は"-style label;
+  it should engage the term the model is attending to ("選定する必要がある";
+  "今の方式では影響を与えられない"). D5 / DS-Pi was not found anywhere in
+  the repo or home dir, so implemented the described behavior directly.
+- Added `src/cueloop/sync/attention.py`: `AttentionTermExtractor` asks the
+  local LLM only for the attended term (never for an operation), verifies it
+  is grounded in the live context, and `operation_for_term()` maps the term
+  to an operation via the existing deterministic vocabulary. Reproducible.
+- `RuleDecisionModel` gained `attention_extractor`; at a boundary it prefers
+  the operation implied by the attended term, with a safe fallback to the
+  rule ordering when the term is out-of-vocabulary or already covered.
+  CLI flag `--attention-select` wires it up.
+- A/B (`scripts/experiment_attention_selection.py`, gemma3:4b, 5 cases,
+  no mic): baseline rule selection 0/5 (0%) -> attention-grounded 3/5 (60%).
+- The 2 remaining cases had out-of-vocabulary terms (コスト/方式); stem v3
+  still produced context-grounded cues (e.g. "コストの削減効果が、より大きな
+  メリットを生むだろう。"). `_resolve_stem_cue` now injects the extracted
+  term at the head of context so the v3 prompt lands on that term.
+- Tests: `tests/test_attention.py` (3) added; 78 focused tests pass.
+
 ### Prompt tuning: attention-grounded stem cues (2026-11-25)
 - User asked for prompt improvement ("D5 / DS-Pi" name not found in repo),
   specifically: the cue word should not be a fixed "逆は？"-style label; it

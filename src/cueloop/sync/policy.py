@@ -557,6 +557,7 @@ class RuleDecisionModel:
         fatigue_penalty: float = 2.0,
         operation_weights: Mapping[str, float] | None = None,
         min_operation_weight: float = 0.0,
+        attention_extractor: object | None = None,
     ) -> None:
         if not 0.0 <= min_confidence <= 1.0:
             raise ValueError("min_confidence must be between 0 and 1")
@@ -580,6 +581,8 @@ class RuleDecisionModel:
         self.fatigue_penalty = fatigue_penalty
         self.operation_weights = dict(operation_weights or {})
         self.min_operation_weight = min_operation_weight
+        self.attention_extractor = attention_extractor
+        self._attention_term: str | None = None
         self._chosen_counts: Counter[str] = Counter()
         self.stem_generator = stem_generator
         self.stem_max_characters = stem_max_characters
@@ -646,6 +649,29 @@ class RuleDecisionModel:
         ]
         if not missing:
             return None
+
+        # Attention-grounded selection: ask the extractor for the term the
+        # speaker is circling, map it to an operation via the deterministic
+        # vocabulary, and prefer that operation. If the term is absent from
+        # the vocabulary or already covered, keep the rule ordering (safe
+        # fallback — an LLM never gets to invent an operation here).
+        self._attention_term = None
+        attention_choice = None
+        if self.attention_extractor is not None:
+            try:
+                term = self.attention_extractor.extract(
+                    text=state.text, context=state.context, span=prediction.span
+                )
+            except Exception:  # noqa: BLE001 - extractor must never break a session
+                term = None
+            if term:
+                self._attention_term = term
+                from .attention import operation_for_term
+
+                candidate = operation_for_term(term)
+                if candidate in missing:
+                    attention_choice = candidate
+
         context_fit = False
         if self.context_fit:
             # No tagged signal anywhere: an operation choice would be noise.
@@ -660,7 +686,7 @@ class RuleDecisionModel:
             if ranked:
                 missing = list(ranked)
             context_fit = True
-        requested_operation = self._choose_with_fatigue(missing)
+        requested_operation = attention_choice or self._choose_with_fatigue(missing)
         if self.cue_style == "stem":
             cue = _resolve_stem_cue(
                 self.stem_generator,
@@ -668,6 +694,7 @@ class RuleDecisionModel:
                 requested_operation,
                 max_characters=self.stem_max_characters,
                 assigner=self.assigner,
+                attended_term=self._attention_term,
             )
             operation = requested_operation
         else:
@@ -687,6 +714,11 @@ class RuleDecisionModel:
                 f"next span omits {requested_operation}; insert the cue before "
                 f"the next clause is produced"
                 + (" (context-fit)" if context_fit else "")
+                + (
+                    f" (attention-term={self._attention_term})"
+                    if attention_choice
+                    else ""
+                )
             ),
             confidence=prediction.confidence,
             scheduled_at_ms=scheduled_at,
@@ -837,6 +869,7 @@ class LinearDecisionModel:
                 requested_operation,
                 max_characters=self.stem_max_characters,
                 assigner=self.assigner,
+                attended_term=self._attention_term,
             )
             operation = requested_operation
         else:
@@ -998,15 +1031,21 @@ def _resolve_stem_cue(
     *,
     max_characters: int,
     assigner: CueAssigner,
+    attended_term: str | None = None,
 ) -> str:
     """LLM-written stem → predicted-span template stem → bare wording."""
     span = state.prediction.span if state.prediction is not None else ""
     if generator is not None:
+        context = list(state.context)
+        # Put the attention-grounded term first so the v3 prompt ("pick the
+        # term you are circling") lands on the extracted term deterministically.
+        if attended_term:
+            context.insert(0, attended_term)
         sentence = generator.generate(
             operation,
             text=state.text,
             span=span,
-            context=state.context,
+            context=context,
         )
         if sentence:
             return sentence

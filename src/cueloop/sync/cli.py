@@ -10,6 +10,7 @@ import time
 from collections.abc import Iterable
 from pathlib import Path
 
+from .attention import AttentionTermExtractor
 from .evaluate import summarize
 from .models import SyncEvent
 from .policy import (
@@ -165,6 +166,14 @@ def build_parser() -> argparse.ArgumentParser:
         type=float,
         default=0.0,
         help="Suppress operations whose learned adoption weight is below this floor.",
+    )
+    parser.add_argument(
+        "--attention-select",
+        action="store_true",
+        help=(
+            "Select the cue operation from the term the local model is attending "
+            "to (mapped via the vocabulary), instead of the fixed rule priority."
+        ),
     )
     parser.add_argument(
         "--pause-ms", type=int, default=350, help="Pause that marks a clause boundary."
@@ -479,7 +488,15 @@ def main(argv: list[str] | None = None) -> int:
                 operation_weights = json.loads(args.operation_weights)
                 if not isinstance(operation_weights, dict):
                     raise ValueError("--operation-weights must be a JSON object")
+            attention_extractor = None
+            if args.attention_select:
+                attention_extractor = AttentionTermExtractor(
+                    base_url=args.base_url,
+                    model=args.model,
+                    timeout=max(args.request_timeout, 2.0),
+                )
             rule_kwargs = {
+                "attention_extractor": attention_extractor,
                 "min_confidence": args.min_confidence,
                 "max_characters": args.max_cue_characters,
                 "delivery_window_ms": args.delivery_window_ms,
