@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+### DSPy prompt optimization (2026-11-25) — the user's "dspy/DS-Pi" reference
+- User clarified the earlier "D5/DS-Pi" name was **DSPy** (prompt optimization
+  framework). Installed `dspy` 3.5.0 into the venv (optional, not a runtime dep).
+- Added `scripts/dspy_optimize_stem.py`: declares a `StemCueSignature`
+  (context/text/span/attended_term -> cue), a metric (attended-term presence
+  0.5 + no op-word leak 0.25 + single sentence 0.25), and compiles a
+  `BootstrapFewShot` optimizer on 8 labeled cases with a held-out split.
+- **Baseline (zero-shot) 0.75 -> optimized 1.00 on held-out**, target +0.20
+  met (+0.25 PASS). Compiled program saved to `artifacts/dspy-stem-compiled.json`
+  with 4 bootstrapped demos; all demos follow "lead with the attended term in
+  a natural one-sentence cue" — consistent with the v3 prompt + explicit
+  attention term already in `stem.py`.
+- Ollama must be configured as `openai/gemma3:4b-it-qat` with
+  `api_base=http://127.0.0.1:11434/v1` (the `ollama_chat/` route 404s here).
+
 ### Context-length sweep and explicit attention term (2026-11-26)
 - Added `scripts/experiment_context_length.py` to test the user's claim
   "文脈が多ければ多いほどより自然になる" across 0/1/2/4 context turns on the
