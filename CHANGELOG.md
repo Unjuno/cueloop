@@ -45,6 +45,15 @@
   highest-adoption ops. Fix planned: normalize/dampen the rank bonus so
   weights can dominate. Analysis only — no behavior change in this commit.
 
+### CI: macos-adapter moved to manual dispatch (2026-11-25)
+- Run 45418637065 proved `continue-on-error: true` does NOT suppress a
+  `timeout-minutes` cancel: both unit jobs were success, macos-adapter was
+  cancelled at 16m while queued, yet run conclusion=failure. Fix: the
+  macos-adapter job now runs only on `workflow_dispatch` (`if:` guard),
+  and push/PR CI runs just the unit job (lint/tests/replay/wheel). The
+  adapter compile is still available on demand. A `workflow_dispatch`
+  trigger was added. Raised timeout to 45 as a secondary measure.
+
 ### CI: macos-adapter no longer blocks main on infra cancels (2026-11-23)
 - Run 45195738266 had both unit jobs green but `macos-adapter` was CANCELLED
   at the 15-min infra cap while still queued (zero steps executed). This is

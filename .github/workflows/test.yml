@@ -4,6 +4,10 @@ on:
   pull_request:
   push:
     branches: [main]
+  # The macOS adapter compile is flaky on shared ARM runners (queued jobs get
+  # cancelled at the infra cap). Run it on demand instead of every push; the
+  # unit job already covers lint/tests/replay/wheel on every PR and push.
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -38,6 +42,9 @@ jobs:
         run: python -m pip wheel --no-deps . --wheel-dir /tmp/wheels
 
   macos-adapter:
+    # Only on explicit manual dispatch; push/PR CI must stay green regardless
+    # of macOS ARM runner capacity (see run 45418637065).
+    if: github.event_name == 'workflow_dispatch'
     runs-on: macos-latest
     # macOS ARM runners are frequently capacity-constrained and this job has
     # been cancelled at the 15-min infra cap while still QUEUED (no steps ran,
@@ -45,7 +52,10 @@ jobs:
     # unit job already covers lint/tests/replay/wheel, so treat this as a
     # best-effort extra check: an infra cancel must not turn main red.
     continue-on-error: true
-    timeout-minutes: 25
+    # Note: `continue-on-error` does NOT suppress a `timeout-minutes` cancel
+    # (run 45418637065 was still failure with the macos-adapter job cancelled
+    # at 16m while QUEUED). Raise the cap so a slow runner can still start.
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v5
       - name: Compile macOS microphone adapter
