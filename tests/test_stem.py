@@ -18,6 +18,7 @@ from cueloop.sync.stem import (
     StemCueGenerator,
     build_stem_messages,
     finalize_stem,
+    load_dspy_demos,
     render_stem_template,
 )
 from cueloop.sync.vocabulary import tag_operations
@@ -339,6 +340,27 @@ class StemCliTests(unittest.TestCase):
             ["--events", "x.jsonl", "--cue-style", "bare"]
         )
         self.assertEqual(args.cue_style, "bare")
+
+    def test_dspy_demos_load_and_enter_prompt(self) -> None:
+        demos = load_dspy_demos()
+        # Artifact is present in the repo, so demos should load.
+        self.assertGreaterEqual(len(demos), 1)
+        self.assertTrue(
+            all(isinstance(t, str) and isinstance(c, str) for t, c in demos)
+        )
+        _system, user = build_stem_messages(
+            "invert",
+            text="テスト",
+            span="続き",
+            context=[],
+            attended_term="前提",
+            dspy_demos=demos,
+        )
+        self.assertIn("良い例", user)
+        self.assertIn("注目すべき語", user)
+
+    def test_missing_dspy_artifact_is_safe(self) -> None:
+        self.assertEqual(load_dspy_demos("/nonexistent/file.json"), [])
 
     def test_prompt_is_attention_grounded_not_operation_forced(self) -> None:
         # The stem prompt must not tell the model which operation to perform

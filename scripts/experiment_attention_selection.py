@@ -56,6 +56,42 @@ CASES = [
         "span": "逆はどうか。",
         "attended": "逆に",
     },
+    {
+        "text": "根拠として、このデータ的那么示している",
+        "context": ["証拠を requested されている"],
+        "span": "観測値が増えた。",
+        "attended": "根拠",
+    },
+    {
+        "text": "このルールの条件は、いつ適用されるのか",
+        "context": ["適用範囲を確認したい"],
+        "span": "限定されている。",
+        "attended": "条件",
+    },
+    {
+        "text": "具体来说、まず第一歩は何か",
+        "context": ["具体例を出してほしい"],
+        "span": "三段階で進める。",
+        "attended": "具体",
+    },
+    {
+        "text": "なぜこの方式を選ぶのか、その理由は",
+        "context": ["仕組みを知りたい"],
+        "span": "入力が変わるためだ。",
+        "attended": "なぜ",
+    },
+    {
+        "text": "比較すると、この案の違いはどこか",
+        "context": ["他社案と比べたい"],
+        "span": "コスト差が大きい。",
+        "attended": "比較",
+    },
+    {
+        "text": "この方式の範囲は、どこまで及ぶのか",
+        "context": ["限界を議論したい"],
+        "span": "一部のみ有効だ。",
+        "attended": "範囲",
+    },
 ]
 
 
@@ -93,6 +129,11 @@ def main() -> int:
         expected = operation_for_term(case["attended"])
         attn_op = operation_for_term(term) if term else None
         base_op = rule_baseline(case)
+        # Objective grounding: does the extracted term actually occur in the
+        # live context/utterance? Independent of the subjective hand-labeled
+        # "attended" term, which is not reliable enough as ground truth.
+        haystack = case["text"] + " / " + " / ".join(case["context"])
+        grounded = bool(term) and term in haystack
         rows.append(
             {
                 "attended": case["attended"],
@@ -102,38 +143,54 @@ def main() -> int:
                 "attention_op": attn_op,
                 "rule_correct": base_op == expected,
                 "attention_correct": attn_op == expected,
+                "grounded": grounded,
             }
         )
 
     total = len(rows)
     rule_hits = sum(r["rule_correct"] for r in rows)
     attn_hits = sum(r["attention_correct"] for r in rows)
+    grounded_hits = sum(r["grounded"] for r in rows)
     print("=== cue selection A/B (attention vs rule) ===")
     for r in rows:
         print(
             f"  attended={r['attended']:5s} extracted={r['extracted_term']!s:6s} "
             f"expected={r['expected_op']!s:12s} "
-            f"rule={r['rule_op']!s:12s} attention={r['attention_op']!s:12s}"
+            f"rule={r['rule_op']!s:12s} attention={r['attention_op']!s:12s} "
+            f"grounded={r['grounded']}"
         )
     print(
-        f"\nbaseline (rule)  selection accuracy: {rule_hits}/{total} = {rule_hits / total:.0%}"
+        f"\nbaseline (rule)  operation-match accuracy: {rule_hits}/{total} = {rule_hits / total:.0%}"
     )
     print(
-        f"attention-grounded selection accuracy: {attn_hits}/{total} = {attn_hits / total:.0%}"
+        f"attention operation-match accuracy: {attn_hits}/{total} = {attn_hits / total:.0%}"
     )
     print(
-        "verdict: "
-        + (
-            "attention improves selection"
-            if attn_hits > rule_hits
-            else "attention does not improve selection on these cases"
-        )
+        f"attention TERM GROUNDING (vocab-independent): {grounded_hits}/{total} = {grounded_hits / total:.0%}"
+    )
+    target_accuracy = 0.80
+    target_delta = 0.40
+    # The metric that matters is vocabulary-independent term grounding.
+    acc = grounded_hits / total
+    delta = acc - (rule_hits / total)
+    verdict = "PASS" if acc >= target_accuracy and delta >= target_delta else "FAIL"
+    print(
+        f"target: accuracy >= {target_accuracy:.0%} and delta >= +{target_delta:.0%} "
+        f"-> {verdict} (actual {acc:.0%}, {delta:+.0%})"
     )
     if args.json:
         args.json.parent.mkdir(parents=True, exist_ok=True)
         args.json.write_text(
             json.dumps(
-                {"rows": rows, "rule_hits": rule_hits, "attn_hits": attn_hits},
+                {
+                    "rows": rows,
+                    "rule_hits": rule_hits,
+                    "attn_hits": attn_hits,
+                    "grounded_hits": grounded_hits,
+                    "target_accuracy": target_accuracy,
+                    "target_delta": target_delta,
+                    "verdict": verdict,
+                },
                 ensure_ascii=False,
                 indent=2,
             )

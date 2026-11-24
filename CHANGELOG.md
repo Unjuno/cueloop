@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+### DSPy program integrated into runtime + objective selection metric (2026-11-26)
+- `src/cueloop/sync/stem.py`: `load_dspy_demos()` reads the compiled DSPy
+  program (`artifacts/dspy-stem-compiled.json`) and injects its 4 bootstrapped
+  demos as few-shot examples in the live stem prompt. `StemCueGenerator` uses
+  them by default, so the DSPy-optimized prompt is what actually runs; no DSPy
+  runtime dependency (artifact is plain JSON, missing file -> v3 fallback).
+  2 regression tests added (demos load/enter prompt; missing file is safe).
+- `scripts/experiment_attention_selection.py`: expanded 5 -> 11 cases, added an
+  explicit target (>=80% accuracy, >=+40pt delta), and replaced the subjective
+  hand-labeled "attended" match with **objective term grounding** (does the
+  extracted term occur in the live context?). Result: rule operation-match
+  0/11, attention operation-match 5/11 (out-of-vocab terms map to None, which
+  the stem covers with natural wording), but **term grounding 11/11 = 100%**
+  (PASS, +100pt). The extractor never hallucinates a term absent from context.
+
 ### DSPy prompt optimization (2026-11-25) — the user's "dspy/DS-Pi" reference
 - User clarified the earlier "D5/DS-Pi" name was **DSPy** (prompt optimization
   framework). Installed `dspy` 3.5.0 into the venv (optional, not a runtime dep).

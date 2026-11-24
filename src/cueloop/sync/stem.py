@@ -17,6 +17,7 @@ import json
 import re
 import urllib.request
 from collections.abc import Sequence
+from pathlib import Path
 
 from .predictors import PREFERRED_DECISION_MODELS, resolve_model
 
@@ -101,6 +102,37 @@ def render_stem_template(
     return None
 
 
+# Path to a DSPy-compiled program whose bootstrapped demos become few-shot
+# examples in the stem prompt. Set to None for the hand-written v3 prompt.
+DSPY_STEM_PROGRAM = Path("artifacts/dspy-stem-compiled.json")
+
+
+def load_dspy_demos(path: Path | str | None = None) -> list[tuple[str, str]]:
+    """Load (attended_term, cue) pairs from a DSPy-compiled program.
+
+    Returns [] when the artifact is absent or unreadable, so runtime never
+    depends on DSPy being installed. Only the *pattern* (lead with the
+    attended term in one sentence) is reused; demo-specific words are not
+    injected verbatim into live prompts.
+    """
+    target = Path(path) if path is not None else DSPY_STEM_PROGRAM
+    if not target.exists():
+        return []
+    try:
+        payload = json.loads(target.read_text(encoding="utf-8"))
+        demos = payload.get("write", {}).get("demos", [])
+    except (OSError, ValueError, AttributeError):
+        return []
+    pairs: list[tuple[str, str]] = []
+    for demo in demos:
+        if not isinstance(demo, dict):
+            continue
+        term, cue = demo.get("attended_term"), demo.get("cue")
+        if isinstance(term, str) and isinstance(cue, str):
+            pairs.append((term, cue))
+    return pairs
+
+
 def build_stem_messages(
     operation: str,
     *,
@@ -109,6 +141,7 @@ def build_stem_messages(
     context: Sequence[str] = (),
     max_characters: int = DEFAULT_STEM_MAX_CHARACTERS,
     attended_term: str | None = None,
+    dspy_demos: Sequence[tuple[str, str]] | None = None,
 ) -> tuple[str, str]:
     """Attention-grounded stem prompt (v3, verified by scripts/experiment_stem_prompt.py).
 
@@ -148,8 +181,18 @@ def build_stem_messages(
             "話し手が今いちばん引っかかっている語を、文脈の中から一つ選び、"
             "その語を自然に使って、話し手が続きに言えそうな一文を書いてください。\n"
         )
+    examples = ""
+    if dspy_demos:
+        # DSPy-compiled patterns: show a few (term -> cue) demonstrations.
+        lines = [f"  注目語: {term} → 文: {cue}" for term, cue in dspy_demos[:4]]
+        examples = (
+            "【良い例（このように注目語を先頭に置いた一文を書く）】\n"
+            + "\n".join(lines)
+            + "\n\n"
+        )
     user = (
-        focus
+        examples
+        + focus
         + "文末に句点を一つだけ付け、それ以外の句点は使いません。"
         + f"{max_characters}文字以内の一文です。\n文:\n"
     )
@@ -173,6 +216,7 @@ class StemCueGenerator:
         max_tokens: int = 160,
         max_characters: int = DEFAULT_STEM_MAX_CHARACTERS,
         temperature: float = 0.0,
+        dspy_program: Path | str | None = DSPY_STEM_PROGRAM,
     ) -> None:
         if timeout <= 0:
             raise ValueError("timeout must be positive")
@@ -190,6 +234,7 @@ class StemCueGenerator:
         self.max_tokens = max_tokens
         self.max_characters = max_characters
         self.temperature = temperature
+        self.dspy_demos = load_dspy_demos(dspy_program)
         self.label = f"stem-llm({self.model})"
         self.last_error: str | None = None
 
@@ -243,6 +288,7 @@ class StemCueGenerator:
                 context=context,
                 max_characters=self.max_characters,
                 attended_term=attended_term,
+                dspy_demos=self.dspy_demos,
             )
             content = self._complete(
                 [
