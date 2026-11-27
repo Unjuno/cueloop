@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### Real-mic head-to-head: alternate WINS on actual microphone (2026-11-28)
+- With BlackHole loopback working, ran paired CUE/SILENCE A/B on the real
+  microphone path (local LLM monologue -> say -> BlackHole -> SFSpeechRecognizer)
+  under tuned latency (50ms / tol10), 2200-char monologues, 180 s arms.
+- alternate (n=10): uptake +0.112 CI [+0.049,+0.179], carryover +0.353,
+  novel_uptake +0.110, novel_carryover +0.349.
+- canonical (n=8): uptake +0.065 CI [+0.026,+0.115], carryover +0.327,
+  novel_uptake +0.064, novel_carryover +0.317.
+- alternate beats canonical on ALL metrics on the REAL mic, confirming the
+  text-feed win transfers. The promote is now FINAL (no longer provisional).
+- `scripts/compare_realmic.py` added for the head-to-head.
+
 ### BlackHole installed + real-mic H1 SUPPORTED (2026-11-28)
 - User approved the admin dialog; `installer -pkg /tmp/BlackHole2ch-0.7.1.pkg
   -target /` succeeded (BlackHole2ch.driver). `killall coreaudiod` (admin)
