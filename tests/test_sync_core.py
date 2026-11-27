@@ -170,6 +170,16 @@ class SynchronizerTests(unittest.TestCase):
         self.assertFalse(sync.diverged)
         self.assertEqual(sync.prediction_match, 3)
 
+    def test_divergence_tolerance_keeps_small_mismatches(self) -> None:
+        text = "この設計は前提を分ける。"
+        for tolerance, expected in ((0, True), (10, False)):
+            sync = Synchronizer(divergence_tolerance=tolerance)
+            sync.start(utterance_id="u1", at_ms=0)
+            sync.observe(text, now_ms=800)
+            sync.set_prediction(_prediction("だから結論は決まる。", base_length=len(text)))
+            sync.observe(text + "逆に考える", now_ms=1_000)
+            self.assertEqual(sync.diverged, expected, f"tolerance={tolerance}")
+
     def test_longest_common_prefix(self) -> None:
         self.assertEqual(longest_common_prefix("abcdef", "abcxyz"), 3)
         self.assertEqual(longest_common_prefix("", "abc"), 0)

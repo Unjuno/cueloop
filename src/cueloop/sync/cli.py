@@ -179,6 +179,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--pause-ms", type=int, default=350, help="Pause that marks a clause boundary."
     )
     parser.add_argument(
+        "--divergence-tolerance",
+        type=int,
+        default=0,
+        help="Characters of prediction mismatch tolerated before cancelling a cue.",
+    )
+    parser.add_argument(
         "--early-lead-ms",
         type=int,
         default=0,
@@ -576,6 +582,7 @@ def main(argv: list[str] | None = None) -> int:
             outcome_window_ms=args.outcome_window_ms,
             replan_on_divergence=args.replan_on_divergence,
             min_replan_interval_ms=args.min_replan_interval_ms,
+            divergence_tolerance=args.divergence_tolerance,
             condition=args.condition_label,
             assignment=args.assignment,
             seed=args.seed,

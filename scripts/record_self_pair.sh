@@ -66,6 +66,14 @@ if [ "${CUELOOP_ATTENTION_SELECT:-0}" = "1" ]; then
   GATE_ARGS+=(--attention-select)
   echo "    attention-grounded cue selection: ON"
 fi
+if [ -n "${CUELOOP_INSERTION_DELAY_MS:-}" ]; then
+  GATE_ARGS+=(--insertion-delay-ms "$CUELOOP_INSERTION_DELAY_MS")
+  echo "    insertion delay: ${CUELOOP_INSERTION_DELAY_MS}ms"
+fi
+if [ -n "${CUELOOP_DIVERGENCE_TOLERANCE:-}" ]; then
+  GATE_ARGS+=(--divergence-tolerance "$CUELOOP_DIVERGENCE_TOLERANCE")
+  echo "    divergence tolerance: ${CUELOOP_DIVERGENCE_TOLERANCE} chars"
+fi
 STAMP="$(date +%Y%m%d-%H%M%S)"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"

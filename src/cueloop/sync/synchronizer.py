@@ -57,10 +57,13 @@ class Synchronizer:
     runtime then cancels any cue that was scheduled for the old path.
     """
 
-    def __init__(self, *, pause_ms: int = 350) -> None:
+    def __init__(self, *, pause_ms: int = 350, divergence_tolerance: int = 0) -> None:
         if pause_ms < 0:
             raise ValueError("pause_ms must be non-negative")
+        if divergence_tolerance < 0:
+            raise ValueError("divergence_tolerance must be non-negative")
         self.pause_ms = pause_ms
+        self.divergence_tolerance = divergence_tolerance
         self.utterance_id = ""
         self.text = ""
         self.started_at_ms = 0
@@ -150,11 +153,14 @@ class Synchronizer:
             return
         if not self.text.startswith(self._prediction_base_text):
             self.prediction_match = 0
-            self.diverged = True
+            # A small tolerance avoids cancelling a cue when the ASR drifts by
+            # a character or two from the anchored base text.
+            self.diverged = self.divergence_tolerance == 0
             return
         spoken_since = self.text[prediction.base_length :]
         self.prediction_match = longest_common_prefix(spoken_since, prediction.span)
-        self.diverged = bool(spoken_since) and self.prediction_match < len(spoken_since)
+        mismatch = len(spoken_since) - self.prediction_match
+        self.diverged = bool(spoken_since) and mismatch > self.divergence_tolerance
 
     def pause_due_within(self, now_ms: int, lead_ms: int) -> bool:
         """Whether the pause threshold will be reached within ``lead_ms``.

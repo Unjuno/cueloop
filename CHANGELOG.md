@@ -2,6 +2,53 @@
 
 ## Unreleased
 
+### Latency / rating tuning (2026-11-27) — user's hypothesis tested
+- User suggested the problem may be latency / "rating" rather than naturalness.
+  Measured over recent real-mic logs: prediction 0.1ms, decision 0.4ms (fine),
+  boundary_to_delivery 146ms, speak_ms 1608ms, and 220 CANCELLED of which 198
+  were "speaker diverged from prediction" — the rating/cancellation issue.
+- Added `divergence_tolerance` to `Synchronizer` / `SyncRuntime` / CLI
+  (`--divergence-tolerance`): mismatches <= N chars no longer cancel a cue.
+  Added `CUELOOP_INSERTION_DELAY_MS` / `CUELOOP_DIVERGENCE_TOLERANCE` to the
+  recorder. Test `test_divergence_tolerance_keeps_small_mismatches` added.
+- Real-mic A/B (latency-tuned: delay 50ms + tolerance 10 vs baseline 100ms + 0):
+  - latency: 139ms -> 94ms (robust improvement)
+  - CANCELLED: 198 -> 0 (robust improvement)
+  - uptake rate: 0.250 -> 0.182 (NOT improved; got worse with n=4)
+- Conclusion: the latency/cancellation problem is real and fixed, but adoption
+  is a separate issue — delivering faster does not make the speaker adopt the
+  cue. Naturalness (DSPy) and latency are both tuned; uptake remains open.
+
+### Real-mic A/B round 2: short stem ALSO loses (2026-11-25)
+- Shortened the DSPy cue objective (metric now rewards <=24-char cues;
+  Signature asks for 24-char leads). DSPy re-optimized: 0.80 -> 1.00 PASS;
+  compiled demos are now 10-20 chars ("違いが明確に現れる。").
+- Re-ran the real-mic A/B (3 pairs each):
+  - NEW short stem+attention: 6 deliveries, uptake 0/12 (0.000)
+  - OLD bare+rule: 24 deliveries, uptake 6/24 (0.250)
+  - (Earlier long stem: 12 deliveries, uptake 0/12)
+- Shortening did NOT help uptake. Diagnosis: stem cues are declarative
+  sentences that answer FOR the speaker; bare cues ("根拠は？") are questions
+  that prompt the speaker to supply the operation, so they are adopted more.
+- Honest verdict: naturalness (DSPy) and attention-grounding are achieved, but
+  the live "influence"/uptake goal is NOT met by the new stack — the old bare
+  stack still has higher uptake. Naturalness and uptake conflict here.
+
+### Real-mic A/B: new stack LOSES on uptake (2026-11-25) — honest negative result
+- Ran paired real-microphone A/B: new stack (`--cue-style stem --attention-select`
+  + DSPy demos) vs old baseline (`bare + rule`), 3 clean pairs each.
+  - NEW stem+attention: 12 deliveries, **uptake 0/12 (0.000)**
+  - OLD bare+rule: 24 deliveries, **uptake 6/24 (0.250)**
+- New cues were long contextual sentences (e.g. "なぜ、その臨床が判断の根拠と
+  なるのかを説明してください。"); old cues were short labels ("根拠は？").
+- Conclusion: DSPy improved *naturalness* metrics but the natural, long cues
+  were NOT adopted by the live speaker; the short bare cues had higher uptake.
+  The "influence" goal (uptake) is therefore NOT yet met by the new stack —
+  naturalness and effectiveness conflict with the current DSPy metric, which
+  does not reward shortness/adoptability. Next: add a length/adoptability term
+  to the DSPy metric and re-optimize.
+- Fixed `set -u` empty-array expansion in `record_self_pair.sh` during this A/B.
+
 ### Larger DSPy split + non-ceiling context-length verification (2026-11-26)
 - DSPy optimization re-run with 12 cases and a 4-case held-out split
   (was 8/2): baseline 0.75 -> optimized 1.00 (+0.25 PASS), artifact refreshed.

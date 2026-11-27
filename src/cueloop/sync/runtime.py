@@ -151,6 +151,7 @@ class SyncRuntime:
         silent: bool = False,
         max_context_turns: int = 6,
         max_context_characters: int = 1_200,
+        divergence_tolerance: int = 0,
     ) -> None:
         if cooldown_ms < 0:
             raise ValueError("cooldown_ms must be non-negative")
@@ -180,7 +181,9 @@ class SyncRuntime:
         self.silent = silent
         self.max_context_turns = max_context_turns
         self.max_context_characters = max_context_characters
-        self.synchronizer = Synchronizer(pause_ms=pause_ms)
+        self.synchronizer = Synchronizer(
+            pause_ms=pause_ms, divergence_tolerance=divergence_tolerance
+        )
         self.now_ms = 0
         self.speaking = False
         self.paused = False
