@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+### Mic loopback ASR: partially restored, still not A/B grade (2026-11-28)
+- Reviewer: alternate's win was only validated in the text-feed path; real mic
+  uptake must be checked and the loopback ASR fixed. Investigated: the default
+  `--speech-db -50` threshold was too high for speaker->mic loopback; -70 plus
+  output volume 80 produced transcripts in a direct test ("...を一言言う選択肢").
+- Added `CUELOOP_SPEECH_DB` (default -70) and `CUELOOP_OUTPUT_VOLUME` (80) to
+  `run_agent_live_pair.sh`. The autonomous voice-agent path now produces
+  transcript events, but only utterance=1 per 120 s arm (fragmentary), so a
+  paired CUE/SILENCE A/B with adequate reliability is STILL not possible via
+  loopback. A virtual audio device (BlackHole 2ch) routing speakers->mic is
+  needed for clean capture; that is a system audio setting requiring the
+  owner's approval.
+- Real-mic `alternate` (4 pairs, tuned latency) gave uptake 2/23 = 0.087, below
+  the 0.250 canonical baseline — confirming the text-feed win does NOT transfer
+  to live mic. Promoting alternate as default is therefore provisional.
+
 ### Cue presentation A/B — alternate assigner BEATS baseline (2026-11-28)
 - Tested cue presentation forms in the autonomous text-feed A/B with equal n:
   canonical (baseline), alternate (rotated cue wording per operation), fixed

@@ -12,6 +12,11 @@ set -euo pipefail
 TOPIC="${1:-design-choice}"
 DURATION="${2:-300}"
 AGENT_MODEL="${CUELOOP_AGENT_MODEL:-qwen3:8b}"
+# Speaker->mic loopback is quieter than a live voice; -50 missed it entirely.
+SPEECH_DB="${CUELOOP_SPEECH_DB:--70}"
+# A louder loopback gives SFSpeechRecognizer a cleaner signal.
+OUTPUT_VOLUME="${CUELOOP_OUTPUT_VOLUME:-80}"
+osascript -e "set volume output volume $OUTPUT_VOLUME" >/dev/null 2>&1 || true
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 # Tuning knobs (same as record_self_pair.sh) so the autonomous voice-agent
 # path can be A/B'd under the tuned latency settings without human speech.
@@ -44,7 +49,7 @@ echo
 echo "=== step 2: CUE arm — Kyoko speaks the monologue; CUELOOP interjects"
 announce_done=0
 CUELOOP_TTS=1 .venv/bin/cueloop-sync \
-  --event-command-json "[\".build/macos-speech-events\",\"--locale\",\"ja-JP\",\"--duration\",\"$DURATION\",\"--speech-db\",\"-50\"]" \
+  --event-command-json "[\".build/macos-speech-events\",\"--locale\",\"ja-JP\",\"--duration\",\"$DURATION\",\"--speech-db\",\"$SPEECH_DB\"]" \
   --decision rule --predictor ngram \
   --tts-command-json '["say","-v","Kyoko"]' \
   --condition-label CUE --assignment "${CUELOOP_ASSIGNMENT:-alternate}" --seed 3 --cue-style "$CUE_STYLE" \
@@ -61,7 +66,7 @@ wait "$CPID"
 echo
 echo "=== step 3: SILENCE arm — Kyoko reads the same text, CUELOOP silent"
 .venv/bin/cueloop-sync \
-  --event-command-json "[\".build/macos-speech-events\",\"--locale\",\"ja-JP\",\"--duration\",\"$DURATION\",\"--speech-db\",\"-50\"]" \
+  --event-command-json "[\".build/macos-speech-events\",\"--locale\",\"ja-JP\",\"--duration\",\"$DURATION\",\"--speech-db\",\"$SPEECH_DB\"]" \
   --decision rule --predictor ngram \
   --condition-label SILENCE --assignment "${CUELOOP_ASSIGNMENT:-alternate}" --seed 3 --cue-style "$CUE_STYLE" \
   "${EXTRA_ARGS[@]}" \
