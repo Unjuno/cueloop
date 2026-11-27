@@ -176,7 +176,9 @@ class SynchronizerTests(unittest.TestCase):
             sync = Synchronizer(divergence_tolerance=tolerance)
             sync.start(utterance_id="u1", at_ms=0)
             sync.observe(text, now_ms=800)
-            sync.set_prediction(_prediction("だから結論は決まる。", base_length=len(text)))
+            sync.set_prediction(
+                _prediction("だから結論は決まる。", base_length=len(text))
+            )
             sync.observe(text + "逆に考える", now_ms=1_000)
             self.assertEqual(sync.diverged, expected, f"tolerance={tolerance}")
 
