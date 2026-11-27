@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### H2 autonomous pilot pipeline (2026-11-28)
+- Added `scripts/run_h2_agent.py`: an agent-side delayed-reconstruction pilot
+  implementing docs/experiment-protocol.md — paired CUE/SILENCE monologues,
+  filler interval, unassisted reconstruction from memory, then the existing
+  rubric scorer. Explicitly labeled agent-side, NOT human evidence.
+- Ran 4 pairs (8 reconstructions); proxy rubric: total delta +0.188 CI
+  [-0.22,+0.55] (includes zero, inconclusive at n=4); only `dependencies`
+  subscore CI [+0.00,+0.11] barely excludes zero. H2 remains unmeasured for
+  humans — a blinded human rater is still required.
+- H2 scoring tool already existed; this completes the end-to-end autonomous
+  path so data collection can scale once a human protocol is approved.
+
 ### Alternate robustness at n=20 (2026-11-28)
 - Re-ran the autonomous text-feed A/B to n=20 per arm (equal n) to check the
   alternate-promote decision was not a small-sample artifact:
