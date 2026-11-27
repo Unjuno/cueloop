@@ -39,7 +39,7 @@ RESTRICT_OPS="${3:-${RESTRICT_OPS:-}}"
 # identical samples from one fixed condition. The CUE and SILENCE arms of a
 # single pair always share these values; only the labeled condition differs.
 SEED="${CUELOOP_SEED:-3}"
-ASSIGNMENT="${CUELOOP_ASSIGNMENT:-canonical}"
+ASSIGNMENT="${CUELOOP_ASSIGNMENT:-alternate}"
 SPEECH_DB="${CUELOOP_SPEECH_DB:--50}"
 # Experiment configuration (previously hard-coded). Override to run the
 # richer stack: CUELOOP_CUE_STYLE=stem CUELOOP_DECISION=local CUELOOP_PREDICTOR=local.

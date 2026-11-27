@@ -47,7 +47,7 @@ CUELOOP_TTS=1 .venv/bin/cueloop-sync \
   --event-command-json "[\".build/macos-speech-events\",\"--locale\",\"ja-JP\",\"--duration\",\"$DURATION\",\"--speech-db\",\"-50\"]" \
   --decision rule --predictor ngram \
   --tts-command-json '["say","-v","Kyoko"]' \
-  --condition-label CUE --assignment canonical --seed 3 --cue-style "$CUE_STYLE" \
+  --condition-label CUE --assignment "${CUELOOP_ASSIGNMENT:-alternate}" --seed 3 --cue-style "$CUE_STYLE" \
   "${EXTRA_ARGS[@]}" \
   --pair-key "agent-$TOPIC-$STAMP" \
   --session-id "agent-$TOPIC-cue" \
@@ -63,7 +63,7 @@ echo "=== step 3: SILENCE arm — Kyoko reads the same text, CUELOOP silent"
 .venv/bin/cueloop-sync \
   --event-command-json "[\".build/macos-speech-events\",\"--locale\",\"ja-JP\",\"--duration\",\"$DURATION\",\"--speech-db\",\"-50\"]" \
   --decision rule --predictor ngram \
-  --condition-label SILENCE --assignment canonical --seed 3 --cue-style "$CUE_STYLE" \
+  --condition-label SILENCE --assignment "${CUELOOP_ASSIGNMENT:-alternate}" --seed 3 --cue-style "$CUE_STYLE" \
   "${EXTRA_ARGS[@]}" \
   --silent \
   --pair-key "agent-$TOPIC-$STAMP" \

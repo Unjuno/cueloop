@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+### Cue presentation A/B — alternate assigner BEATS baseline (2026-11-28)
+- Tested cue presentation forms in the autonomous text-feed A/B with equal n:
+  canonical (baseline), alternate (rotated cue wording per operation), fixed
+  (single cue "根拠は？"). All used bare cues and default latency.
+- **alternate wins at n=12**: uptake delta +0.308 CI [+0.244,+0.382]
+  vs baseline +0.236 CI [+0.151,+0.308] (+0.072); carryover +0.444 vs 0.323;
+  novel_carryover +0.464 vs 0.391. Both CIs exclude zero.
+- fixed cue was worse (+0.200, n=4). Adjacent cue-repeat rates were identical
+  (2.5% both), so the gain is from rotated wording, not repetition avoidance.
+- Promoted `alternate` to the default assignment in all three recording
+  scripts (record_self_pair, run_agent_text_pair, run_agent_live_pair);
+  `CUELOOP_ASSIGNMENT` overrides it.
+- This is the first configuration to beat the baseline with a robust sample.
+
 ### Exhaustive latency tuning in autonomous A/B — defaults win (2026-11-28)
 - Investigated why tuned 50ms/tol10 lost baseline in the agent A/B: tuned
   delivered MORE cues (avg 14 vs 12 pairs) with the same uptake count, so the
