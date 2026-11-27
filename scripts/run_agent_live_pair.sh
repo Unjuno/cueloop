@@ -47,7 +47,12 @@ echo "generated text:"; head -c 200 "$TEXTFILE"; echo; echo "... ($(wc -c < "$TE
 # 2) CUE arm: CUELOOP listens + speaks Kyoko cues when boundaries/triggers fire
 echo
 echo "=== step 2: CUE arm — Kyoko speaks the monologue; CUELOOP interjects"
-announce_done=0
+# Pre-roll: start TTS FIRST, then start the adapter, so the first clause is
+# already in the air when SFSpeechRecognizer begins (starting the adapter first
+# and sleeping 2s made utterances=1 per arm — the opening speech was missed).
+say -v Kyoko -f "$TEXTFILE" &
+SAY_PID=$!
+sleep 1
 CUELOOP_TTS=1 .venv/bin/cueloop-sync \
   --event-command-json "[\".build/macos-speech-events\",\"--locale\",\"ja-JP\",\"--duration\",\"$DURATION\",\"--speech-db\",\"$SPEECH_DB\"]" \
   --decision rule --predictor ngram \
@@ -58,13 +63,15 @@ CUELOOP_TTS=1 .venv/bin/cueloop-sync \
   --session-id "agent-$TOPIC-cue" \
   --log "logs/agent-live/${TOPIC}-cue-${STAMP}.jsonl" --report "logs/agent-live/${TOPIC}-cue-${STAMP}.report" &
 CPID=$!
-sleep 2
-say -v Kyoko -f "$TEXTFILE"
-wait "$CPID"
+wait "$CPID" || true
+wait "$SAY_PID" 2>/dev/null || true
 
 # 3) SILENCE arm: same text, same seed, no Kyoko cues
 echo
 echo "=== step 3: SILENCE arm — Kyoko reads the same text, CUELOOP silent"
+say -v Kyoko -f "$TEXTFILE" &
+SAY_PID2=$!
+sleep 1
 .venv/bin/cueloop-sync \
   --event-command-json "[\".build/macos-speech-events\",\"--locale\",\"ja-JP\",\"--duration\",\"$DURATION\",\"--speech-db\",\"$SPEECH_DB\"]" \
   --decision rule --predictor ngram \
@@ -75,9 +82,8 @@ echo "=== step 3: SILENCE arm — Kyoko reads the same text, CUELOOP silent"
   --session-id "agent-$TOPIC-silence" \
   --log "logs/agent-live/${TOPIC}-silence-${STAMP}.jsonl" --report "logs/agent-live/${TOPIC}-silence-${STAMP}.report" &
 SPPID=$!
-sleep 2
-say -v Kyoko -f "$TEXTFILE"
-wait "$SPPID"
+wait "$SPPID" || true
+wait "$SAY_PID2" 2>/dev/null || true
 
 # 4) stage a paired directory
 PAIR_DIR="logs/agent-live-${TOPIC}-paired-${STAMP}"

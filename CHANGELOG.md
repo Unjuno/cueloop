@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Alternate robustness at n=20 (2026-11-28)
+- Re-ran the autonomous text-feed A/B to n=20 per arm (equal n) to check the
+  alternate-promote decision was not a small-sample artifact:
+  - alternate: uptake +0.281 CI [+0.228,+0.335], carryover +0.402
+  - canonical: uptake +0.231 CI [+0.174,+0.287], carryover +0.291
+  - alternate remains better on uptake/carryover with narrower CIs.
+- Real-mic loopback still yields utterances=1 per 120 s arm even after pre-roll
+  TTS (start say before the adapter) and speech-db -70 + volume 80. The gain
+  is a fragmentary transcript only; BlackHole-style routing is still required.
+
 ### Mic loopback ASR: partially restored, still not A/B grade (2026-11-28)
 - Reviewer: alternate's win was only validated in the text-feed path; real mic
   uptake must be checked and the loopback ASR fixed. Investigated: the default
