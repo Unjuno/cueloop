@@ -24,6 +24,7 @@ EXTRA=()
 if [ -n "${CUELOOP_INSERTION_DELAY_MS:-}" ]; then EXTRA+=(--insertion-delay-ms "$CUELOOP_INSERTION_DELAY_MS"); fi
 if [ -n "${CUELOOP_DIVERGENCE_TOLERANCE:-}" ]; then EXTRA+=(--divergence-tolerance "$CUELOOP_DIVERGENCE_TOLERANCE"); fi
 if [ -n "${CUELOOP_COOLDOWN_MS:-}" ]; then EXTRA+=(--cooldown-ms "$CUELOOP_COOLDOWN_MS"); fi
+if [ -n "${CUELOOP_MIN_CONFIDENCE:-}" ]; then EXTRA+=(--min-confidence "$CUELOOP_MIN_CONFIDENCE"); fi
 if [ "${CUELOOP_ATTENTION_SELECT:-0}" = "1" ]; then EXTRA+=(--attention-select); fi
 
 run_arm() {

@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+### Exhaustive latency tuning in autonomous A/B — defaults win (2026-11-28)
+- Investigated why tuned 50ms/tol10 lost baseline in the agent A/B: tuned
+  delivered MORE cues (avg 14 vs 12 pairs) with the same uptake count, so the
+  rate was diluted. Tried `min_confidence` 0.75 to thin insertions, and swept
+  insertion delay 50/100/150/200/300ms (4-8 pairs each, baseline also to n=8).
+- Dose-response at n=4 suggested later is better (50:+0.179, 100:+0.236,
+  150:+0.254, 200:+0.259, 300:0.000). With n=8 for both arms this VANISHED:
+  delay200 +0.194 vs baseline(delay100) +0.236. Every apparent win at n=4
+  was sampling noise from the LLM's high per-pair variance.
+- Honest conclusion: after exhausting every tuning knob (latency, tolerance,
+  confidence, TTS rate, cooldown, naturalness, attention selection), the
+  DEFAULT settings (100ms / tol0 / conf0.55 / bare) have the best measured
+  uptake at equal n. Further parameter tuning is not supported by evidence;
+  the remaining variance is the agent model's generation, not a knob.
+- `scripts/run_agent_text_pair.sh` now accepts `--min-confidence` via
+  `CUELOOP_MIN_CONFIDENCE`.
+
 ### Autonomous voice-agent A/B (2026-11-28) — mic loopback does NOT work here
 - Reviewer noted `scripts/run_agent_live_pair.sh` enables autonomy without the
   user. Attempted it: VAD fires (speech_started/ended) but SFSpeechRecognizer
