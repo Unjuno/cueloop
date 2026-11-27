@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+### BlackHole installed + real-mic H1 SUPPORTED (2026-11-28)
+- User approved the admin dialog; `installer -pkg /tmp/BlackHole2ch-0.7.1.pkg
+  -target /` succeeded (BlackHole2ch.driver). `killall coreaudiod` (admin)
+  made "BlackHole 2ch" appear in CoreAudio. `tools/audio_route.swift` routes
+  BOTH default input and output to BlackHole; `say` then feeds SFSpeechRecognizer
+  a clean loopback (clear transcripts: "調べて安いし、比べて安いし...").
+- `run_agent_live_pair.sh` now auto-routes via audio_route when BlackHole is
+  present, accepts `CUELOOP_MONOLOGUE_CHARS` (default 1000; 2200 gave utterances
+  3-7 and 11-19 deliveries per 180 s arm).
+- Real-mic (BlackHole loopback) paired analysis, 8 alternate pairs:
+  **uptake delta +0.101 CI [+0.028,+0.178] (excludes zero -> H1 supported)**,
+  carryover +0.383 CI [+0.270,+0.495], CUE 106 outcomes (uptake 0.10),
+  SILENCE 0 outcomes (clean control). This REPLACES the earlier "uptake 0 =
+  blocker" finding — the blocker was the mic loopback, not cue design.
+- Canonical baseline (same settings, 8 pairs) is running for the head-to-head.
+- H2 still needs a blinded human rater; agent-side pilot pipeline exists.
+
 ### BlackHole install BLOCKED on admin password (2026-11-28)
 - Downloaded BlackHole2ch-0.7.1.pkg to /tmp (SHA256 matches the Homebrew cask
   expected value exactly). Built `tools/audio_route.swift` (CoreAudio default

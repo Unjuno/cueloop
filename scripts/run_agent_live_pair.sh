@@ -14,9 +14,17 @@ DURATION="${2:-300}"
 AGENT_MODEL="${CUELOOP_AGENT_MODEL:-qwen3:8b}"
 # Speaker->mic loopback is quieter than a live voice; -50 missed it entirely.
 SPEECH_DB="${CUELOOP_SPEECH_DB:--70}"
+MONOLOGUE_CHARS="${CUELOOP_MONOLOGUE_CHARS:-1000}"
 # A louder loopback gives SFSpeechRecognizer a cleaner signal.
 OUTPUT_VOLUME="${CUELOOP_OUTPUT_VOLUME:-80}"
 osascript -e "set volume output volume $OUTPUT_VOLUME" >/dev/null 2>&1 || true
+# With BlackHole 2ch installed, route BOTH input and output to it: say() plays
+# into BlackHole, which is also the mic input, giving a clean loopback.
+if [ -x "/tmp/audio_route" ] && /tmp/audio_route list 2>/dev/null | grep -qi blackhole; then
+  /tmp/audio_route input "BlackHole" >/dev/null 2>&1 || true
+  /tmp/audio_route output "BlackHole" >/dev/null 2>&1 || true
+  echo "    audio routed through BlackHole 2ch"
+fi
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 # Tuning knobs (same as record_self_pair.sh) so the autonomous voice-agent
 # path can be A/B'd under the tuned latency settings without human speech.
@@ -39,7 +47,7 @@ TEXTFILE=logs/agent-live/$(echo "$TOPIC" | tr -cd 'a-zA-Z0-9-')-prompt-${STAMP}.
 
 # 1) Ask the local LLM for a Japanese reasoning monologue (~1100 chars for ~180 s)
 echo "=== step 1: ask local LLM (qwen2.5:7b) for a monologue on $TOPIC"
-curl -s --max-time 180 http://localhost:11434/api/generate -d "{\"model\":\"$AGENT_MODEL\",\"prompt\":\"次のトピックについて、日本語の推論モノローグを約1000文字で書いてください: 『なぜ${TOPIC}を選ぶのか?』。まず結論を言う、そのあと第一に〜、第二に〜、つまり〜、逆に〜、依存関係、根拠 の展開で、話し言葉に近い自然な表現を使ってください。見出しやマークアップは付けず、ただ連続した口語で書いてください。\",\"stream\":false}" \
+curl -s --max-time 180 http://localhost:11434/api/generate -d "{\"model\":\"$AGENT_MODEL\",\"prompt\":\"次のトピックについて、日本語の推論モノローグを約${MONOLOGUE_CHARS}文字で書いてください: 『なぜ${TOPIC}を選ぶのか?』。まず結論を言う、そのあと第一に〜、第二に〜、つまり〜、逆に〜、依存関係、根拠 の展開で、話し言葉に近い自然な表現を使ってください。見出しやマークアップは付けず、ただ連続した口語で書いてください。\",\"stream\":false}" \
   | /opt/homebrew/bin/python3 -c 'import sys, json; print(json.load(sys.stdin)["response"])' \
   > "$TEXTFILE"
 echo "generated text:"; head -c 200 "$TEXTFILE"; echo; echo "... ($(wc -c < "$TEXTFILE") chars)"
