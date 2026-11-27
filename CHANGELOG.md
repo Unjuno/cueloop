@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+### BlackHole install BLOCKED on admin password (2026-11-28)
+- Downloaded BlackHole2ch-0.7.1.pkg to /tmp (SHA256 matches the Homebrew cask
+  expected value exactly). Built `tools/audio_route.swift` (CoreAudio default
+  device reader/setter) and verified it enumerates devices via CLT swiftc with
+  `-sdk /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk`.
+- `sudo` is unavailable to the agent; `osascript ... with administrator
+  privileges` was CANCELLED by the user (error -128). BlackHole is therefore
+  NOT installed and loopback ASR stays fragmentary (utterances=1 per 120 s).
+- ONE manual step remains (user's terminal):
+  `sudo installer -pkg /tmp/BlackHole2ch-0.7.1.pkg -target /`
+  After that the agent can route input to BlackHole via audio_route and run
+  real-mic CUE/SILENCE A/B for alternate vs canonical.
+- This is a genuine manual blocker, not a code issue; all code-side tuning is
+  complete and verified.
+
 ### H2 autonomous pilot pipeline (2026-11-28)
 - Added `scripts/run_h2_agent.py`: an agent-side delayed-reconstruction pilot
   implementing docs/experiment-protocol.md — paired CUE/SILENCE monologues,
