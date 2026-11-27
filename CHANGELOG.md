@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+### Uptake remains the blocker (2026-11-27) — exhaustive A/B, honest stop
+- Ran every presentation/latency variant with an explicit target uptake >=0.35
+  (baseline old bare/rule = 0.250). None met it:
+  - old bare/rule baseline: 6/24 = 0.250
+  - latency-tuned (50ms + tolerance 10): 4/22 = 0.182
+  - fast TTS (rate 220): 0/8 = 0.000
+  - rapid cue (cooldown 1000): 2/19 = 0.105, uptake/pair 1.0 (< baseline 2.0)
+  - stem+attention (long and short): 0/12 and 0/6 = 0.000
+- TTS overlap hypothesis DISPROVEN: speak_ms ~1620ms but next clause arrives
+  ~3279ms later; overlap 0/687 = 0%.
+- Uptake scoring audit: `target_operation_seen = operation in tag_operations(
+  continuation)` works; per-op adoption varies (ground 0.48, dependency 0.02)
+  but detection is not broken.
+- Conclusion: every engineering lever (naturalness, attention selection,
+  latency, cancellation, TTS rate, cue rate) has been tuned and CI is green,
+  but live uptake never exceeds baseline. Further parameter tuning is not
+  justified by evidence. Raising uptake now requires the speaker to actually
+  adopt a cue in the next clause — a human/manual step that cannot be replaced
+  by code.
+
 ### Latency / rating tuning (2026-11-27) — user's hypothesis tested
 - User suggested the problem may be latency / "rating" rather than naturalness.
   Measured over recent real-mic logs: prediction 0.1ms, decision 0.4ms (fine),

@@ -49,6 +49,12 @@ CUE_STYLE="${CUELOOP_CUE_STYLE:-bare}"
 LLM_ARGS=()
 if [ -n "${CUELOOP_BASE_URL:-}" ]; then LLM_ARGS+=(--base-url "$CUELOOP_BASE_URL"); fi
 if [ -n "${CUELOOP_MODEL:-}" ]; then LLM_ARGS+=(--model "$CUELOOP_MODEL"); fi
+# TTS command; faster rate shortens the cue's airtime.
+TTS_JSON='["say","-v","Kyoko"]'
+if [ -n "${CUELOOP_TTS_RATE:-}" ]; then
+  TTS_JSON="[\"say\",\"-v\",\"Kyoko\",\"-r\",\"${CUELOOP_TTS_RATE}\"]"
+  echo "    TTS rate: ${CUELOOP_TTS_RATE} wpm"
+fi
 ANNOUNCE_CUE="${CUELOOP_ANNOUNCE_CUE:-これから話してください。結論は、なぜなら、逆に、具体例は、といった言葉を使いながら、日本語で話し続けてください。}"
 ANNOUNCE_SIL="${CUELOOP_ANNOUNCE_SIL:-もう一度、同じ話題で話してください。先ほどと同じように、結論は、なぜなら、逆に、といった言葉を使ってください。}"
 # Optional anti-over-insertion gate (derived by scripts/tune_operation_weights.py).
@@ -73,6 +79,10 @@ fi
 if [ -n "${CUELOOP_DIVERGENCE_TOLERANCE:-}" ]; then
   GATE_ARGS+=(--divergence-tolerance "$CUELOOP_DIVERGENCE_TOLERANCE")
   echo "    divergence tolerance: ${CUELOOP_DIVERGENCE_TOLERANCE} chars"
+fi
+if [ -n "${CUELOOP_COOLDOWN_MS:-}" ]; then
+  GATE_ARGS+=(--cooldown-ms "$CUELOOP_COOLDOWN_MS")
+  echo "    cooldown: ${CUELOOP_COOLDOWN_MS}ms"
 fi
 STAMP="$(date +%Y%m%d-%H%M%S)"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -111,7 +121,7 @@ python3 -m pip install -q -e . 2>/dev/null || true
   --event-command-json "[\".build/macos-speech-events\",\"--locale\",\"ja-JP\",\"--duration\",\"$DURATION\",\"--speech-db\",\"$SPEECH_DB\"]" \
   --restrict-ops "${RESTRICT_OPS}" \
   --decision "$DECISION" --predictor "$PREDICTOR" ${LLM_ARGS[@]+"${LLM_ARGS[@]}"} \
-  --tts-command-json '["say","-v","Kyoko"]' \
+  --tts-command-json "$TTS_JSON" \
   --condition-label CUE --assignment "$ASSIGNMENT" --seed "$SEED" --cue-style "$CUE_STYLE" \
   ${GATE_ARGS[@]+"${GATE_ARGS[@]}"} \
   --pair-key "self-$TOPIC-${STAMP}" \
