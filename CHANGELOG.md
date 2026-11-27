@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+### Autonomous voice-agent A/B (2026-11-28) — mic loopback does NOT work here
+- Reviewer noted `scripts/run_agent_live_pair.sh` enables autonomy without the
+  user. Attempted it: VAD fires (speech_started/ended) but SFSpeechRecognizer
+  returns NO transcript from speakers->mic loopback on this Mac (tested with
+  `say -f` while the adapter listened). So the mic-loopback agent path is
+  non-functional here; it is not a valid A/B channel without audio routing.
+- Added a working autonomous path without the mic: `scripts/agent_text_events.py`
+  feeds the LLM's Japanese monologue as transcript events via `--events -`,
+  and `scripts/run_agent_text_pair.sh` runs paired CUE/SILENCE entirely offline.
+- A/B (4 pairs each, tuned 50ms/tol10 vs baseline 100ms/tol0):
+  - tuned uptake delta +0.193 CI [+0.089,+0.344] (H1 supported)
+  - baseline uptake delta +0.230 CI [+0.089,+0.366] (also supported)
+  - baseline >= tuned on uptake/novel_uptake; carryover ~equal.
+- Conclusion: with text fed directly, the agent DOES adopt cues (uptake 0.19-0.23,
+  SILENCE=0), so the "influence" mechanism works in the autonomous path. The
+  tuned latency settings do not beat baseline there. Live-mic uptake staying at
+  0 is therefore an audio/ASR issue, not a cue-design issue.
+- Fixed `set -u` empty-array expansion in both agent scripts.
+
 ### Uptake remains the blocker (2026-11-27) — exhaustive A/B, honest stop
 - Ran every presentation/latency variant with an explicit target uptake >=0.35
   (baseline old bare/rule = 0.250). None met it:
