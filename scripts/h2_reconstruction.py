@@ -78,6 +78,75 @@ def proxy_scores(text: str) -> dict[str, float]:
     return out
 
 
+def llm_rater_scores(text: str, *, model: str, base_url: str) -> dict[str, float]:
+    """Blinded LLM rater: score a reconstruction on the 7 rubric items 0..3.
+
+    The condition label is NOT supplied, so the rater cannot know whether the
+    text came from a CUE or SILENCE arm. Returns the average of two independent
+    samples to reduce single-generation variance.
+    """
+    import urllib.request
+
+    items = "\n".join(
+        f"- {name}: "
+        + {
+            "claims": "明確な主張の多さ",
+            "premises": "前提・根拠・証拠の明確さ",
+            "dependencies": "主張間の依存関係の明確さ",
+            "counterexamples": "反例・代替説明の有無",
+            "questions": "未解決質問の明示",
+            "unsupported": "根拠のない断定の多さ（高いほど悪い）",
+            "coherence": "文章全体の一体感",
+        }[name]
+        for name in RUBRIC
+    )
+    prompt = (
+        "あなたは blind な評価者です。以下の再構成テキストだけを読み、"
+        "各項目を 0（なし）〜3（非常に明確）で採点してください。\n"
+        f"採点項目:\n{items}\n\n"
+        "JSON オブジェクトのみで答えてください（説明不要）:\n"
+        "{" + ", ".join(f'"{k}": 0' for k in RUBRIC) + "}\n\n"
+        f"再構成テキスト:\n{text}\n"
+    )
+    samples: list[dict[str, float]] = []
+    for _ in range(2):
+        body = json.dumps(
+            {
+                "model": model,
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.0,
+                "max_tokens": 200,
+                "stream": False,
+            }
+        ).encode()
+        req = urllib.request.Request(
+            base_url.rstrip("/") + "/api/chat",
+            data=body,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=60) as response:
+                payload = json.loads(response.read().decode())
+            content = payload["message"]["content"]
+            # Local models often wrap JSON in a markdown code fence.
+            content = content.strip()
+            if content.startswith("```"):
+                content = content.split("```", 2)[1]
+                if content.lstrip().startswith("json"):
+                    content = content.lstrip()[4:]
+            parsed = json.loads(content.strip())
+            samples.append(
+                {k: max(0.0, min(3.0, float(parsed[k]))) for k in RUBRIC if k in parsed}
+            )
+        except (OSError, ValueError, KeyError, TypeError):
+            # A bad rater sample is skipped; the other sample still counts.
+            continue
+    if not samples:
+        raise ValueError("LLM rater produced no usable scores")
+    return {k: statistics.mean(s[k] for s in samples if k in s) for k in RUBRIC}
+
+
 def human_scores(record: dict) -> dict[str, float]:
     """Average the blinded raters' scores for each rubric item."""
     raters = record.get("raters") or []
@@ -114,10 +183,21 @@ def load_records(paths: list[Path]) -> list[dict]:
     return records
 
 
-def score_records(records: list[dict], *, proxy: bool) -> list[dict]:
+def score_records(
+    records: list[dict],
+    *,
+    proxy: bool,
+    llm_model: str | None = None,
+    llm_base_url: str = "http://127.0.0.1:11434",
+) -> list[dict]:
     scored = []
     for record in records:
-        if proxy:
+        if llm_model:
+            scores = llm_rater_scores(
+                str(record.get("text", "")), model=llm_model, base_url=llm_base_url
+            )
+            source = f"blinded-llm-rater({llm_model})"
+        elif proxy:
             scores = proxy_scores(str(record.get("text", "")))
             source = "proxy"
         else:
@@ -244,6 +324,12 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Use the lexical proxy scorer (dry run only, not human evidence).",
     )
+    parser.add_argument(
+        "--llm-rater",
+        metavar="MODEL",
+        help="Use a blinded local-LLM rater (agent-side H2, not human evidence).",
+    )
+    parser.add_argument("--llm-base-url", default="http://127.0.0.1:11434")
     return parser
 
 
@@ -257,7 +343,12 @@ def main(argv: list[str] | None = None) -> int:
     if not records:
         print("error: no reconstruction records found", file=sys.stderr)
         return 2
-    scored = score_records(records, proxy=args.proxy)
+    scored = score_records(
+        records,
+        proxy=args.proxy,
+        llm_model=args.llm_rater,
+        llm_base_url=args.llm_base_url,
+    )
     payload = pair_and_compare(
         scored,
         resamples=args.resamples,

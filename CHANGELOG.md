@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+### H2 LLM blinded rater added — agent-side H2 still inconclusive (2026-11-28)
+- Added `--llm-rater MODEL` to `scripts/h2_reconstruction.py`: a condition-blind
+  local-LLM rater scores the 7 rubric items 0-3 from reconstruction text alone
+  (2 samples averaged; markdown code fence stripped). This makes the H2 pipeline
+  fully autonomous (reconstruct -> blind rater -> paired bootstrap), agent-side.
+- Results: n=4 proxy cases gave total +1.000 CI [+0.25,+2.00] (seemed positive),
+  but scaling to n=6 real-mic reconstructions gave total -0.333 CI
+  [-1.83,+1.33] (inconclusive). The n=4 'win' was small-sample noise.
+- Honest verdict: agent-side H2 shows NO stable effect. True H2 (human durable
+  retention) requires a human's delayed written reconstruction and a human
+  blinded rater — it cannot be substituted by an LLM rater. The pipeline is
+  READY for that human protocol; the human data itself is the remaining gap.
+
 ### Real-mic head-to-head: alternate WINS on actual microphone (2026-11-28)
 - With BlackHole loopback working, ran paired CUE/SILENCE A/B on the real
   microphone path (local LLM monologue -> say -> BlackHole -> SFSpeechRecognizer)
